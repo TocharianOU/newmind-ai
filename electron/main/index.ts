@@ -109,7 +109,7 @@ async function onReady() {
 
 export async function createWindow() {
   win = new BrowserWindow({
-    title: "Dive AI",
+    title: "Newmind Agent",
     icon: path.join(process.env.VITE_PUBLIC, "favicon.ico"),
     width: 1280,
     height: 720,

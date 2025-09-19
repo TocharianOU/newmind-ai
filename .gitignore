@@ -7,6 +7,11 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+BUILD.md
+CRITICAL_FIXES.md
+RENAME_CHANGES.md
+RENAME_CHANGES.md
+
 node_modules
 dist
 dist-ssr

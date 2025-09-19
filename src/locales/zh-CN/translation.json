@@ -1,6 +1,6 @@
 {
   "header": {
-    "title": "Dive AI",
+    "title": "Newmind AI",
     "openSidebar": "打开侧边栏",
     "closeSidebar": "关闭侧边栏"
   },
@@ -28,7 +28,7 @@
     "retry": "重试",
     "noModelAlert": "无可用模型",
     "noModelBanner": "无模型可用，请先选择模型",
-    "onLimit": "您已达到 {{plan}} 方案用量限制，oap模型无法使用",
+    "onLimit": "您已达到 {{plan}} 方案用量限制，Newmind模型无法使用",
     "modelSettings": "模型设置",
     "copy": "复制",
     "copied": "已复制",
@@ -47,7 +47,7 @@
     }
   },
   "welcome": {
-    "title": "欢迎使用 Dive AI",
+    "title": "欢迎使用 Newmind AI",
     "subtitle": "开始你的 AI 对话",
     "startChat": "开始对话"
   },
@@ -77,7 +77,7 @@
     "models": "模型设置",
     "system": "系统设置",
     "manageAndSettings": "管理与设置",
-    "OAPhub": "OAPhub",
+    "New mindhub": "Newmindhub",
     "signOut": "登出",
     "chat": {
       "starredChat": "已钉选",
@@ -178,15 +178,15 @@
     "logTitle": "执行 UVX 命令",
     "logProcessing": "处理中...",
     "no_tool_title": "目前没有任何的 MCP Server",
-    "no_oap_tool_message": {
-      "all": "请选择要使用的 OAP MCP Server，或新增自定义的 MCP Server。",
-      "oap": "请选择要使用的 OAP MCP Server。",
+    "no_Newmind_tool_message": {
+      "all": "请选择要使用的 Newmind MCP Server，或新增自定义的 MCP Server。",
+      "Newmind": "请选择要使用的 Newmind MCP Server。",
       "custom": "请新增自定义的 MCP Server。"
     },
     "no_tool_message": "请新增 MCP Server。",
     "tab": {
       "all": "所有工具",
-      "oap": "OAP工具",
+      "Newmind": "Newmind工具",
       "custom": "自定义工具"
     },
     "oapStoreLinkAlt": "详细说明",
@@ -198,7 +198,7 @@
       "cancel": "取消更改",
       "save": "保存"
     },
-    "oauthAlert": "请确认你信任此连接器：此连接器尚未经过 Dive 验证。你需自行承担使用 Dive 执行所有操作的责任。",
+    "oauthAlert": "请确认你信任此连接器：此连接器尚未经过 NewmindAI 验证。你需自行承担使用 NewmindAI 执行所有操作的责任。",
     "reload": {
       "headerBtn": "重新加载",
       "headerBtnAlt": "重新加载并更新 MCP Tools"
@@ -221,7 +221,7 @@
       "hint": "高阶 MCP Server 需要升级 Pro 版本方能安装",
       "high_cost_title": "启用昂贵的MCP Server",
       "high_cost_desc": "您有勾选到以下使用较多 Token 数量的 MCP Server。确定要启用吗？",
-      "headerBtnAlt": "新增 / 查看 OAP MCP 工具"
+      "headerBtnAlt": "新增 / 查看 Newmind MCP 工具"
     },
     "custom": {
       "headerBtn": "新增 / 编辑 Config",
@@ -358,24 +358,24 @@
     "title": "系统设置",
     "language": "系统语言",
     "languageDefault": "系统默认",
-    "languageDescription": "系统界面显示时所使用的语言。模型中使用的语言可以在模型设置页面中的提示词里修改，这里是指 Dive 界面上显示的语言",
+    "languageDescription": "系统界面显示时所使用的语言。模型中使用的语言可以在模型设置页面中的提示词里修改，这里是指 NewmindAI 界面上显示的语言",
     "theme": "深色模式",
     "themeDescription": "切换系统默认 / Darkmode 显示模式",
     "defaultInstructions": "以简体中文回應",
     "autoDownload": "自动下载更新",
-    "autoDownloadDescription": "自动在后台下载新版本 DIVE，用户下次重启后或点击菜单页的「新版本升级」按钮，即会启用新版本",
+    "autoDownloadDescription": "自动在后台下载新版本 NewmindAI，用户下次重启后或点击菜单页的「新版本升级」按钮，即会启用新版本",
     "autoLaunch": "自动启动",
-    "autoLaunchDescription": "开机时自动启动 Dive AI",
-    "loginTitle": "OAP 登录",
-    "loginDescription": "使用 OpenAgentPlatform 登录，无需技术背景即可轻松连接 LLMs、AI Agents 和 MCP Servers — 立即体验智慧解决方案！",
+    "autoLaunchDescription": "开机时自动启动 NewmindAI",
+    "loginTitle": "Newmind 登录",
+    "loginDescription": "使用 Newmind Hub 登录，无需技术背景即可轻松连接 LLMs、AI Agents 和 MCP Servers — 立即体验智慧解决方案！",
     "personalInformationTitle": "个人信息",
     "minimalToTray": "最小化",
     "minimalToTrayDescription": "关闭窗口时不会将程序关闭，而是缩放成最小化 icon",
-    "defaultSystemPrompt": "Dive Default System Prompt",
-    "defaultSystemPromptDescription": "Dive Default System Prompt 用来作为 chat 预设的系统提示词。跟 LLM 说明对于 Dive chat 的内容支持 KaTeX / Markdown / Mermaid 等输出的提示。这个功能会花费一定的 Token 数，某些情况下会使得回应相对没有系统提示词的 Prompt 来得更慢。另一方面，若是关闭 LLM 回应的品质可能下降",
-    "usageAnalytics": "前往 OAP Hub 的 Dashboard 页面查看",
+    "defaultSystemPrompt": "NewmindAI Default System Prompt",
+    "defaultSystemPromptDescription": "NewmindAI Default System Prompt 用来作为 chat 预设的系统提示词。跟 LLM 说明对于 NewmindAI chat 的内容支持 KaTeX / Markdown / Mermaid 等输出的提示。这个功能会花费一定的 Token 数，某些情况下会使得回应相对没有系统提示词的 Prompt 来得更慢。另一方面，若是关闭 LLM 回应的品质可能下降",
+    "usageAnalytics": "前往 Newmind Hub 的 Dashboard 页面查看",
     "usageAnalyticsTitle": "使用分析",
-    "userEdit": "前往 OAP Hub 的 Account 页面查看",
+    "userEdit": "前往 Newmind Hub 的 Account 页面查看",
     "planSectionTitle": "当前计划用量",
     "subscriptionDate": "订阅日期",
     "remainingUsage": "剩余使用量",
@@ -390,7 +390,7 @@
     "tokenPackageHint": "Token 包没有到期日，将在每月计划配额耗尽后使用。",
     "tokenPackageRemainingUsage": "剩余使用量",
     "tokenPackageWarningTitle": "Token 使用量已达到上限。",
-    "tokenPackageWarning": "您可以前往 OAPhub <planLink>Dashboard 页面</planLink>补充更多 Token 使用量。",
+    "tokenPackageWarning": "您可以前往 Newmindhub <planLink>Dashboard 页面</planLink>补充更多 Token 使用量。",
     "skipTlsVerifyWarning": "安全提醒：忽略证书验证会降低连接安全性，建议您在信任的网络环境中使用。"
   },
   "toast": {
@@ -420,14 +420,14 @@
     "clickToInstall": "点击安装更新"
   },
   "login": {
-    "subtitle": "Dive AI 是一款开源的桌面应用程序，无缝整合各种支持功能调用的大型语言模型。通过简洁直观的界面，让您轻松与顶尖 AI 进行对话，从日常问答到专业任务，都能获得精准回应，成为您的智能助手。",
-    "title1": "使用你自己准备好的模型",
-    "description1": "适合进阶的 AI 专家，如果您已经准备好自己的配置，不论是本地的 Ollama、llama.cpp 或是远程的 Openrouter、OpenAI、anthropic 或是其他 AI 公司自己提供的 LLM API。请使用这个选项",
+    "subtitle": "NewmindAI 是一款开源的桌面应用程序，无缝整合各种支持功能调用的大型语言模型。通过简洁直观的界面，实现对数据分析等领域深度智能化的探索。",
+    "title1": "自定义或本地模型",
+    "description1": "Newmind AI软硬一体机团队提供的 LLM API或者其他自定义模型适合的选项",
     "button1": "前往设置模型",
-    "title2": "使用 OpenAgentPlatform 平台",
-    "description2": "OAP 让每个人都能轻松使用最先进的 AI 服务，无需专业知识即可连接 LLM、AI Agent 与 MCP Servers。探索 AI 的无限可能，是立即体验智能化的解决方案",
-    "button2": "注册 OAP",
-    "button3": "登录 OAP"
+    "title2": "使用 Newmind Hub 平台",
+    "description2": "Newmind Hub 提供多种在线大模型以及垂直领域专有模型， 探索 AI 的无限可能，是立即体验智能化的解决方案",
+    "button2": "注册 Newmind",
+    "button3": "登录 Newmind"
   },
   "InstallHostDependencies": {
     "title": "正在下载模组套件...",

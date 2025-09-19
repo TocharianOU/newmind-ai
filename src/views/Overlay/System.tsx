@@ -35,12 +35,8 @@ const System = () => {
 
   const languageOptions = [
     { label: t("system.languageDefault"), value: "default" },
-    { label: "繁體中文", value: "zh-TW" },
     { label: "简体中文", value: "zh-CN" },
     { label: "English", value: "en" },
-    { label: "Español", value: "es" },
-    { label: "日本語", value: "ja" },
-    { label: "한국어", value: "ko" },
   ]
 
   useEffect(() => {

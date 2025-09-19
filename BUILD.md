@@ -1,4 +1,4 @@
-## Table of Contents Build Dive
+## Table of Contents Build Newmind Agent
 
 - [Development Requirements](#development-requirements)
 - [Development](#development)
@@ -28,8 +28,8 @@
 ### Clone Repository
 
 ```bash
-git clone --recurse-submodules https://github.com/OpenAgentPlatform/Dive.git
-cd Dive
+git clone --recurse-submodules https://github.com/TocharianOU/newmind-agent.git
+cd newmind-agent
 ```
 
 ### Update Repository
@@ -59,7 +59,7 @@ npm run dev
 
 ### Development Configuration
 
-When running Dive in development mode, the configuration file will be automatically generated in the `.config` directory of your project root. This is different from the production environment where configuration files are stored in the user's home directory.
+When running Newmind Agent in development mode, the configuration file will be automatically generated in the `.config` directory of your project root. This is different from the production environment where configuration files are stored in the user's home directory.
 
 This allows developers to have separate configurations for development and production environments, making it easier to test different MCP server setups without affecting the production configuration.
 
@@ -108,9 +108,9 @@ npm run download:windows-bin
 
 After first launch, you can find the `config.json` file in these locations:
 
-- macOS: `~/.dive/config`
-- Windows: `%USERPROFILE%\.dive\config`
-- Linux: `~/.dive/config`
+- macOS: `~/.newmind-agent/config`
+- Windows: `%USERPROFILE%\.newmind-agent\config`
+- Linux: `~/.newmind-agent/config`
 
 There are four ways to configure MCP servers:
 
@@ -146,11 +146,11 @@ You can edit the `config.json` file directly in the above locations following ea
 
 ### 4. Custom Scripts
 
-You can add your own MCP server scripts in the `.dive/scripts` directory in your home folder, then update the `config.json` accordingly.
+You can add your own MCP server scripts in the `.newmind-agent/scripts` directory in your home folder, then update the `config.json` accordingly.
 
 Example:
 
-1. Create a new file `echo.js` in `~/.dive/scripts`
+1. Create a new file `echo.js` in `~/.newmind-agent/scripts`
 2. Update `config.json`:
 
 ```json

@@ -1,6 +1,6 @@
 {
   "header": {
-    "title": "Dive AI",
+    "title": "Newmind AI",
     "openSidebar": "Open sidebar",
     "closeSidebar": "Close sidebar"
   },
@@ -28,7 +28,7 @@
     "retry": "Retry",
     "noModelAlert": "No models available",
     "noModelBanner": "No models available, please select a model first",
-    "onLimit": "You have reached the {{plan}} plan usage limit, oap models cannot be used",
+    "onLimit": "You have reached the {{plan}} plan usage limit, Newmind models cannot be used",
     "modelSettings": "Model Settings",
     "copy": "Copy",
     "copied": "Copied",
@@ -47,7 +47,7 @@
     }
   },
   "welcome": {
-    "title": "Welcome to Dive AI",
+    "title": "Welcome to NewmindAI",
     "subtitle": "Start your AI conversation",
     "startChat": "Start Chat"
   },
@@ -77,7 +77,7 @@
     "models": "Model Settings",
     "system": "System Settings",
     "manageAndSettings": "Management and Settings",
-    "OAPhub": "OAPhub",
+    "Newmindhub": "Newmindhub",
     "signOut": "Sign Out",
     "chat": {
       "starredChat": "Starred",
@@ -178,15 +178,15 @@
     "logTitle": "Execute UVX Command",
     "logProcessing": "Processing...",
     "no_tool_title": "No MCP Servers Available",
-    "no_oap_tool_message": {
-      "all": "Please select an OAP MCP Server to use, or add a custom MCP Server.",
-      "oap": "Please select an OAP MCP Server to use.",
+    "no_Newmind_tool_message": {
+      "all": "Please select a Newmind MCP Server to use, or add a custom MCP Server.",
+      "Newmind": "Please select a Newmind MCP Server to use.",
       "custom": "Please add a custom MCP Server."
     },
     "no_tool_message": "Please add an MCP Server.",
     "tab": {
       "all": "All Tools",
-      "oap": "OAP Tools",
+      "Newmind": "Newmind Tools",
       "custom": "Custom Tools"
     },
     "oapStoreLinkAlt": "View Details",
@@ -198,7 +198,7 @@
       "cancel": "Cancel Changes",
       "save": "Save"
     },
-    "oauthAlert": "Please confirm that you trust this connector: this connector has not been verified by Dive. You are responsible for all operations you perform with Dive.",
+    "oauthAlert": "Please confirm that you trust this connector: this connector has not been verified by NewmindAI. You are responsible for all operations you perform with NewmindAI.",
     "reload": {
       "headerBtn": "Reload",
       "headerBtnAlt": "Reload and Update MCP Tools"
@@ -221,7 +221,7 @@
       "hint": "High-level MCP Servers require upgrading to the Pro version to install",
       "high_cost_title": "Enable High-Cost MCP Servers",
       "high_cost_desc": "You have selected MCP Servers that consume many tokens. Please check if your plan usage is sufficient.",
-      "headerBtnAlt": "Add / View OAP MCP Tools"
+      "headerBtnAlt": "Add / View Newmind MCP Tools"
     },
     "custom": {
       "headerBtn": "Add / Edit Config",
@@ -358,24 +358,24 @@
     "title": "System Settings",
     "language": "System Language",
     "languageDefault": "System Default",
-    "languageDescription": "Language used to display the system interface. The language used in the model can be modified in the model settings page, this refers to the language displayed on the Dive interface",
+    "languageDescription": "Language used to display the system interface. The language used in the model can be modified in the model settings page, this refers to the language displayed on the NewmindAI interface",
     "theme": "Dark Mode",
     "themeDescription": "Switch between system default and dark mode",
     "defaultInstructions": "speak in English",
     "autoDownload": "Auto Download Update",
-    "autoDownloadDescription": "Automatically download the new version of DIVE when the user restarts or clicks the \"Upgrade\" button on the menu page, the new version will be enabled",
+    "autoDownloadDescription": "Automatically download the new version of NewmindAI when the user restarts or clicks the \"Upgrade\" button on the menu page, the new version will be enabled",
     "autoLaunch": "Auto Launch",
-    "autoLaunchDescription": "Automatically start Dive AI when the system starts",
+    "autoLaunchDescription": "Automatically start NewmindAI when the system starts",
     "minimalToTray": "Minimize to tray",
     "minimalToTrayDescription": "When closing the window, the program will minimize to the system tray instead of exiting completely",
-    "loginTitle": "OAP Login",
-    "loginDescription": "Use OpenAgentPlatform to login, no technical background is required to easily connect LLMs, AI Agents and MCP Servers — Experience smart solutions now!",
+    "loginTitle": "Newmind Login",
+    "loginDescription": "Use Newmind Hub to login, no technical background is required to easily connect LLMs, AI Agents and MCP Servers — Experience smart solutions now!",
     "personalInformationTitle": "Personal Information",
-    "defaultSystemPrompt": "Dive Default System Prompt",
-    "defaultSystemPromptDescription": "Dive Default System Prompt is used as the default system prompt for chat. It tells the LLM that Dive chat supports KaTeX / Markdown / Mermaid, etc. This feature consumes certain tokens, which may make the response slower than the prompt without a system prompt. On the other hand, if it is disabled, the quality of the LLM's response may decrease",
-    "usageAnalytics": "Go to the Dashboard page in OAP Hub to view",
+    "defaultSystemPrompt": "NewmindAI Default System Prompt",
+    "defaultSystemPromptDescription": "NewmindAI Default System Prompt is used as the default system prompt for chat. It tells the LLM that NewmindAI chat supports KaTeX / Markdown / Mermaid, etc. This feature consumes certain tokens, which may make the response slower than the prompt without a system prompt. On the other hand, if it is disabled, the quality of the LLM's response may decrease",
+    "usageAnalytics": "Go to the Dashboard page in Newmind Hub to view",
     "usageAnalyticsTitle": "Usage Analytics",
-    "userEdit": "Go to the Account page in OAP Hub to make changes",
+    "userEdit": "Go to the Account page in Newmind Hub to make changes",
     "planSectionTitle": "Current plan usage",
     "subscriptionDate": "Subscription date",
     "remainingUsage": "Remaining usage",
@@ -390,7 +390,7 @@
     "tokenPackageHint": "Token packages have no expiration date and will only be used after the monthly plan quota is exhausted.",
     "tokenPackageRemainingUsage": "Remaining usage",
     "tokenPackageWarningTitle": "Token quota used up.",
-    "tokenPackageWarning": "You can replenish more token usage at the OAPhub <planLink>Dashboard page</planLink>.",
+    "tokenPackageWarning": "You can replenish more token usage at the Newmindhub <planLink>Dashboard page</planLink>.",
     "skipTlsVerifyWarning": "Security warning: Ignoring certificate verification may reduce connection security. It is recommended to use in trusted network environments."
   },
   "toast": {
@@ -420,14 +420,14 @@
     "clickToInstall": "Click to Install Update"
   },
   "login": {
-    "subtitle": "Dive AI is an open-source desktop application that seamlessly integrates various large language models supporting function calls. Through its clean and intuitive interface, you can easily converse with cutting-edge AI, from daily Q&A to professional tasks, getting precise responses and making it your intelligent assistant.",
-    "title1": "Use Your Own Prepared Models",
-    "description1": "Suitable for advanced AI experts. If you already have your own configuration ready, whether it's local Ollama, llama.cpp, or remote Openrouter, OpenAI, Anthropic, or other AI companies' LLM APIs, please use this option.",
+    "subtitle": "NewmindAI is an open-source desktop application that seamlessly integrates various large language models supporting function calls. Through its clean and intuitive interface, it enables deep intelligent exploration in fields such as data analysis.",
+    "title1": "Custom or Local Models",
+    "description1": "LLM API provided by Newmind AI integrated software and hardware team or other custom models suitable options",
     "button1": "Go to Model Settings",
-    "title2": "Use OpenAgentPlatform",
-    "description2": "OAP makes it easy for everyone to use the most advanced AI services, connecting LLMs, AI Agents, and MCP Servers without requiring technical expertise. Explore the unlimited possibilities of AI and experience intelligent solutions now.",
-    "button2": "Register for OAP",
-    "button3": "Login to OAP"
+    "title2": "Use Newmind Hub Platform",
+    "description2": "Newmind Hub provides various online large models and vertical domain-specific models, explore the unlimited possibilities of AI and experience intelligent solutions immediately",
+    "button2": "Register for Newmind",
+    "button3": "Login to Newmind"
   },
   "InstallHostDependencies": {
     "title": "Downloading Host Dependencies...",

@@ -43,7 +43,7 @@ const Header = ({ showHelpButton = false, showModelSelect = false }: Props) => {
                 </svg>
               </button>
             </Tooltip>
-            <h1>{t("header.title")}</h1>
+            <h1 style={{ fontSize: "0.8em" }}>{t("header.title")}</h1>
             {showModelSelect && <ModelSelect />}
           </div>
         </div>

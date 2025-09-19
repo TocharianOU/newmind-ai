@@ -1,7 +1,7 @@
 {
-  "name": "dive",
+  "name": "newmind-agent",
   "private": true,
-  "version": "0.9.7",
+  "version": "0.0.1",
   "type": "module",
   "main": "dist-electron/main/index.js",
   "debug": {
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/OpenAgentPlatform/Dive"
+    "url": "https://github.com/TocharianOU/newmind-agent.git"
   },
   "scripts": {
     "dev": "vite-node scripts/download-host-deps.ts && vite --config vite.config.electron.ts",
