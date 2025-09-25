@@ -1,0 +1,260 @@
+@use "../_variables" as *;
+
+.outlet-container {
+  container-type: inline-size;
+  container-name: outlet-container;
+
+  > .app-header {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    transition: width $transition-normal ease, left $transition-normal ease;
+
+    &.sidebar-visible {
+      width: calc(100% + $sidebar-width);
+      left: -$sidebar-width;
+
+      @media (max-width: $breakpoint-m) {
+        width: 100%;
+        left: 0;
+      }
+    }
+  }
+}
+
+.app-header {
+  background: inherit;
+  z-index: $z-header;
+
+  [data-theme='dark'] {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  &.sidebar-visible {
+    .menu-container {
+      position: static;
+    }
+  }
+
+  .header-content {
+    margin: 0 auto;
+    padding: 0 $page-h-padding;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 5px;
+
+    .left-side {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .menu-container {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        white-space: nowrap;
+      }
+    }
+
+    .right-side {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+
+      @media (max-width: $breakpoint-s) {
+        display: none;
+      }
+
+      .update-progress-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: var(--text-light);
+        font-size: 12px;
+        text-shadow: 0 0 2px var(--shadow);
+      }
+
+      .update-btn-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        gap: 16px;
+      }
+
+      .update-version-text {
+        font-size: 16px;
+        color: var(--text-weak);
+        white-space: nowrap;
+      }
+
+      .update-btn.downloading {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 7px 24px;
+      }
+
+      .update-btn-wrap {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .update-btn {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: 2px solid var(--border-weak);
+        gap: 16px;
+        padding: 6px 10px;
+        font-size: 12px;
+
+        & > div {
+          display: flex;
+          gap: 8px;
+        }
+
+        .update-btn-downloading {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .update-progress-container {
+          width: 100%;
+          height: 2px;
+          position: relative;
+          background-color: var(--bg-op-dark-strong);
+          border-radius: 10px;
+          overflow: hidden;
+        }
+
+        .update-progress-bar {
+          height: 100%;
+          background-color: var(--bg-inverted-op-dark-mediumweak);
+          transition: width 0.3s ease;
+        }
+
+        .update-btn-wrap {
+          display: flex;
+          align-items: center;
+        }
+
+        .update-btn-icon {
+          font-size: 20px;
+          width: 20px;
+          height: 20px;
+        }
+
+        .update-btn-text {
+          font-size: 14px;
+          color: var(--text);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          line-height: 20px;
+        }
+
+        .update-btn-downloading-text {
+          display: flex;
+          align-items: center;
+          gap: 30px;
+          font-size: 12px;
+          color: var(--text);
+          line-height: 20px;
+        }
+
+        .update-btn-install-text {
+          color: var(--text-pri-blue);
+        }
+      }
+    }
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  .menu-btn, .help-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+
+    &:hover {
+      background: var(--bg-op-dark-ultraweak);
+    }
+
+    &:focus {
+      outline: none;
+    }
+
+    svg {
+      min-width: 20px;
+      min-height: 20px;
+      fill: currentColor;
+    }
+
+    .open-sidebar-btn-icon {
+      opacity: 1;
+      position: absolute;
+      transition: opacity $transition-normal ease;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .close-sidebar-btn-icon {
+      opacity: 0;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      transition: opacity $transition-normal ease;
+      width: 32px;
+      height: 32px;
+    }
+  }
+
+  .close-sidebar-btn {
+    .open-sidebar-btn-icon {
+      opacity: 0;
+    }
+    .close-sidebar-btn-icon {
+      opacity: 1;
+    }
+  }
+
+  .help-btn {
+    color: var(--text-weak);
+
+    &:hover {
+      color: var(--text);
+    }
+  }
+}
+
+@container outlet-container (max-width: #{$breakpoint-s}) {
+  .outlet-container {
+    .app-header {
+      .header-content {
+        .right-side {
+          display: none;
+        }
+      }
+    }
+  }
+}

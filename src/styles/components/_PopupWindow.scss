@@ -1,0 +1,20 @@
+@use "../_variables" as *;
+
+.container-wrapper {
+  position: fixed;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  inset: 0;
+  background-color: var(--bg-overlay);
+  pointer-events: auto;
+
+  &.transparent {
+    background-color: transparent;
+    pointer-events: none;
+
+    > div {
+      pointer-events: auto;
+    }
+  }
+}

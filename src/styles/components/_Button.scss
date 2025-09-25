@@ -1,0 +1,174 @@
+@use "../_variables" as *;
+
+.custom-button {
+  background-color: var(--bg);
+  box-shadow: 0 3px 7px var(--shadow-btn-white);
+  transition: background-color $transition-normal ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+
+  &:hover,
+  &:focus {
+    outline: none;
+    border-color: transparent;
+  }
+
+  &:hover {
+    background-color: var(--bg-btn-hover-white);
+  }
+
+  .loading-spinner {
+    @include loading-spinner;
+  }
+
+  &.white,
+  &.gray {
+    .loading-spinner {
+      @include loading-spinner(16px, 2px, var(--text), var(--border-op-mediumweak));
+    }
+  }
+
+  &.padding-xxs {
+    padding: 7px 8px;
+  }
+
+  &.padding-xs {
+    padding: 7px 16px;
+  }
+
+  &.padding-s {
+    padding: 7px 24px;
+  }
+
+  &.padding-n {
+    padding: 7px 32px;
+  }
+
+  &.padding-l {
+    padding: 7px 40px;
+  }
+
+  &.padding-xl {
+    padding: 7px 48px;
+  }
+
+  &.padding-xxl {
+    padding: 7px 56px;
+  }
+
+  &.white {
+    background-color: var(--bg);
+    border: 1px solid var(--border-weak);
+    box-shadow: 0 3px 7px var(--shadow-btn-white);
+    color: var(--text);
+
+    &:hover {
+      background-color: var(--bg-btn-hover-white);
+    }
+  }
+
+  &.gray {
+    background-color: var(--bg-op-dark-extremeweak);
+    box-shadow: 0 3px 7px var(--shadow);
+    color: var(--text);
+
+    &:hover {
+      background-color: var(--bg-op-dark-weak);
+    }
+  }
+
+  &.success-green {
+    background: var(--bg-success);
+    box-shadow: 0 3px 7px var(--shadow-btn-green);
+    color: var(--text-light);
+
+    &:hover {
+      background-color: var(--bg-hover-success);
+    }
+  }
+
+  &.green {
+    background-color: var(--bg-pri-green);
+    box-shadow: 0 3px 7px var(--shadow-btn-green);
+    color: var(--text-light);
+
+    &:hover {
+      background-color: var(--bg-btn-hover-green);
+    }
+  }
+
+  &.blue {
+    background-color: var(--bg-pri-blue);
+    box-shadow: 0 3px 7px var(--shadow-btn-blue);
+    color: var(--text-light);
+
+    &:hover {
+      background-color: var(--bg-hover-blue);
+    }
+  }
+
+  &.fit {
+    width: fit-content;
+  }
+
+  &.normal {
+    width: 100%;
+  }
+
+  &.full {
+    width: 100%;
+  }
+
+  &.round {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+
+    &.padding-xxs {
+      padding: 0;
+    }
+
+    &.padding-xs {
+      padding: 2px;
+    }
+
+    &.padding-s {
+      padding: 3px;
+    }
+
+    &.padding-n {
+      padding: 5px;
+    }
+
+    &.padding-l {
+      padding: 7px;
+    }
+
+    &.padding-xl {
+      padding: 9px;
+    }
+
+    &.padding-xxl {
+      padding: 12px;
+    }
+  }
+
+  &.border-none {
+    border: none;
+  }
+
+  &.disabled:not(.loading) {
+    background-color: var(--bg-op-dark-weak)!important;
+    box-shadow: none!important;
+    color: var(--text-light)!important;
+    cursor: not-allowed!important;
+    opacity: 0.5;
+  }
+
+  &.loading {
+    cursor: not-allowed!important;
+    opacity: 0.5;
+  }
+}

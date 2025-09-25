@@ -1,0 +1,21 @@
+{
+    "db": {
+        "uri": "postgresql://postgres:azmatjan1997A@xiaopenges.tocharian.eu:3307/newmind_hub",
+        "async_uri": "postgresql+asyncpg://postgres:azmatjan1997A@xiaopenges.tocharian.eu:3307/newmind_hub",
+        "pool_size": 10,
+        "pool_recycle": 3600,
+        "max_overflow": 20,
+        "echo": false,
+        "pool_pre_ping": true,
+        "migrate": true
+    },
+    "checkpointer": {
+        "uri": "postgresql://postgres:azmatjan1997A@xiaopenges.tocharian.eu:3307/newmind_hub"
+    },
+    "cors_origin": "http://localhost:5173",
+    "local_cache": {
+        "enabled": true,
+        "path": "db.sqlite",
+        "sync_interval": 30
+    }
+}

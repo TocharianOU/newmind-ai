@@ -1,0 +1,244 @@
+from enum import StrEnum
+from typing import Any, Literal, Self, TypeVar
+
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    RootModel,
+    SecretStr,
+    field_serializer,
+    model_validator,
+)
+from pydantic.alias_generators import to_camel
+
+from dive_mcp_host.host.conf import EmbedConfig
+from dive_mcp_host.host.conf.llm import (
+    LLMConfigTypes,
+    LLMConfiguration,
+    get_llm_config_type,
+)
+from dive_mcp_host.host.custom_events import ToolCallProgress
+
+T = TypeVar("T")
+
+
+class ResultResponse(BaseModel):
+    """Generic response model with success status and message."""
+
+    success: bool
+    message: str | None = None
+
+
+class McpServerError(BaseModel):
+    """Represents an error from an MCP server."""
+
+    server_name: str = Field(alias="serverName")
+    error: Any  # any
+
+
+class ModelType(StrEnum):
+    """Model type."""
+
+    OLLAMA = "ollama"
+    MISTRAL = "mistralai"
+    BEDROCK = "bedrock"
+    DEEPSEEK = "deepseek"
+    OTHER = "other"
+
+    @classmethod
+    def get_model_type(cls, llm_config: LLMConfigTypes) -> "ModelType":
+        """Get model type from model name."""
+        # Direct mapping for known providers
+        try:
+            return cls(llm_config.model_provider)
+        except ValueError:
+            pass
+        # Special case for deepseek
+        if "deepseek" in llm_config.model.lower():
+            return cls.DEEPSEEK
+
+        return cls.OTHER
+
+
+class ModelSettingsProperty(BaseModel):
+    """Defines a property for model settings with type information and metadata."""
+
+    type: Literal["string", "number"]
+    description: str
+    required: bool
+    default: Any | None = None
+    placeholder: Any | None = None
+
+
+class ModelSettingsDefinition(ModelSettingsProperty):
+    """Model settings definition with nested properties."""
+
+    type: Literal["string", "number", "object"]  # type: ignore
+    properties: dict[str, ModelSettingsProperty] | None = None
+
+
+class ModelInterfaceDefinition(BaseModel):
+    """Defines the interface for model settings."""
+
+    model_settings: dict[str, ModelSettingsDefinition]
+
+
+class SimpleToolInfo(BaseModel):
+    """Represents an MCP tool with its properties and metadata."""
+
+    name: str
+    description: str
+    enabled: bool = True
+
+
+class McpTool(BaseModel):
+    """Represents an MCP tool with its properties and metadata."""
+
+    name: str
+    tools: list[SimpleToolInfo]
+    description: str
+    enabled: bool
+    icon: str
+    url: str | None = None
+    error: str | None = None
+
+
+class ToolsCache(RootModel[dict[str, McpTool]]):
+    """Tools cache."""
+
+    root: dict[str, McpTool]
+
+
+class ToolCallsContent(BaseModel):
+    """Tool call content."""
+
+    name: str
+    arguments: Any
+
+
+class ToolResultContent(BaseModel):
+    """Tool result content."""
+
+    name: str
+    result: Any
+
+
+class ChatInfoContent(BaseModel):
+    """Chat info."""
+
+    id: str
+    title: str
+
+
+class MessageInfoContent(BaseModel):
+    """Message info."""
+
+    user_message_id: str = Field(alias="userMessageId")
+    assistant_message_id: str = Field(alias="assistantMessageId")
+
+
+class StreamMessage(BaseModel):
+    """Stream message."""
+
+    type: Literal[
+        "text",
+        "tool_calls",
+        "tool_call_progress",
+        "tool_result",
+        "error",
+        "chat_info",
+        "message_info",
+    ]
+    content: (
+        str
+        | list[ToolCallsContent]
+        | ToolResultContent
+        | ChatInfoContent
+        | MessageInfoContent
+        | ToolCallProgress
+    )
+
+
+class TokenUsage(BaseModel):
+    """Token usage."""
+
+    total_input_tokens: int = Field(default=0, alias="totalInputTokens")
+    total_output_tokens: int = Field(default=0, alias="totalOutputTokens")
+    total_tokens: int = Field(default=0, alias="totalTokens")
+
+
+class ModelSingleConfig(BaseModel):
+    """Model single config."""
+
+    model_provider: str
+    model: str
+    max_tokens: int | None = None
+    api_key: SecretStr | None = None
+    configuration: LLMConfiguration | None = None
+    azure_endpoint: str | None = None
+    azure_deployment: str | None = None
+    api_version: str | None = None
+    active: bool = Field(default=True)
+    checked: bool = Field(default=False)
+    tools_in_prompt: bool = Field(default=False)
+
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        arbitrary_types_allowed=True,
+        validate_by_name=True,
+        validate_by_alias=True,
+        extra="allow",
+    )
+
+    @model_validator(mode="after")
+    def post_validate(self) -> Self:
+        """Validate the model config by converting to LLMConfigTypes."""
+        # ollama doesn't work well with normal bind tools
+        if self.model_provider == "ollama":
+            self.tools_in_prompt = True
+
+        self.to_host_llm_config()
+
+        return self
+
+    def to_host_llm_config(self) -> LLMConfigTypes:
+        """Convert to LLMConfigTypes."""
+        return get_llm_config_type(self.model_provider).model_validate(
+            self.model_dump()
+        )
+
+    @field_serializer("api_key", when_used="json")
+    def dump_api_key(self, v: SecretStr | None) -> str | None:
+        """Serialize the api_key field to plain text."""
+        return v.get_secret_value() if v else None
+
+
+class ModelFullConfigs(BaseModel):
+    """Configuration for the model."""
+
+    active_provider: str
+    enable_tools: bool
+    configs: dict[str, ModelSingleConfig] = Field(default_factory=dict)
+    embed_config: EmbedConfig | None = None
+
+    disable_dive_system_prompt: bool = False
+    # If True, custom rules will be used directly without extra system prompt from Dive.
+
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        arbitrary_types_allowed=True,
+        validate_by_name=True,
+        validate_by_alias=True,
+    )
+
+
+class UserInputError(Exception):
+    """User input error."""
+
+
+class SortBy(StrEnum):
+    """Sort by."""
+
+    CHAT = "chat"
+    MESSAGE = "msg"

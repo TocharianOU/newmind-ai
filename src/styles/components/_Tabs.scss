@@ -1,0 +1,33 @@
+.tabs-container {
+  display: flex;
+  background: var(--bg-op-dark-weak);
+  border-radius: 16px;
+  position: relative;
+  width: fit-content;
+
+  .tabs-item {
+    padding: 3px 8px;
+    border-radius: 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 2;
+    color: var(--text);
+
+    &.active {
+      color: var(--text-inverted);
+    }
+  }
+
+  .tabs-item-slider {
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    background-color: var(--bg-pri-blue);
+    border-radius: 26px;
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), width 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    z-index: 1;
+  }
+}

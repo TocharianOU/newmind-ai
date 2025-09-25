@@ -1,0 +1,178 @@
+@use "../_variables" as *;
+
+.setting-container {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+
+  @media (max-width: $breakpoint-xs) {
+    width: 100%;
+    padding: 0;
+    border-bottom: 1px solid var(--border-weak);
+    flex-direction: column;
+    gap: 0;
+  }
+}
+
+.setting-content {
+  display: flex;
+  flex: 1;
+  justify-content: flex-start;
+  align-items: flex-start;
+  height: 100%;
+  padding: 40px;
+  padding-top: 45px;
+  background: var(--bg);
+  overflow-x: auto;
+
+  @include scrollbar;
+}
+
+.setting-sidebar {
+  min-width: 228px;
+  background: var(--bg);
+  border-right: 1px solid var(--border-weak);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: calc($header-height + 10px) 0;
+  gap: 10px;
+
+  .setting-sidebar-category {
+    width: 100%;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-op-dark-weak);
+    font-size: 16px;
+    font-weight: 500;
+
+    &.link {
+      cursor: pointer;
+      transition: background $transition-normal ease;
+      
+      &:hover {
+        background: var(--bg-op-dark-weak-hover);
+      }
+    }
+
+    .setting-sidebar-category-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      flex: 1;
+
+      img {
+        width: 24px;
+        height: 24px;
+      }
+
+      .oap-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+
+        .oap-name {
+          font-size: 16px;
+          font-weight: 500;
+        }
+
+        .oap-details {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 12px;
+          color: var(--text-weak);
+
+          .oap-username {
+            font-weight: 500;
+          }
+
+          .oap-plan {
+            color: var(--text-pri-blue);
+            font-weight: 600;
+          }
+        }
+      }
+    }
+  }
+
+  .setting-sidebar-item-wrap {
+    width: 100%;
+    padding: 0 10px;
+    border-radius: 8px;
+  }
+
+  .setting-sidebar-item {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background $transition-normal ease;
+
+    &.active {
+      background: var(--bg-op-blue-ultraweak);
+    }
+
+    &:hover {
+      background: var(--bg-op-dark-ultraweak);;
+    }
+  }
+
+  @media (max-width: $breakpoint-xs) {
+    width: 100%;
+    border: none;
+    flex-direction: row;
+    padding: $header-height 16px 0;
+    overflow-x: auto;
+    gap: 0;
+    position: sticky;
+    top: 0;
+    z-index: 9;
+
+    .setting-sidebar-category {
+      min-width: fit-content;
+      flex-shrink: 0;
+      border-radius: 8px;
+      padding: 8px 12px;
+
+      .setting-sidebar-category-left {
+        gap: 6px;
+
+        .oap-info {
+          .oap-name {
+            font-size: 14px;
+          }
+
+          .oap-details {
+            font-size: 11px;
+          }
+        }
+      }
+    }
+
+    .setting-sidebar-item-wrap {
+      padding: 0 4px;
+      min-width: fit-content;
+      flex-shrink: 0;
+
+      .setting-sidebar-item {
+        padding: 8px 12px;
+        font-size: 14px;
+      }
+    }
+  }
+
+  .setting-sidebar-version {
+    margin-top: auto;
+    padding: 12px 16px;
+    color: var(--text-weak);
+    font-size: 12px;
+    text-align: center;
+  }
+}

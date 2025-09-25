@@ -1,0 +1,69 @@
+@use "../variables" as *;
+
+.overlay {
+  background-color: var(--bg-op-dark-ultrastrong);
+  z-index: $z-overlay !important;
+  left: $sidebar-width;
+  top: 0;
+  width: calc(100vw - $sidebar-width);
+  height: 100vh;
+  transition: width $transition-normal ease, left $transition-normal ease;
+
+  &.full-width {
+    left: 0;
+    width: 100vw;
+  }
+
+  > div {
+    width: 100%;
+    height: 100%;
+  }
+
+  @media (max-width: $breakpoint-m) {
+    left: 0;
+    width: 100vw;
+  }
+}
+
+.overlay-page {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  align-items: flex-start;
+  height: 100%;
+  padding: 40px;
+  padding-top: $header-height;
+  background: var(--bg);
+
+  @media (max-width: $breakpoint-xs) {
+    padding-top: 10px;
+    overflow: auto;
+    min-width: 0;
+    justify-content: flex-start;
+  }
+
+  @include scrollbar;
+
+  > .close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 5px;
+    left: 0;
+    transition: left $transition-normal ease;
+
+    &:hover {
+      background: var(--bg-op-dark-ultraweak);
+    }
+
+    svg {
+      fill: var(--stroke-extremestrong);
+    }
+  }
+}

@@ -1,0 +1,92 @@
+@use "../_variables" as *;
+
+.zoom-tools {
+  position: absolute;
+  bottom: 3px;
+  right: 0;
+  display: flex;
+  gap: 8px;
+
+  button {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 7px;
+    margin: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+
+    svg {
+      width: 22px;
+      height: 22px;
+      color: var(--text-light);
+    }
+
+    &:hover {
+      background-color: var(--bg-light-op-weak);
+
+      svg {
+        color: var(--text-dark);
+      }
+    }
+
+    &:focus {
+      outline: none;
+    }
+  }
+}
+
+.zoom-container {
+  position: relative;
+  width: fit-content;
+  height: fit-content;
+
+  .zoom-child {
+    line-height: 0;
+    padding: 0;
+    margin: 0;
+  }
+
+  .zoom-tools {
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  &:hover {
+    .zoom-tools {
+      opacity: 1;
+    }
+  }
+}
+
+.zoom-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 2500;
+
+  > div {
+    width: 100%;
+    height: 100%;
+
+    .zoom-content {
+      position: absolute;
+      object-fit: contain;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+    }
+  }
+
+  .zoom-tools {
+    top: 0;
+    bottom: unset;
+  }
+}

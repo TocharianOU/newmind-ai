@@ -1,0 +1,337 @@
+from ssl import CERT_NONE
+from typing import Any
+
+import pytest
+from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import AIMessage, HumanMessage, ToolCall
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.tools import tool
+from langgraph.prebuilt import create_react_agent
+from pydantic import SecretStr
+
+from dive_mcp_host.host.agents.chat_agent import AgentState
+from dive_mcp_host.host.conf.llm import LLMConfig, LLMConfiguration
+from dive_mcp_host.host.helpers import today_datetime
+from dive_mcp_host.httpd.routers.models import ModelSingleConfig
+from dive_mcp_host.models import load_model
+from dive_mcp_host.models.fake import FakeMessageToolModel
+
+
+@pytest.mark.asyncio
+async def test_fake_model_tool_call() -> None:
+    """Test the fake model."""
+
+    @tool
+    def fake_tool(arg: str) -> str:
+        """A fake tool."""
+        return arg
+
+    responses = [
+        AIMessage(
+            content="I am a fake model.",
+            tool_calls=[ToolCall(name="fake_tool", args={"arg": "arg"}, id="id")],
+        ),
+        AIMessage(
+            content="final AI message",
+        ),
+    ]
+    model = FakeMessageToolModel(responses=responses)
+    prompt = ChatPromptTemplate.from_messages(
+        [("system", "You are a helpful assistant."), ("placeholder", "{messages}")],
+    )
+    agent_executor = create_react_agent(
+        model,
+        tools=[fake_tool],
+        state_schema=AgentState,
+        debug=False,
+        prompt=prompt,
+    )
+
+    input_messages = AgentState(
+        messages=[HumanMessage(content="Hello, world!")],
+        is_last_step=False,
+        today_datetime=today_datetime(),
+        remaining_steps=3,
+        structured_response={},
+    )
+
+    def check_results(results: list[dict[str, Any]], msg: str) -> None:
+        assert len(results) == 3, msg
+        assert results[0]["agent"]["messages"][0].content == responses[0].content, msg
+        assert (
+            results[1]["tools"]["messages"][0].content
+            == responses[0].tool_calls[0]["args"]["arg"]
+        ), msg
+        assert results[2]["agent"]["messages"][0].content == responses[1].content, msg
+
+    check_results(
+        [a async for a in agent_executor.astream(input_messages)],
+        "astream",
+    )
+    check_results(list(agent_executor.stream(input_messages)), "stream")
+
+
+def test_load_fake_model() -> None:
+    """Test the load model."""
+    responses = [
+        AIMessage(content="hello"),
+    ]
+    model = load_model("dive", "fake", responses=responses)
+    assert isinstance(model, FakeMessageToolModel)
+    assert model.responses == responses
+
+
+def test_load_langchain_model() -> None:
+    """Test the load langchain model."""
+    config = LLMConfig(
+        model="gpt-4o",
+        model_provider="openai",
+        api_key=SecretStr("API_KEY"),
+        configuration=LLMConfiguration(
+            temperature=0.5,
+        ),
+    )
+    model = load_model(
+        config.model_provider, config.model, **(config.to_load_model_kwargs())
+    )
+    assert isinstance(model, BaseChatModel)
+
+
+def test_load__load__model() -> None:
+    """Test the load __load__ model."""
+    model = load_model("__load__", "dive_mcp_host.models.fake:FakeMessageToolModel")
+    assert isinstance(model, FakeMessageToolModel)
+
+
+def test_llm_config_validate() -> None:
+    """Test the LLMConfig can accept both camelCase and snake_case keys."""
+    config = LLMConfig(
+        model="gpt-4o",
+        model_provider="openai",
+        api_key=SecretStr("fake"),
+    )
+    assert config.api_key == SecretStr("fake")
+    assert config.model_provider == "openai"
+    assert config.model == "gpt-4o"
+
+    config = LLMConfig.model_validate(
+        {
+            "model": "gpt-4o",
+            "modelProvider": "openai",
+            "apiKey": "fake",
+        }
+    )
+    assert config.api_key == SecretStr("fake")
+    assert config.model_provider == "openai"
+    assert config.model == "gpt-4o"
+
+    config = LLMConfig.model_validate(
+        {
+            "model": "gpt-4o",
+            "modelProvider": "openai",
+            "apiKey": "fake",
+        }
+    )
+    assert config.api_key == SecretStr("fake")
+    assert config.model_provider == "openai"
+    assert config.model == "gpt-4o"
+
+    config = LLMConfig.model_validate(
+        {
+            "region": "us-east-1",
+            "configuration": {"topP": 0, "temperature": 0},
+            "credentials": {
+                "accessKeyId": "fakekeyid",
+                "secretAccessKey": "fakekey",
+                "sessionToken": "fakesessiontoken",
+            },
+            "name": "bedrock",
+            "checked": False,
+            "active": True,
+            "model": "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
+            "modelProvider": "bedrock",
+        }
+    )
+
+
+def test_model_single_config_validate() -> None:
+    """Test the ModelSingleConfig can accept both camelCase and snake_case keys."""
+    config = ModelSingleConfig(
+        model="gpt-4o",
+        model_provider="openai",
+        api_key=SecretStr("fake"),
+    )
+    assert config.api_key == SecretStr("fake")
+    assert config.model_provider == "openai"
+    assert config.model == "gpt-4o"
+
+    config = ModelSingleConfig.model_validate(
+        {
+            "model": "gpt-4o",
+            "modelProvider": "openai",
+            "apiKey": "fake",
+        }
+    )
+    assert config.api_key == SecretStr("fake")
+    assert config.model_provider == "openai"
+    assert config.model == "gpt-4o"
+
+    config = ModelSingleConfig.model_validate(
+        {
+            "model": "GPT4",
+            "modelProvider": "azure_openai",
+            "apiKey": "fake",
+            "azureEndpoint": "https://fake.openai.azure.com",
+            "azureDeployment": "fake",
+            "apiVersion": "2023-03-15-preview",
+        }
+    )
+    assert config.azure_endpoint == "https://fake.openai.azure.com"
+    assert config.azure_deployment == "fake"
+    assert config.api_key == SecretStr("fake")
+    assert config.api_version == "2023-03-15-preview"
+
+
+def test_openai_skip_tls_verify() -> None:
+    """Test the OpenAI skip TLS verify."""
+    config = LLMConfig(
+        model="gpt-4o",
+        model_provider="openai",
+        api_key=SecretStr("fake"),
+        configuration=LLMConfiguration(
+            skip_tls_verify=True,
+        ),
+    )
+    model = load_model(
+        config.model_provider, config.model, **(config.to_load_model_kwargs())
+    )
+    assert (
+        model.client._client._client._transport._pool._ssl_context.verify_mode  # type: ignore
+        == CERT_NONE
+    )
+    assert (
+        model.async_client._client._client._transport._pool._ssl_context.verify_mode  # type: ignore
+        == CERT_NONE
+    )
+
+
+def test_ollama_skip_tls_verify() -> None:
+    """Test the Ollama skip TLS verify."""
+    config = LLMConfig(
+        model="llama3.1",
+        model_provider="ollama",
+        api_key=SecretStr("fake"),
+        configuration=LLMConfiguration(
+            skip_tls_verify=True,
+        ),
+    )
+    model = load_model(
+        config.model_provider, config.model, **(config.to_load_model_kwargs())
+    )
+
+    assert model._client._client._transport._pool._ssl_context.verify_mode == CERT_NONE  # type: ignore
+
+
+def test_opus_4_1_temperature_top_p() -> None:
+    """Test the temperature and top_p."""
+    raw_config: dict = {
+        "modelProvider": "anthropic",
+        "model": "claude-opus-4-1",
+    }
+
+    # test opus 4.1
+    simple_1 = raw_config.copy()
+    llm_config = LLMConfig.model_validate(simple_1)
+
+    # with temperature and top_p
+    simple_2 = raw_config.copy()
+    simple_2["configuration"] = {"temperature": 0.5, "top_p": 0.5}
+    llm_config = LLMConfig.model_validate(simple_2)
+    # should be subset of llm_config.to_load_model_kwargs()
+    kwargs = llm_config.to_load_model_kwargs()
+    assert "top_p" not in kwargs
+    assert "temperature" in kwargs
+    assert kwargs["temperature"] == 0.5
+
+    # test only temperature
+    simple_3 = raw_config.copy()
+    simple_3["configuration"] = {"temperature": 0.5}
+    llm_config = LLMConfig.model_validate(simple_3)
+    kwargs = llm_config.to_load_model_kwargs()
+    assert "top_p" not in kwargs
+    assert "temperature" in kwargs
+    assert kwargs["temperature"] == 0.5
+
+    # test only top_p
+    simple_4 = raw_config.copy()
+    simple_4["configuration"] = {"top_p": 0.5}
+    llm_config = LLMConfig.model_validate(simple_4)
+    kwargs = llm_config.to_load_model_kwargs()
+    assert "top_p" in kwargs
+    assert "temperature" not in kwargs
+    assert kwargs["top_p"] == 0.5
+
+    # oap provider
+    simple_5 = simple_2.copy()
+    simple_5["modelProvider"] = "oap"
+    llm_config = LLMConfig.model_validate(simple_5)
+    kwargs = llm_config.to_load_model_kwargs()
+    assert "top_p" not in kwargs
+    assert "temperature" in kwargs
+    assert kwargs["temperature"] == 0.5
+
+    # test general llm config
+    simple_6 = simple_2.copy()
+    simple_6["model"] = "gpt-4o"
+    llm_config = LLMConfig.model_validate(simple_6)
+    kwargs = llm_config.to_load_model_kwargs()
+    assert "top_p" in kwargs
+    assert "temperature" in kwargs
+    assert kwargs["temperature"] == 0.5
+    assert kwargs["top_p"] == 0.5
+
+
+def test_gpt_5_temperature() -> None:
+    """Test the GPT-5 temperature."""
+    raw_config: dict = {
+        "modelProvider": "openai",
+        "model": "gpt-5",
+    }
+
+    simple_1 = raw_config.copy()
+    llm_config = LLMConfig.model_validate(simple_1)
+    kwargs = llm_config.to_load_model_kwargs()
+    assert "temperature" not in kwargs
+
+    simple_2 = raw_config.copy()
+    simple_2["configuration"] = {"temperature": 0.5, "top_p": 0.5}
+    llm_config = LLMConfig.model_validate(simple_2)
+    kwargs = llm_config.to_load_model_kwargs()
+    assert "temperature" in kwargs
+    assert kwargs["temperature"] == 1
+    assert "top_p" not in kwargs
+
+    simple_3 = raw_config.copy()
+    simple_3["configuration"] = {"temperature": 0}
+    llm_config = LLMConfig.model_validate(simple_3)
+    kwargs = llm_config.to_load_model_kwargs()
+    assert "temperature" not in kwargs
+
+    # test oap provider
+    simple_4 = simple_2.copy()
+    simple_4["modelProvider"] = "oap"
+    llm_config = LLMConfig.model_validate(simple_4)
+    kwargs = llm_config.to_load_model_kwargs()
+    assert "temperature" in kwargs
+    assert kwargs["temperature"] == 1
+    assert "top_p" not in kwargs
+
+    # test general llm config
+    simple_5 = simple_2.copy()
+    simple_5["model"] = "gpt-4o"
+    llm_config = LLMConfig.model_validate(simple_5)
+    kwargs = llm_config.to_load_model_kwargs()
+    assert "temperature" in kwargs
+    assert kwargs["temperature"] == 0.5
+    assert "top_p" in kwargs
+    assert kwargs["top_p"] == 0.5

@@ -1,0 +1,110 @@
+@use "../_variables" as *;
+@use "sass:color";
+
+.downloading-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-color: var(--bg);
+
+  .downloading-content {
+    width: 100%;
+    height: 100%;
+    max-width: 700px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    .downloading-title {
+      display: flex;
+      align-items: center;
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 1.5rem;
+    }
+
+    .spinner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 80px;
+      margin-right: 15px;
+
+      svg{
+        width: 20px;
+        height: 20px;
+      }
+    }
+
+    .downloading-log {
+      background-color: var(--bg-op-dark-extremeweak);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 30px 15px;
+      width: 100%;
+      height: 350px;
+      overflow-y: auto;
+      margin-bottom: 1.5rem;
+
+      @include scrollbar;
+
+      .downloading-log-item {
+        color: var(--text-weak);
+        display: flex;
+        align-items: flex-start;
+        font-size: 16px;
+
+        .downloading-log-item-timestamp {
+          font-family: monospace;
+          margin-right: 5px;
+          flex-shrink: 0;
+
+          .downloading-log-item-timestamp-time {
+            color: var(--text-pri-blue);
+          }
+        }
+      }
+    }
+  }
+}
+
+.button-container {
+  display: flex;
+  justify-content: flex-start;
+  gap: 25px;
+  width: 100%;
+  color: var(--text-ultraweak);
+
+  .retry-button,
+  .stop-button {
+    color: var(--text-light);
+    background-color: var(--bg-active-blue);
+    padding: 8px 50px;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s;
+
+    &:hover {
+      background-color: var(--bg-hover-blue);
+      border-color: transparent;
+    }
+
+    &.disabled {
+      background-color: var(--bg-op-dark-weak);
+      color: var(--text);
+      opacity: 0.5;
+      cursor: not-allowed;
+
+      &:hover {
+        background-color: var(--bg-op-dark-weak);
+      }
+    }
+  }
+}

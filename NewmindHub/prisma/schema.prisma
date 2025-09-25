@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  username      String
+  password      String
+  picture       String?  @db.VarChar(500)
+  team          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  subscription  Subscription?
+  usageRecords  UsageRecord[]
+  mcpConfigs    UserMcpConfig[]
+  refreshTokens RefreshToken[]
+  // 预留聊天关系（暂时不使用）
+  chatSessions  ChatSession[]
+  messages      Message[]
+
+  @@index([email])
+}
+
+model Subscription {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  planName         String   @default("BASE") // BASE, PRO, ENTERPRISE
+  isDefaultPlan    Boolean  @default(true)
+  startDate        DateTime @default(now())
+  endDate          DateTime?
+  nextBillingDate  DateTime?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model UsageRecord {
+  id           String   @id @default(uuid())
+  userId       String
+  model        String
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  cost         Float    @default(0)
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model McpServer {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  tags         Json?
+  transport    String   @default("stdio")  // stdio, http, sse, streamable
+  command      String?  @db.VarChar(200)     // Command to execute (e.g., "npx")
+  args         Json?                         // Command arguments as JSON array
+  url          String?  @db.VarChar(500)     // URL for http/sse/streamable transport
+  env          Json?                         // Environment variables as JSON object
+  headers      Json?                         // HTTP headers for http transport
+  planRequired String   @default("BASE")     // BASE, PRO, ENTERPRISE
+  isActive     Boolean  @default(true)
+  banner       String?  @db.VarChar(500)     // Banner image URL
+  document     String?             // Markdown documentation
+  tokenCost    Float    @default(0)          // Token cost per unit
+  tokenRequired Float   @default(0)          // Required tokens
+  tokenPriceUnit String? @default("request") // Pricing unit
+  popular      Boolean  @default(false)      // Popular flag
+  new          Boolean  @default(false)      // New flag
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  userConfigs UserMcpConfig[]
+
+  @@index([planRequired])
+}
+
+model UserMcpConfig {
+  id          String   @id @default(uuid())
+  userId      String
+  mcpServerId String
+  enabled     Boolean  @default(true)
+  config      Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mcpServer McpServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mcpServerId])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique @db.VarChar(500)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model ModelDescription {
+  id          String   @id @default(uuid())
+  modelId     String   @unique
+  name        String
+  icon        String?  @db.VarChar(500)
+  provider    String
+  tokenCost   Float    @default(0)
+  description String?
+  extra       Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([modelId])
+}
+
+// 预留的聊天相关表结构（参考老版本，为将来云同步准备）
+model ChatSession {
+  id          String   @id @default(uuid())
+  userId      String
+  title       String
+  isStarred   Boolean  @default(false)
+  starredAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages    Message[]
+  
+  @@index([userId, createdAt])
+  @@index([userId, isStarred])
+  @@index([userId, updatedAt])
+}
+
+model Message {
+  id             String      @id @default(uuid())
+  chatSessionId  String
+  userId         String
+  role           MessageRole
+  content        String
+  messageId      String?     // 前端生成的临时ID
+  toolCalls      Json?       // 工具调用数据
+  resourceUsage  Json?       // 资源使用统计 {model, total_input_tokens, total_output_tokens, total_run_time}
+  attachments    Json?       // 文件附件信息
+  createdAt      DateTime    @default(now())
+  
+  chatSession    ChatSession @relation(fields: [chatSessionId], references: [id], onDelete: Cascade)
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([chatSessionId, createdAt])
+  @@index([userId, createdAt])
+}
+
+enum MessageRole {
+  user
+  assistant
+  tool_call
+  tool_result
+}
