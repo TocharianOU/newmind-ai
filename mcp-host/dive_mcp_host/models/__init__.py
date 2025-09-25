@@ -202,7 +202,7 @@ def load_model(
             
             model = init_chat_model(
                 model=model_name,
-                model_provider="openai",
+                model_provider="openai-compatible",
                 **model_kwargs,
             )
     elif provider == "__load__":
