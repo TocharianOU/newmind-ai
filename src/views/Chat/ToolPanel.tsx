@@ -95,14 +95,14 @@ const ToolPanel: React.FC<ToolPanelProps> = ({ content, name, isOpen, onToggle }
   }
 
   return (
-    <div className="tool-panel" >
-      <div className={`tool-summary ${isOpen ? "open" : ""}`} onClick={() => onToggle(!isOpen)} >
-        <div className="tool-summary-icon">▼</div> {t("chat.toolCalls", { name })}
-      </div>
-      {isOpen && <div className="tool-content">
+    <span className="tool-panel" style={{ display: 'block' }}>
+      <span className={`tool-summary ${isOpen ? "open" : ""}`} onClick={() => onToggle(!isOpen)} style={{ display: 'block', cursor: 'pointer' }}>
+        <span className="tool-summary-icon">▼</span> {t("chat.toolCalls", { name })}
+      </span>
+      {isOpen && <span className="tool-content" style={{ display: 'block' }}>
         {formattedCalls.map((call, index) => (
-          <div className="tool-call">
-            <div className="tool-call-header">
+          <span key={index} className="tool-call" style={{ display: 'block' }}>
+            <span className="tool-call-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span>Call{formattedCalls.length > 1 ? ` ${index + 1}` : ""}:</span>
               <Tooltip
                 content={t("chat.copyCode")}
@@ -119,16 +119,16 @@ const ToolPanel: React.FC<ToolPanelProps> = ({ content, name, isOpen, onToggle }
                   </svg>
                 </button>
               </Tooltip>
-            </div>
-            <Code key={index} content={call} />
-          </div>
+            </span>
+            <Code content={call} />
+          </span>
         ))}
 
         {results.length > 0 && (
-          <div className="tool-call">
+          <span className="tool-call" style={{ display: 'block' }}>
             {formattedResults.map((result, index) => (
-              <>
-                <div className="tool-call-header">
+              <span key={index} style={{ display: 'block' }}>
+                <span className="tool-call-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span>Results{formattedResults.length > 1 ? ` ${index + 1}` : ""}:</span>
                   <Tooltip
                     content={t("chat.copyCode")}
@@ -145,14 +145,14 @@ const ToolPanel: React.FC<ToolPanelProps> = ({ content, name, isOpen, onToggle }
                       </svg>
                     </button>
                   </Tooltip>
-                </div>
-                <Code key={index} content={result} />
-              </>
+                </span>
+                <Code content={result} />
+              </span>
             ))}
-          </div>
+          </span>
         )}
-      </div>}
-    </div>
+      </span>}
+    </span>
   )
 }
 

@@ -196,7 +196,7 @@ class BaseMessageStore(AbstractMessageStore):
                 if msg.resource_usage
                 else None
             )
-            tool_calls = json.loads(msg.tool_calls) if msg.tool_calls else []
+            tool_calls = msg.tool_calls if msg.tool_calls else []
             files = json.loads(msg.files) if msg.files else []
 
             messages.append(
