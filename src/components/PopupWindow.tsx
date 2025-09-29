@@ -13,6 +13,7 @@ type PopupWindowProps = PopupStylePorps & {
   children: React.ReactNode
   overlay?: boolean
   onClickOutside?: () => void
+  onFinish?: () => void
 }
 
 export default function PopupWindow({
@@ -21,6 +22,7 @@ export default function PopupWindow({
   onClickOutside = () => {},
   overlay = false,
   noBackground = false,
+  onFinish = () => {},
 }: PopupWindowProps) {
   const [isSidebarVisible] = useAtom(sidebarVisibleAtom)
   const root = document.body

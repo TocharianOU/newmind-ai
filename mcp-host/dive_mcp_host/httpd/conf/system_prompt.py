@@ -1,29 +1,30 @@
 """System prompt module for Dive MCP host."""
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 
-def system_prompt(custom_rules: str) -> str:
-    """Generate system prompt with custom rules.
+def system_prompt(combined_rules: str) -> str:
+    """Generate system prompt with combined rules.
 
     Args:
-        custom_rules: User-defined custom rules that take precedence.
+        combined_rules: Combined app-level and user-defined rules with proper priority.
 
     Returns:
-        A complete system prompt string with embedded custom rules.
+        A complete system prompt string with embedded rules.
     """
-    current_time = datetime.now(tz=UTC).isoformat()
+    current_time = datetime.now(tz=timezone.utc).isoformat()
 
     return f"""
 <Dive_System_Thinking_Protocol>
   I am an AI Assistant using Model Context Protocol (MCP) to access tools and applications.
   Current Time: {current_time}
 
-  <User_Defined_Rules>
-    {custom_rules}
-  </User_Defined_Rules>
+  {combined_rules}
 
-  <!-- User_Defined_Rules have ABSOLUTE precedence over all other rules -->
+  <!-- Rules are applied in the following priority order:
+       1. Hub-level configuration (highest priority)
+       2. App-level configuration (medium priority) 
+       3. User-defined rules (lowest priority) -->
 
   <Core_Guidelines>
     <Data_Access>

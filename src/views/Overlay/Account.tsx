@@ -11,6 +11,7 @@ import Button from "../../components/Button"
 import React, { useState } from "react"
 import "../../styles/overlay/_Account.scss"
 import EmbeddedLogin from "../../components/EmbeddedLogin"
+import EditUsernameModal from "../../components/EditUsernameModal"
 
 const USER_EDIT_URL = `${OAP_ROOT_URL}/u/account`
 const USAGE_ANALYTICS_URL = `${OAP_ROOT_URL}/u/dashboard`
@@ -25,6 +26,16 @@ const Account = () => {
   const oapLevel = useAtomValue(OAPLevelAtom)
   const isLoggedInOAP = useAtomValue(isLoggedInOAPAtom)
   const [showEmbeddedLogin, setShowEmbeddedLogin] = useState(false)
+  const [showEditUsername, setShowEditUsername] = useState(false)
+
+  const handleUsernameUpdate = async (newUsername: string) => {
+    // Refresh user data after username update
+    try {
+      await oapGetMe();
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+    }
+  }
 
   const handleEmbeddedLoginSuccess = async (token: string) => {
     try {
@@ -118,7 +129,7 @@ const Account = () => {
                   <div className="user-name">
                     {oapUser?.username}
                     <Tooltip content={t("system.userEdit")}>
-                      <button className="user-edit-btn" onClick={() => openUrl(USER_EDIT_URL)}>
+                      <button className="user-edit-btn" onClick={() => setShowEditUsername(true)}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="23" viewBox="0 0 22 23" fill="none">
                           <path d="M3 14.1686V19.5001H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                           <path d="M3.00088 14.0986L12.5245 4.62082C14.0006 3.15181 16.3939 3.15181 17.87 4.62082V4.62082C19.3461 6.08983 19.3461 8.47157 17.87 9.94058L8.34639 19.4183" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -334,6 +345,13 @@ const Account = () => {
         <EmbeddedLogin
           onCancel={() => setShowEmbeddedLogin(false)}
           onSuccess={handleEmbeddedLoginSuccess}
+        />
+      )}
+      {showEditUsername && oapUser && (
+        <EditUsernameModal
+          currentUsername={oapUser.username || ''}
+          onClose={() => setShowEditUsername(false)}
+          onSuccess={handleUsernameUpdate}
         />
       )}
     </>

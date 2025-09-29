@@ -12,11 +12,23 @@ export function setOapHost(host: string) {
 }
 
 export function openOapLoginPage(regist: boolean) {
+    // Open Hub platform in external browser
+    const hubUrl = regist 
+        ? 'http://localhost:5173/register'  // Hub registration page
+        : 'http://localhost:5173/login';     // Hub login page (fallback)
+    
     if (isElectron) {
-        return window.ipcRenderer.oapLogin(regist)
+        // Electron: Use shell to open external browser
+        const { shell } = require('electron');
+        shell.openExternal(hubUrl);
+        return Promise.resolve();
     }
 
-    return invoke("open_oap_login_page", { regist })
+    // Tauri: Use open command
+    return invoke("open_url", { url: hubUrl }).catch(() => {
+        // Fallback: Use window.open
+        window.open(hubUrl, '_blank');
+    });
 }
 
 export function oapLogin(token: string) {

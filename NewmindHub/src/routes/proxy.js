@@ -7,6 +7,65 @@ import logger from '../utils/logger.js';
 
 const router = express.Router();
 
+// 系统提示词处理辅助函数
+async function getSystemPromptOverride() {
+  try {
+    // 从环境变量获取最高优先级系统提示词
+    const overridePrompt = process.env.DIVE_OVERRIDE_SYSTEM_PROMPT;
+    if (overridePrompt && overridePrompt.trim()) {
+      logger.info(`🔥 [PROMPT] Found system prompt override (length: ${overridePrompt.trim().length})`);
+      return overridePrompt.trim();
+    }
+  } catch (error) {
+    logger.debug('Failed to get system prompt override:', error);
+  }
+  return null;
+}
+
+function insertSystemPromptIntoAnthropicMessages(requestBody, systemPrompt) {
+  // Anthropic API需要将系统提示词作为顶级参数，而不是消息中的system角色
+  // 如果已经有系统参数，将其与覆盖提示词合并
+  let finalSystemPrompt = systemPrompt;
+  
+  if (requestBody.system) {
+    finalSystemPrompt = systemPrompt + '\n\n' + requestBody.system;
+    logger.info(`🔥 [PROMPT] Merged override with existing system prompt`);
+  } else {
+    logger.info(`🔥 [PROMPT] Applied system prompt override to Anthropic request`);
+  }
+  
+  // 设置系统参数
+  requestBody.system = finalSystemPrompt;
+  
+  // 移除消息中的system角色（如果有的话）
+  if (requestBody.messages) {
+    requestBody.messages = requestBody.messages.filter(msg => msg.role !== 'system');
+  }
+  
+  return requestBody;
+}
+
+function insertSystemPromptIntoOpenAIMessages(messages, systemPrompt) {
+  // 移除现有的系统消息
+  const filteredMessages = messages.filter(msg => msg.role !== 'system');
+  
+  // 获取原有的系统提示词内容
+  const existingSystemMessages = messages.filter(msg => msg.role === 'system');
+  let finalSystemPrompt = systemPrompt;
+  
+  if (existingSystemMessages.length > 0) {
+    const existingContent = existingSystemMessages.map(msg => msg.content).join('\n\n');
+    finalSystemPrompt = systemPrompt + '\n\n' + existingContent;
+    logger.info(`🔥 [PROMPT] Merged override with existing system messages`);
+  } else {
+    logger.info(`🔥 [PROMPT] Applied system prompt override to OpenAI messages`);
+  }
+  
+  // 在消息开头插入合并后的系统提示词
+  const newMessages = [{ role: 'system', content: finalSystemPrompt }, ...filteredMessages];
+  return newMessages;
+}
+
 // LM Studio auto-loading functionality
 async function ensureLMStudioModelLoaded(baseUrl, modelName, maxRetries = 3) {
   try {
@@ -72,7 +131,7 @@ async function recordUsage(userId, model, inputTokens, outputTokens) {
     await prisma.usageRecord.create({
       data: {
         userId,
-        model,
+        modelName: model,  // Changed from 'model' to 'modelName'
         inputTokens,
         outputTokens,
         cost
@@ -111,11 +170,19 @@ router.post('/messages', authenticateToken, async (req, res) => {
     }
     
    
+    // 🔥 获取系统提示词覆盖
+    const systemPromptOverride = await getSystemPromptOverride();
+    
     // Prepare proxy request - map to real Claude model
     const proxyRequest = {
       ...req.body,
       model: MODEL_MAPPING[model] // Map to real Claude model
     };
+    
+    // 🔥 如果有系统提示词覆盖，设置为顶级系统参数
+    if (systemPromptOverride) {
+      insertSystemPromptIntoAnthropicMessages(proxyRequest, systemPromptOverride);
+    }
     
     // Ensure required Anthropic parameters
     if (!proxyRequest.max_tokens) {
@@ -277,11 +344,22 @@ router.post('/chat/completions', authenticateToken, async (req, res) => {
         });
       }
       
+      // 🔥 获取系统提示词覆盖
+      const systemPromptOverride = await getSystemPromptOverride();
+      
       // Prepare request with real model name
       const lmstudioBody = {
         ...req.body,
         model: realModelName  // Use real model name
       };
+      
+      // 🔥 如果有系统提示词覆盖，插入到消息中
+      if (systemPromptOverride && lmstudioBody.messages) {
+        lmstudioBody.messages = insertSystemPromptIntoOpenAIMessages(
+          lmstudioBody.messages, 
+          systemPromptOverride
+        );
+      }
       
       // Forward request to LM Studio
       const response = await fetch(`${baseUrl}${provider.endpoint}`, {
@@ -343,6 +421,9 @@ router.post('/chat/completions', authenticateToken, async (req, res) => {
         return res.status(500).json(createResponse(null, 'Service temporarily unavailable'));
       }
       
+      // 🔥 获取系统提示词覆盖
+      const systemPromptOverride = await getSystemPromptOverride();
+      
       // Convert OpenAI format to Anthropic format and map to real model
       const anthropicRequest = {
         model: realModelName,  // Use real Claude model name
@@ -350,6 +431,11 @@ router.post('/chat/completions', authenticateToken, async (req, res) => {
         max_tokens: req.body.max_tokens || 4096,
         stream: req.body.stream || false
       };
+      
+      // 🔥 如果有系统提示词覆盖，设置为顶级系统参数
+      if (systemPromptOverride) {
+        insertSystemPromptIntoAnthropicMessages(anthropicRequest, systemPromptOverride);
+      }
       
       // Build Anthropic API headers
       const anthropicHeaders = {

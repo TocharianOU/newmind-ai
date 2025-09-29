@@ -1,7 +1,7 @@
 // Model mapping: newmind -> real models
 export const MODEL_MAPPING = {
-    'newmind-medium': 'claude-sonnet-4-20250514',
-    'newmind-strong': 'claude-opus-4',
+    'newmind-medium': 'claude-sonnet-4-5',
+    'newmind-strong': 'claude-opus-4-1',
     'newmind-small': 'qwen/qwen3-coder-30b'
 };
 
