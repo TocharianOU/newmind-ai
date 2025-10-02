@@ -2,20 +2,56 @@ import { useAtomValue, useSetAtom } from "jotai"
 import { Trans, useTranslation } from "react-i18next"
 
 import { isLoggedInOAPAtom, isOAPUsageLimitAtom, OAPLevelAtom, oapUsageAtom, oapUserAtom } from "../../atoms/oapState"
-import { OAP_ROOT_URL } from "../../../shared/oap"
+import { ENV_CONFIG } from "../../config/env"
 
 import Tooltip from "../../components/Tooltip"
 import { openUrl } from "../../ipc/util"
-import { oapGetMe, oapLogin, oapLogout, oapLoginWithToken, openOapLoginPage } from "../../ipc/oap"
+import { oapGetMe, oapLogin, oapLogout, oapLoginWithToken, openOapLoginPage, oapGetToken } from "../../ipc/oap"
 import Button from "../../components/Button"
 import React, { useState } from "react"
 import "../../styles/overlay/_Account.scss"
 import EmbeddedLogin from "../../components/EmbeddedLogin"
 import EditUsernameModal from "../../components/EditUsernameModal"
 
-const USER_EDIT_URL = `${OAP_ROOT_URL}/u/account`
-const USAGE_ANALYTICS_URL = `${OAP_ROOT_URL}/u/dashboard`
-const PLAN_PAGE_URL = `${OAP_ROOT_URL}/u/plan`
+// Use Hub URLs with session token passing
+const getHubUrlWithToken = async (path: string) => {
+  try {
+    // Get token from Electron main process instead of localStorage
+    const token = await oapGetToken();
+    console.log('🔗 Getting token for Hub URL:', { token: token ? `${token.substring(0, 8)}...` : 'null', path });
+    return `${ENV_CONFIG.HUB_BASE_URL}${path}${token ? `?token=${token}` : ''}`;
+  } catch (error) {
+    console.error('🔗 Error getting token:', error);
+    return `${ENV_CONFIG.HUB_BASE_URL}${path}`;
+  }
+};
+
+// Function to open Hub URLs with session token
+const openHubUrl = async (path: string) => {
+  try {
+    const url = await getHubUrlWithToken(path);
+    console.log('🔗 Opening Hub URL:', url);
+    
+    if (window.ipcRenderer && window.ipcRenderer.invoke) {
+      // Use IPC to open external browser
+      window.ipcRenderer.invoke('open-external-url', url);
+    } else {
+      // Fallback to window.open
+      window.open(url, '_blank');
+    }
+  } catch (error) {
+    console.error('🔗 Error opening Hub URL:', error);
+    // Fallback to URL without token
+    const fallbackUrl = `${ENV_CONFIG.HUB_BASE_URL}${path}`;
+    if (window.ipcRenderer && window.ipcRenderer.invoke) {
+      window.ipcRenderer.invoke('open-external-url', fallbackUrl);
+    } else {
+      window.open(fallbackUrl, '_blank');
+    }
+  }
+};
+
+// Removed static URL generation - now using async functions
 
 const Account = () => {
   const { t } = useTranslation()
@@ -146,7 +182,7 @@ const Account = () => {
               <div className="section-header">
                 <div className="section-title">{t("system.planSectionTitle")}</div>
                 <Tooltip content={t("system.usageAnalytics")}>
-                  <button className="analytics-btn" onClick={() => openUrl(USAGE_ANALYTICS_URL)}>
+                  <button className="analytics-btn" onClick={() => openHubUrl('/dashboard')}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22" fill="none">
                       <path d="M3 5V17.5C3 18.3284 3.67157 19 4.5 19H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                       <path d="M3 11L7.5 7.5L10.5 11.5L16.5 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -229,7 +265,7 @@ const Account = () => {
                     <div className="warning-text">
                       {oapLevel === "BASE" ?
                           <Trans i18nKey="system.BaseUsageWarning" components={{
-                            planLink: <a className="plan-link" href={PLAN_PAGE_URL} target="_blank" rel="noopener noreferrer" />
+                            planLink: <button className="plan-link" onClick={() => openHubUrl('/settings')} />
                           }} />
                         :
                         <div>
@@ -315,7 +351,7 @@ const Account = () => {
                           </div>
                           <div className="warning-text-description">
                             <Trans i18nKey="system.tokenPackageWarning" components={{
-                              planLink: <a className="plan-link" href={USAGE_ANALYTICS_URL} target="_blank" rel="noopener noreferrer" />
+                              planLink: <button className="plan-link" onClick={() => openHubUrl('/dashboard')} />
                             }} />
                           </div>
                         </div>
