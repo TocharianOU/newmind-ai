@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import api from '../config/api';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './Dashboard.css';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [stats, setStats] = useState(null);
   const [usage, setUsage] = useState(null);
   const [range, setRange] = useState('30d');
@@ -47,7 +49,7 @@ const Dashboard = () => {
     return (
       <div className="dashboard-loading">
         <div className="spinner"></div>
-        <p>Loading dashboard...</p>
+        <p>{t('dashboard.loadingDashboard', 'Loading dashboard...')}</p>
       </div>
     );
   }
@@ -56,8 +58,8 @@ const Dashboard = () => {
     <div className="dashboard">
       <div className="dashboard-header">
         <div>
-          <h1>Welcome back, {user?.username}!</h1>
-          <p className="subtitle">Here's your usage overview</p>
+          <h1>{t('dashboard.welcomeBack', 'Welcome back')}, {user?.username}!</h1>
+          <p className="subtitle">{t('dashboard.usageOverview', "Here's your usage overview")}</p>
         </div>
         
         <div className="range-selector">
@@ -65,19 +67,19 @@ const Dashboard = () => {
             className={range === '7d' ? 'active' : ''}
             onClick={() => setRange('7d')}
           >
-            7 Days
+            {t('dashboard.days7', '7 Days')}
           </button>
           <button
             className={range === '30d' ? 'active' : ''}
             onClick={() => setRange('30d')}
           >
-            30 Days
+            {t('dashboard.days30', '30 Days')}
           </button>
           <button
             className={range === '90d' ? 'active' : ''}
             onClick={() => setRange('90d')}
           >
-            90 Days
+            {t('dashboard.days90', '90 Days')}
           </button>
         </div>
       </div>
@@ -92,7 +94,7 @@ const Dashboard = () => {
           </div>
           <div className="stat-content">
             <h3>{formatNumber(stats?.summary?.totalCalls || 0)}</h3>
-            <p>Total API Calls</p>
+            <p>{t('dashboard.totalApiCalls', 'Total API Calls')}</p>
           </div>
         </div>
 
@@ -104,7 +106,7 @@ const Dashboard = () => {
           </div>
           <div className="stat-content">
             <h3>{formatNumber(stats?.summary?.totalTokens || 0)}</h3>
-            <p>Total Tokens Used</p>
+            <p>{t('dashboard.totalTokensUsed', 'Total Tokens Used')}</p>
           </div>
         </div>
 
@@ -116,7 +118,7 @@ const Dashboard = () => {
           </div>
           <div className="stat-content">
             <h3>{formatNumber(stats?.summary?.averageTokensPerCall || 0)}</h3>
-            <p>Avg Tokens/Call</p>
+            <p>{t('dashboard.avgTokensPerCall', 'Avg Tokens/Call')}</p>
           </div>
         </div>
 
@@ -128,7 +130,7 @@ const Dashboard = () => {
           </div>
           <div className="stat-content">
             <h3>{user?.subscription?.PlanName || 'BASE'}</h3>
-            <p>Current Plan</p>
+            <p>{t('dashboard.currentPlan', 'Current Plan')}</p>
           </div>
         </div>
       </div>
@@ -136,7 +138,7 @@ const Dashboard = () => {
       {/* Usage Progress */}
       {usage && (
         <div className="usage-card">
-          <h2>Monthly Usage</h2>
+          <h2>{t('dashboard.monthlyUsage', 'Monthly Usage')}</h2>
           <div className="usage-progress">
             <div className="usage-bar">
               <div 
@@ -147,8 +149,8 @@ const Dashboard = () => {
               ></div>
             </div>
             <div className="usage-text">
-              <span>{formatNumber(usage.total)} tokens used</span>
-              <span>{formatNumber(usage.limit)} limit</span>
+              <span>{formatNumber(usage.total)} {t('dashboard.tokensUsed', 'tokens used')}</span>
+              <span>{formatNumber(usage.limit)} {t('dashboard.limit', 'limit')}</span>
             </div>
           </div>
         </div>
@@ -158,7 +160,7 @@ const Dashboard = () => {
       <div className="charts-grid">
         {stats?.dailyUsage && stats.dailyUsage.length > 0 && (
           <div className="chart-card">
-            <h2>Daily Usage Trend</h2>
+            <h2>{t('dashboard.dailyUsageTrend', 'Daily Usage Trend')}</h2>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={stats.dailyUsage}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -166,7 +168,13 @@ const Dashboard = () => {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="tokens" stroke="#667eea" strokeWidth={2} />
+                <Line 
+                  type="monotone" 
+                  dataKey="tokens" 
+                  name={t('dashboard.tokens', 'Tokens')}
+                  stroke="#667eea" 
+                  strokeWidth={2} 
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -174,7 +182,7 @@ const Dashboard = () => {
 
         {stats?.modelStats && stats.modelStats.length > 0 && (
           <div className="chart-card">
-            <h2>Usage by Model</h2>
+            <h2>{t('dashboard.usageByModel', 'Usage by Model')}</h2>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={stats.modelStats}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -182,7 +190,11 @@ const Dashboard = () => {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="totalTokens" fill="#764ba2" />
+                <Bar 
+                  dataKey="totalTokens" 
+                  name={t('dashboard.totalTokens', 'Total Tokens')}
+                  fill="#764ba2" 
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -192,16 +204,16 @@ const Dashboard = () => {
       {/* Model Stats Table */}
       {stats?.modelStats && stats.modelStats.length > 0 && (
         <div className="table-card">
-          <h2>Detailed Model Statistics</h2>
+          <h2>{t('dashboard.detailedModelStats', 'Detailed Model Statistics')}</h2>
           <div className="table-container">
             <table className="stats-table">
               <thead>
                 <tr>
-                  <th>Model</th>
-                  <th>Calls</th>
-                  <th>Input Tokens</th>
-                  <th>Output Tokens</th>
-                  <th>Total Tokens</th>
+                  <th>{t('dashboard.model', 'Model')}</th>
+                  <th>{t('dashboard.calls', 'Calls')}</th>
+                  <th>{t('dashboard.inputTokens', 'Input Tokens')}</th>
+                  <th>{t('dashboard.outputTokens', 'Output Tokens')}</th>
+                  <th>{t('dashboard.totalTokens', 'Total Tokens')}</th>
                 </tr>
               </thead>
               <tbody>
