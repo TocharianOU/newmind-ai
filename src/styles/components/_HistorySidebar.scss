@@ -230,6 +230,7 @@
         border-radius: 8px;
         background: var(--bg-op-dark-extremeweak);
         transition: background $transition-fast;
+        cursor: pointer;
 
         &:hover {
           background: var(--bg-op-dark-ultraweak);

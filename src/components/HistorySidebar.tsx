@@ -365,15 +365,17 @@ const HistorySidebar = ({ onNewChat }: Props) => {
           <div className="history-footer">
             {isLoggedInOAP && oapUser ? (
               <div className="history-footer-user">
-                <div className="user-info">
-                  <div className="user-avatar">
-                    {oapUser.email?.charAt(0).toUpperCase() || oapUser.username?.charAt(0).toUpperCase() || 'U'}
+                <Tooltip content={t("chat.modelSettings")}>
+                  <div className="user-info" onClick={() => openOverlay({ page: "Setting", tab: "Model" })}>
+                    <div className="user-avatar">
+                      {oapUser.email?.charAt(0).toUpperCase() || oapUser.username?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <div className="user-details">
+                      <div className="user-name">{oapUser.username || oapUser.email}</div>
+                      <div className="user-plan">{oapLevel || 'BASE'}</div>
+                    </div>
                   </div>
-                  <div className="user-details">
-                    <div className="user-name">{oapUser.username || oapUser.email}</div>
-                    <div className="user-plan">{oapLevel || 'BASE'}</div>
-                  </div>
-                </div>
+                </Tooltip>
               </div>
             ) : (
               <div className="history-footer-btn">
