@@ -36,14 +36,23 @@ const wss = new WebSocketServer({
   path: '/api/v1/socket'
 });
 
+// CORS configuration
+const corsOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://localhost:3000'
+];
+
+// Add Hub frontend URL if specified
+if (process.env.HUB_FRONTEND_URL) {
+  corsOrigins.push(process.env.HUB_FRONTEND_URL);
+}
+
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5175'
-  ],
+  origin: corsOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -136,5 +145,5 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   logger.info(`🚀 NewmindHub server running on port ${PORT}`);
   logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
-  logger.info(`🌐 CORS origins: ${process.env.ALLOWED_ORIGINS}`);
+  logger.info(`🌐 CORS origins: ${corsOrigins.join(',')}`);
 });

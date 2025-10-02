@@ -23,11 +23,11 @@ const Dashboard = () => {
         api.get('/api/v1/user/usage')
       ]);
 
-      if (statsResponse.data.success) {
+      if (statsResponse.data.status === 'success') {
         setStats(statsResponse.data.data);
       }
 
-      if (usageResponse.data.success) {
+      if (usageResponse.data.status === 'success') {
         setUsage(usageResponse.data.data);
       }
     } catch (error) {

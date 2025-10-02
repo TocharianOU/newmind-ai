@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow, dialog, nativeImage, clipboard } from "electron"
+import { ipcMain, BrowserWindow, dialog, nativeImage, clipboard, shell } from "electron"
 import fse from "fs-extra"
 import path from "node:path"
 import { configDir, scriptsDir } from "../constant"
@@ -128,6 +128,11 @@ export function ipcUtilHandler(win: BrowserWindow) {
 
   ipcMain.handle("util:getInstallHostDependenciesLog", async () => {
     return getInstallHostDependenciesLog()
+  })
+
+  ipcMain.handle("open-external-url", async (_, url: string) => {
+    console.log('🔗 Opening external URL:', url);
+    shell.openExternal(url);
   })
 }
 

@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core"
 import { isElectron } from "./env"
 import { ApiResponse, MCPServerSearchParam, OAPMCPServer, OAPModelDescription, OAPModelDescriptionParam, OAPUsage, OAPUser } from "../../types/oap"
 import { listenIPC } from "."
+import { getHubLoginUrl, getHubRegisterUrl } from "../config/env"
 
 export function setOapHost(host: string) {
     if (isElectron) {
@@ -12,22 +13,52 @@ export function setOapHost(host: string) {
 }
 
 export function openOapLoginPage(regist: boolean) {
-    // Open Hub platform in external browser
+    // Open Hub platform in external browser using environment variables
     const hubUrl = regist 
-        ? 'http://localhost:5173/register'  // Hub registration page
-        : 'http://localhost:5173/login';     // Hub login page (fallback)
+        ? getHubRegisterUrl()  // Hub registration page
+        : getHubLoginUrl();    // Hub login page
+    
+    console.log('🔗 Opening URL:', hubUrl);
+    console.log('🔗 Environment variables:', {
+        VITE_HUB_BASE_URL: import.meta.env.VITE_HUB_BASE_URL,
+        VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL
+    });
+    
+    // 临时硬编码 URL 以确保功能正常
+    const fallbackUrl = regist 
+        ? 'http://localhost:5174/register'
+        : 'http://localhost:5174/login';
+    
+    const finalUrl = hubUrl || fallbackUrl;
+    console.log('🔗 Final URL:', finalUrl);
     
     if (isElectron) {
-        // Electron: Use shell to open external browser
-        const { shell } = require('electron');
-        shell.openExternal(hubUrl);
+        // Electron: Use IPC to call shell.openExternal in main process
+        console.log('🔗 Opening in Electron with IPC shell.openExternal');
+        try {
+            // Use the existing IPC method to open external URL
+            if (window.ipcRenderer && window.ipcRenderer.invoke) {
+                // Create a custom IPC call to open external URL
+                window.ipcRenderer.invoke('open-external-url', finalUrl);
+            } else {
+                // Fallback to window.open
+                console.log('🔗 Fallback to window.open');
+                window.open(finalUrl, '_blank');
+            }
+        } catch (error) {
+            console.error('🔗 Error opening URL:', error);
+            // Final fallback
+            window.open(finalUrl, '_blank');
+        }
         return Promise.resolve();
     }
 
     // Tauri: Use open command
-    return invoke("open_url", { url: hubUrl }).catch(() => {
+    console.log('🔗 Opening in Tauri with invoke');
+    return invoke("open_url", { url: finalUrl }).catch(() => {
         // Fallback: Use window.open
-        window.open(hubUrl, '_blank');
+        console.log('🔗 Fallback to window.open');
+        window.open(finalUrl, '_blank');
     });
 }
 

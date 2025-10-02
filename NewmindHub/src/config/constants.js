@@ -23,11 +23,10 @@ export const MODEL_CONFIG = {
         metadata: {
             native_format: true,
             real_provider: 'anthropic',
-            base_model: 'claude-sonnet-4-20250514',
             supports_tools: true,
             supports_streaming: true
         },
-        plans: ['PRO', 'ENTERPRISE', 'BASIC']
+        plans: ['PRO', 'ENTERPRISE', 'BASE']
     },
     'newmind-strong': {
         id: 'newmind-strong',
@@ -38,7 +37,6 @@ export const MODEL_CONFIG = {
         metadata: {
             native_format: true,
             real_provider: 'anthropic',
-            base_model: 'claude-opus-4',
             supports_tools: true,
             supports_streaming: true
         },
@@ -53,11 +51,10 @@ export const MODEL_CONFIG = {
         metadata: {
             native_format: true,
             real_provider: 'openai',
-            base_model: 'qwen/qwen3-coder-30b',
             supports_tools: true,
             supports_streaming: true
         },
-        plans: ['PRO', 'ENTERPRISE', 'BASIC']
+        plans: ['PRO', 'ENTERPRISE', 'BASE']
     }
 };
 

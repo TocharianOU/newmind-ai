@@ -12,7 +12,7 @@
     "checkpointer": {
         "uri": "postgresql://postgres:azmatjan1997A@xiaopenges.tocharian.eu:3307/newmind_hub"
     },
-    "cors_origin": "http://localhost:5173",
+    "cors_origin": "http://localhost:5174",
     "local_cache": {
         "enabled": true,
         "path": "db.sqlite",

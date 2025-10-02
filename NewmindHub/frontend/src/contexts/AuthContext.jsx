@@ -20,6 +20,39 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkAuth = async () => {
+    // First check for token in URL parameters (from Dive app)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlToken = urlParams.get('token');
+    
+    if (urlToken) {
+      console.log('🔗 Token found in URL, attempting auto-login...');
+      try {
+        // Store the token from URL
+        localStorage.setItem('authToken', urlToken);
+        
+        // Verify the token by calling /api/v1/user/me
+        const response = await api.get('/api/v1/user/me');
+        if (response.data.status === 'success') {
+          setUser(response.data.data);
+          console.log('🔗 Auto-login successful');
+          
+          // Clean up URL by removing token parameter
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, newUrl);
+          
+          setLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error('🔗 Auto-login failed:', error);
+        localStorage.removeItem('authToken');
+        // Remove token from URL even if login failed
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+      }
+    }
+    
+    // Fallback to normal auth check
     const token = localStorage.getItem('authToken');
     if (!token) {
       setLoading(false);
@@ -28,7 +61,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const response = await api.get('/api/v1/user/me');
-      if (response.data.success) {
+      if (response.data.status === 'success') {
         setUser(response.data.data);
       }
     } catch (error) {
@@ -55,7 +88,7 @@ export const AuthProvider = ({ children }) => {
       username,
       password
     });
-    if (response.data.success) {
+    if (response.data.status === 'success') {
       localStorage.setItem('authToken', response.data.data.token);
       setUser(response.data.data.user);
       return response.data;

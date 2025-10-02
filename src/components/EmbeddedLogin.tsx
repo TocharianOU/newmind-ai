@@ -54,7 +54,7 @@ const EmbeddedLogin: React.FC<EmbeddedLoginProps> = ({ onCancel, onSuccess }) =>
     
     try {
       // Use the exported nativeFetch to bypass the wrapped fetch that causes URL issues.
-      const FULL_LOGIN_URL = 'http://localhost:3000/api/auth/login';
+      const FULL_LOGIN_URL = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/auth/login`;
 
       const response = await nativeFetch(FULL_LOGIN_URL, {
         method: 'POST',

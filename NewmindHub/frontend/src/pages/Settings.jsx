@@ -38,7 +38,7 @@ const Settings = () => {
   const fetchPreferences = async () => {
     try {
       const response = await api.get('/api/v1/user/preferences');
-      if (response.data.success) {
+      if (response.data.status === 'success') {
         setPreferences(response.data.data);
       }
     } catch (error) {
@@ -53,9 +53,14 @@ const Settings = () => {
 
     try {
       const response = await api.put('/api/v1/user/settings', profileData);
-      if (response.data.success) {
+      if (response.data.status === 'success') {
         setMessage({ type: 'success', text: 'Profile updated successfully!' });
         await checkAuth(); // Refresh user data
+      } else {
+        setMessage({
+          type: 'error',
+          text: response.data.error || 'Failed to update profile'
+        });
       }
     } catch (error) {
       setMessage({
@@ -74,8 +79,13 @@ const Settings = () => {
 
     try {
       const response = await api.put('/api/v1/user/preferences', preferences);
-      if (response.data.success) {
+      if (response.data.status === 'success') {
         setMessage({ type: 'success', text: 'Preferences updated successfully!' });
+      } else {
+        setMessage({
+          type: 'error',
+          text: response.data.error || 'Failed to update preferences'
+        });
       }
     } catch (error) {
       setMessage({
