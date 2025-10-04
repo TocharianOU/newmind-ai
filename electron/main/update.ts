@@ -33,6 +33,7 @@ export function update(win: Electron.BrowserWindow) {
   })
 
   // Checking for updates
+  ipcMain.removeHandler("check-update")
   ipcMain.handle("check-update", async () => {
     if (!app.isPackaged) {
       const error = new Error("The update feature is only available after the package.")
@@ -47,6 +48,7 @@ export function update(win: Electron.BrowserWindow) {
   })
 
   // Start downloading and feedback on progress
+  ipcMain.removeHandler("start-download")
   ipcMain.handle("start-download", (event: Electron.IpcMainInvokeEvent) => {
     startDownload(
       (error, progressInfo) => {
@@ -66,6 +68,7 @@ export function update(win: Electron.BrowserWindow) {
   })
 
   // Install now
+  ipcMain.removeHandler("quit-and-install")
   ipcMain.handle("quit-and-install", () => {
     autoUpdater.quitAndInstall(false, true)
   })

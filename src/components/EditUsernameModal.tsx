@@ -68,10 +68,13 @@ const EditUsernameModal: React.FC<EditUsernameModalProps> = ({
   };
 
   return (
-    <PopupWindow
-      title={t('system.editUsername') || 'Edit Username'}
-      onClose={onClose}
-    >
+    <PopupWindow onClickOutside={onClose}>
+      <div className="modal-header">
+        <h2>{t('system.editUsername') || 'Edit Username'}</h2>
+        <Button type="button" color="gray" onClick={onClose}>
+          &times;
+        </Button>
+      </div>
       <form onSubmit={handleSubmit} className="edit-username-form">
         {error && (
           <div className="error-message">

@@ -70,6 +70,21 @@ export const DEF_MCP_SERVER_CONFIG = {
         "KIBANA_USERNAME": "",
         "KIBANA_PASSWORD": ""
       }
+    },
+    "elasticsearch-sl": {
+      "enabled": false,
+      "command": "node",
+      "args": [
+        path.join(scriptsDir, "mcp-server-elasticsearch-sl", "dist", "index.js")
+      ],
+      "env": {
+        "ES_URL": "",
+        "ES_API_KEY": "",
+        "ES_USERNAME": "",
+        "ES_PASSWORD": "",
+        "ES_CA_CERT": "",
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      }
     }
   }
 }
