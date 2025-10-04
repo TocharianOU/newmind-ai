@@ -51,7 +51,7 @@ async function initApp() {
 
   // create config file if not exists
   const mcpServerConfigPath = path.join(baseConfigDir, "mcp_config.json")
-  await mergeDefaultMCPConfig(mcpServerConfigPath)
+  await createFileIfNotExists(mcpServerConfigPath, JSON.stringify(DEF_MCP_SERVER_CONFIG, null, 2))
 
   // create custom rules file if not exists
   const customRulesPath = path.join(baseConfigDir, "customrules")
@@ -220,59 +220,7 @@ async function migratePrebuiltScripts() {
   // update prebuilt scripts
   compareFilesAndReplace(path.join(rebuiltScriptsPath, "echo.js"), path.join(scriptsDir, "echo.js"))
 
-  // copy mcp-server-kibana if exists (完整独立复制，包含所有依赖)
-  const kibanaSourcePath = path.join(rebuiltScriptsPath, "mcp-server-kibana")
-  const kibanaTargetPath = path.join(scriptsDir, "mcp-server-kibana")
-  if (await fse.pathExists(kibanaSourcePath)) {
-    console.log("Processing mcp-server-kibana...")
-    
-    // 1. 检查源目录是否有必要的文件
-    const hasNodeModules = await fse.pathExists(path.join(kibanaSourcePath, "node_modules"))
-    const hasDist = await fse.pathExists(path.join(kibanaSourcePath, "dist"))
-    
-    if (!hasNodeModules || !hasDist) {
-      console.warn("⚠️  Warning: mcp-server-kibana is missing node_modules or dist directory")
-      console.warn("Please run: npm run build:mcp-kibana && npm run prepare:mcp-kibana")
-    }
-    
-    // 2. 只在需要时删除和复制（比较版本或时间戳）
-    let needsCopy = true
-    if (await fse.pathExists(kibanaTargetPath)) {
-      const sourcePackageJson = await fse.readJSON(path.join(kibanaSourcePath, "package.json")).catch(() => ({}))
-      const targetPackageJson = await fse.readJSON(path.join(kibanaTargetPath, "package.json")).catch(() => ({}))
-      
-      if (sourcePackageJson.version === targetPackageJson.version) {
-        console.log(`mcp-server-kibana v${sourcePackageJson.version} already exists, skipping copy`)
-        needsCopy = false
-      } else {
-        console.log(`Updating mcp-server-kibana from v${targetPackageJson.version} to v${sourcePackageJson.version}`)
-        await fse.remove(kibanaTargetPath)
-      }
-    }
-    
-    // 3. 完整复制，解析所有符号链接为真实文件
-    if (needsCopy) {
-      console.log("Copying mcp-server-kibana (complete with all dependencies)...")
-      await fse.copy(kibanaSourcePath, kibanaTargetPath, {
-        dereference: true,  // 解析符号链接，复制真实文件
-        filter: (src) => {
-          // 排除不必要的文件
-          const relativePath = path.relative(kibanaSourcePath, src)
-          if (relativePath.includes('.git') || 
-              relativePath.includes('tsconfig.json') ||
-              relativePath.includes('jest.config.js') ||
-              relativePath.startsWith('src/') ||
-              relativePath === 'index.ts') {
-            return false
-          }
-          return true
-        }
-      })
-      console.log("✓ Copied mcp-server-kibana successfully (complete independent package)")
-    }
-  }
-
-  // install dependencies for prebuilt scripts (不包括 mcp-server-kibana)
+  // install dependencies for prebuilt scripts
   await npmInstall(scriptsDir).catch(console.error)
   await npmInstall(scriptsDir, ["install", "express", "cors"]).catch(console.error)
 

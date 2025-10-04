@@ -1,193 +1,252 @@
-# Newmind Agent 🧠 🤖
+# Newmind Agent
 
-![GitHub stars](https://img.shields.io/github/stars/TocharianOU/newmind-ai?style=social)
-![GitHub forks](https://img.shields.io/github/forks/TocharianOU/newmind-ai?style=social)
-![GitHub watchers](https://img.shields.io/github/watchers/TocharianOU/newmind-ai?style=social)
-![GitHub repo size](https://img.shields.io/github/repo-size/TocharianOU/newmind-ai)
-![GitHub language count](https://img.shields.io/github/languages/count/TocharianOU/newmind-ai)
-![GitHub top language](https://img.shields.io/github/languages/top/TocharianOU/newmind-ai)
-![GitHub last commit](https://img.shields.io/github/last-commit/TocharianOU/newmind-ai?color=red)
+一个基于 Electron 的智能代理应用，集成了 Kibana MCP 服务器，支持 Elasticsearch 数据分析和可视化。
 
-Newmind Agent is an open-source MCP Host Desktop Application that seamlessly integrates with any LLMs supporting function calling capabilities. ✨
+## 🚀 快速开始
 
-## Features 🎯
+### 环境要求
 
-- 🌐 **Universal LLM Support**: Compatible with ChatGPT, Anthropic, Ollama and OpenAI-compatible models
-- 💻 **Cross-Platform**: Available for Windows, MacOS, and Linux
-- 🔄 **Model Context Protocol**: Enabling seamless MCP AI agent integration on both stdio and SSE mode
-- ☁️ **OAP Cloud Integration**: One-click access to managed MCP servers via [OAPHub.ai](https://oaphub.ai/) - eliminates complex local deployments
-- 🏗️ **Dual Architecture**: Modern Tauri version alongside traditional Electron version for optimal performance
-- 🌍 **Multi-Language Support**: Simplified Chinese and English
-- ⚙️ **Advanced API Management**: Multiple API keys and model switching support with `model_settings.json`
-- 🛠️ **Granular Tool Control**: Enable/disable individual MCP tools for precise customization
-- 💡 **Custom Instructions**: Personalized system prompts for tailored AI behavior
-- 🔄 **Auto-Update Mechanism**: Automatically checks for and installs the latest application updates
+- Node.js >= 18
+- npm >= 8
+- Git
 
-## Recent updates - v0.0.1 🎉
+### 安装和构建
 
-### Major Architecture Changes
-- 🏗️ **Dual Architecture Support**: Newmind Agent now supports both **Electron** and **Tauri** frameworks simultaneously
-- ⚡ **Tauri Version**: New modern architecture with optimized installer size (Windows < 30MB)
-- 🌐 **OAP Platform Integration**: Native support for [OAPHub.ai](https://oaphub.ai/) cloud services with one-click MCP server deployment
-
-### New Features & Improvements
-- 🔐 **OAP Authentication**: Comprehensive OAP login and authentication support
-- 📁 **Enhanced Model Configuration**: Complete restructuring with `model_settings.json` for managing multiple models
-- 🛠️ **Granular MCP Control**: Individual tool enable/disable functionality for better customization
-- 🎨 **UI/UX Enhancements**: Streamlined settings interface with combined pages for better user experience
-- 🔧 **Improved Network Handling**: Enhanced port resolution logic with interval polling for better connectivity
-- ⚙️ **Enhanced Model Settings**: Improved OpenAI compatible model settings and tool integration in prompts
-- 🐧 **Linux Tauri Support**: Full Tauri framework support now available on Linux platforms
-- 📦 **Smart Dependency Management**: Automatic detection and updating of MCP host dependencies
-- 🔄 **Updated mcp-host**: Latest architectural improvements incorporated
-
-### Platform Availability
-- **Windows**: Available in both Electron and Tauri versions ✅
-- **macOS**: Currently Electron only 🔜
-- **Linux**: Available in both Electron and Tauri versions ✅
-
-> **Migration Note:** Existing local MCP/LLM configurations remain fully supported. OAP integration is additive and does not affect current workflows.
-
-## Download and Install ⬇️
-
-Get the latest version of Newmind Agent:
-[![Download](https://img.shields.io/badge/Download-Latest%20Release-blue.svg)](https://github.com/TocharianOU/newmind-ai/releases/latest)
-
-### Windows users: 🪟
-Choose between two architectures:
-- **Tauri Version** (Recommended): Smaller installer (<30MB), modern architecture
-- **Electron Version**: Traditional architecture, fully stable
-- Python and Node.js environments will be downloaded automatically after launching
-
-### MacOS users: 🍎
-- **Electron Version**: Download the .dmg version
-- You need to install Python and Node.js (with npx uvx) environments yourself
-- Follow the installation prompts to complete setup
-
-### Linux users: 🐧
-Choose between two architectures:
-- **Tauri Version** (Recommended): Modern architecture with smaller installer size
-- **Electron Version**: Traditional architecture with .AppImage format
-- You need to install Python and Node.js (with npx uvx) environments yourself
-- For Ubuntu/Debian users:
-  - You may need to add `--no-sandbox` parameter
-  - Or modify system settings to allow sandbox
-  - Run `chmod +x` to make the AppImage executable
-
-## MCP Setup Options
-
-Newmind Agent offers two ways to access MCP tools: **OAP Cloud Services** (recommended for beginners) and **Local MCP Servers** (for advanced users).
-
-### Option 1: Local MCP Servers 🛠️
-
-For advanced users who prefer local control. The system comes with a default echo MCP Server, and you can add more powerful tools like Fetch and Youtube-dl.
-
-### Option 2: OAP Cloud Services ☁️
-
-The easiest way to get started! Access enterprise-grade MCP tools instantly:
-
-1. **Sign up** at [OAPHub.ai](https://oaphub.ai/)
-2. **Connect** to Newmind Agent using one-click deep links or configuration files
-3. **Enjoy** managed MCP servers with zero setup - no Python, Docker, or complex dependencies required
-
-Benefits:
-- ✅ Zero configuration needed
-- ✅ Cross-platform compatibility
-- ✅ Enterprise-grade reliability
-- ✅ Automatic updates and maintenance
-
-#### Quick Local Setup
-
-Add this JSON configuration to your Newmind Agent MCP settings to enable local tools:
-
-```json
- "mcpServers":{
-    "fetch": {
-      "command": "uvx",
-      "args": [
-        "mcp-server-fetch",
-        "--ignore-robots-txt"
-      ],
-      "enabled": true
-    },
-    "filesystem": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "/path/to/allowed/files"
-      ],
-      "enabled": true
-    },
-    "youtubedl": {
-      "command": "npx",
-      "args": [
-        "@kevinwatt/yt-dlp-mcp"
-      ],
-      "enabled": true
-    }
-  }
+#### 1. 克隆项目
+```bash
+git clone https://github.com/TocharianOU/newmind-ai.git
+cd newmind-ai
 ```
 
-#### Using Streamable HTTP for Cloud MCP Services
+#### 2. 安装依赖
+```bash
+npm install
+```
 
-You can connect to external cloud MCP servers via Streamable HTTP transport. Here's the Newmind Agent configuration example for SearXNG service from OAPHub:
+#### 3. 构建 MCP Kibana 服务器
+```bash
+# 构建完整的 MCP Kibana 服务器（包含所有依赖）
+npm run build:mcp-kibana
+
+# 准备生产环境的 MCP Kibana（只保留生产依赖）
+npm run prepare:mcp-kibana
+```
+
+#### 4. 构建主应用
+```bash
+npm run build:electron
+```
+
+### 开发模式
+
+```bash
+# 启动开发服务器（包含热重载）
+npm run dev
+```
+
+### 生产模式
+
+#### 方法一：直接运行构建后的应用
+```bash
+npm run build:electron
+# 然后运行构建后的应用
+./dist-electron/main/index.js
+```
+
+#### 方法二：打包成可执行文件
+
+**macOS:**
+```bash
+# 打包所有架构
+npm run package:darwin
+
+# 或者分别打包
+npm run package:darwin-dmg:arm64  # Apple Silicon
+npm run package:darwin-dmg:x64    # Intel
+```
+
+**Windows:**
+```bash
+npm run package:windows
+```
+
+**Linux:**
+```bash
+npm run package:linux
+```
+
+## 📦 项目结构
+
+```
+newmind-ai/
+├── electron/                 # Electron 主进程代码
+│   ├── main/                # 主进程
+│   └── preload/             # 预加载脚本
+├── src/                     # 渲染进程代码（React）
+├── prebuilt/scripts/        # 预构建的脚本
+│   ├── echo.js             # 基础脚本
+│   └── mcp-server-kibana/   # Kibana MCP 服务器
+│       ├── dist/           # 构建输出
+│       ├── node_modules/   # 独立依赖
+│       ├── src/           # 源代码
+│       └── package.json   # 独立配置
+├── mcp-host/               # MCP 主机服务
+└── scripts/               # 构建脚本
+```
+
+## 🔧 MCP Kibana 服务器
+
+### 特性
+
+- **完全独立**：包含所有必要的 Node.js 依赖
+- **自动复制**：应用启动时自动复制到用户目录
+- **版本控制**：支持版本检查和更新
+- **多平台支持**：支持 macOS、Windows、Linux
+
+### 配置
+
+MCP Kibana 服务器通过以下配置连接：
 
 ```json
 {
   "mcpServers": {
-    "SearXNG_MCP_Server": {
-      "transport": "streamable",
-      "url": "https://proxy.oaphub.ai/v1/mcp/181672830075666436",
-      "headers": {
-        "Authorization": "GLOBAL_CLIENT_TOKEN"
+    "kibana": {
+      "enabled": true,
+      "command": "node",
+      "args": ["~/.dive/scripts/mcp-server-kibana/dist/index.js"],
+      "env": {
+        "KIBANA_URL": "http://your-kibana-url:5601",
+        "KIBANA_USERNAME": "your-username",
+        "KIBANA_PASSWORD": "your-password"
       }
     }
   }
 }
 ```
 
-Reference: [@https://oaphub.ai/mcp/181672830075666436](https://oaphub.ai/mcp/181672830075666436)
+### 支持的操作
 
-#### Using SSE Server (Non-Local MCP)
+- **搜索 Kibana 对象**：搜索仪表板、可视化、索引模式等
+- **获取对象详情**：获取特定对象的详细信息
+- **创建对象**：创建新的 Kibana 对象
+- **更新对象**：更新现有对象
+- **删除对象**：删除不需要的对象
+- **批量操作**：支持批量创建、更新、删除
 
-You can also connect to external MCP servers (not local ones) via SSE (Server-Sent Events). Add this configuration to your Newmind Agent MCP settings:
+## 🛠️ 开发指南
 
-```json
-{
-  "mcpServers": {
-    "MCP_SERVER_NAME": {
-      "enabled": true,
-      "transport": "sse",
-      "url": "YOUR_SSE_SERVER_URL"
-    }
-  }
-}
-```
+### 添加新的 MCP 服务器
 
-#### Additional Setup for yt-dlp-mcp
+1. **创建服务器目录**：
+   ```bash
+   mkdir prebuilt/scripts/your-mcp-server
+   cd prebuilt/scripts/your-mcp-server
+   ```
 
-yt-dlp-mcp requires the yt-dlp package. Install it based on your operating system:
+2. **初始化项目**：
+   ```bash
+   npm init -y
+   # 添加必要的依赖
+   npm install @modelcontextprotocol/sdk
+   ```
 
-#### Windows
-```bash
-winget install yt-dlp
-```
+3. **配置独立安装**：
+   创建 `.npmrc` 文件：
+   ```
+   legacy-peer-deps=true
+   install-links=false
+   ```
 
-#### MacOS
-```bash
-brew install yt-dlp
-```
+4. **更新构建脚本**：
+   在 `package.json` 中添加构建命令：
+   ```json
+   {
+     "scripts": {
+       "build:your-mcp": "cd prebuilt/scripts/your-mcp-server && npm install && npm run build",
+       "prepare:your-mcp": "cd prebuilt/scripts/your-mcp-server && npm ci --omit=dev --ignore-scripts"
+     }
+   }
+   ```
 
-#### Linux
-```bash
-pip install yt-dlp
-```
+5. **更新复制逻辑**：
+   在 `electron/main/service.ts` 中添加复制逻辑
 
-## Build 🛠️
+### 构建脚本说明
 
-See [BUILD.md](BUILD.md) for more details.
+- `build:mcp-kibana`：构建 MCP Kibana 服务器（开发依赖 + 生产依赖）
+- `prepare:mcp-kibana`：准备生产环境（只保留生产依赖）
+- `clean:mcp-kibana`：清理构建文件
+- `build:electron`：构建主应用
 
-## Connect With Us 🌐
-- ⭐ Star us on GitHub
-- 🐛 Report issues on our [Issue Tracker](https://github.com/TocharianOU/newmind-ai/issues)
+## 📋 可用脚本
+
+### 开发脚本
+- `npm run dev`：启动开发服务器
+- `npm run lint`：代码检查
+- `npm run check`：类型检查
+
+### 构建脚本
+- `npm run build`：构建渲染进程
+- `npm run build:electron`：构建 Electron 应用
+- `npm run build:mcp-kibana`：构建 MCP Kibana 服务器
+- `npm run prepare:mcp-kibana`：准备生产环境
+
+### 打包脚本
+- `npm run package:darwin`：打包 macOS 应用
+- `npm run package:windows`：打包 Windows 应用
+- `npm run package:linux`：打包 Linux 应用
+
+### 清理脚本
+- `npm run clean:mcp-kibana`：清理 MCP Kibana 构建文件
+
+## 🔍 故障排除
+
+### MCP 服务器无法启动
+
+1. **检查依赖**：
+   ```bash
+   ls -la ~/.dive/scripts/mcp-server-kibana/node_modules/@modelcontextprotocol
+   ```
+
+2. **重新构建**：
+   ```bash
+   npm run clean:mcp-kibana
+   npm run build:mcp-kibana
+   npm run prepare:mcp-kibana
+   ```
+
+3. **检查日志**：
+   查看应用日志中的错误信息
+
+### 构建失败
+
+1. **清理缓存**：
+   ```bash
+   npm cache clean --force
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
+
+2. **检查 Node.js 版本**：
+   ```bash
+   node --version  # 应该是 >= 18
+   ```
+
+## 📄 许可证
+
+本项目采用 Apache-2.0 许可证。详见 [LICENSE](LICENSE) 文件。
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+## 📞 支持
+
+如有问题，请通过以下方式联系：
+
+- GitHub Issues: [https://github.com/TocharianOU/newmind-ai/issues](https://github.com/TocharianOU/newmind-ai/issues)
+- 邮箱: [your-email@example.com]
+
+---
+
+**注意**：本项目集成了 Kibana MCP 服务器，需要有效的 Kibana 实例才能使用相关功能。

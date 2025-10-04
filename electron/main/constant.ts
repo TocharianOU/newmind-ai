@@ -59,6 +59,18 @@ export const DEF_MCP_SERVER_CONFIG = {
         path.join(scriptsDir, "echo.js")
       ]
     },
+    "kibana": {
+      "enabled": false,
+      "command": "node",
+      "args": [
+        path.join(scriptsDir, "mcp-server-kibana", "dist", "index.js")
+      ],
+      "env": {
+        "KIBANA_URL": "",
+        "KIBANA_USERNAME": "",
+        "KIBANA_PASSWORD": ""
+      }
+    }
   }
 }
 
