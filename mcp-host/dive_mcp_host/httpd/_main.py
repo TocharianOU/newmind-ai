@@ -98,7 +98,7 @@ def main() -> None:
         )
 
     else:
-        start = int(os.getenv("MCP_HOST_PORT", "61990"))
+        start = 61990
         port = 0
         for i in range(1000):
             port = start + i

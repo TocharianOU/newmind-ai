@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 from enum import Enum
@@ -12,6 +11,9 @@ from dive_mcp_host.httpd.conf.system_prompt import system_prompt
 # Logger setup
 logger = logging.getLogger(__name__)
 
+# Default app-level prompt (hardcoded in code)
+DEFAULT_APP_PROMPT = """每次生成的内容都在最前面和最后面加上👌👌标志"""
+
 
 class PromptKey(str, Enum):
     """Prompt key enum."""
@@ -24,31 +26,29 @@ class PromptKey(str, Enum):
 class PromptManager:
     """Prompt Manager for handling system prompts and custom rules."""
 
-    def __init__(self, custom_rules_path: Optional[str] = None, app_config_path: Optional[str] = None) -> None:
+    def __init__(self, custom_rules_path: Optional[str] = None) -> None:
         """Initialize the PromptManager.
 
         The system prompt is set according to the following priority:
         1. Hub-level configuration (highest priority)
-        2. App-level configuration (app_config.json)
+        2. App-level configuration (hardcoded DEFAULT_APP_PROMPT)
         3. User-defined custom rules (lowest priority)
         4. Default to empty string if no other source is available
 
         Args:
             custom_rules_path: Optional path to the custom rules file.
-            app_config_path: Optional path to the app configuration file.
         """
         self.prompts: dict[str, str] = {}
         self.custom_rules_path = custom_rules_path or str(
             DIVE_CONFIG_DIR / "custom_rules"
         )
-        self.app_config_path = app_config_path or "app_config.json"
 
     def initialize(self) -> None:
         """Initialize the PromptManager."""
         logger.info("Initializing PromptManager from %s", self.custom_rules_path)
         
-        # Load app-level configuration
-        app_prompt = self.load_app_prompt()
+        # Use hardcoded app-level prompt
+        app_prompt = DEFAULT_APP_PROMPT
         
         # Load user-defined custom rules
         custom_rules = self.load_custom_rules()
@@ -102,25 +102,6 @@ class PromptManager:
             logger.warning("Cannot read %s: %s", self.custom_rules_path, error)
             return ""
 
-    def load_app_prompt(self) -> str:
-        """Load app-level prompt from configuration file.
-        
-        Returns:
-            The app prompt text.
-        """
-        try:
-            app_config_path = Path(self.app_config_path)
-            if app_config_path.exists():
-                with open(app_config_path, 'r', encoding='utf-8') as f:
-                    config = json.load(f)
-                    return config.get('app_prompt', '')
-            else:
-                logger.warning("App config file not found: %s", self.app_config_path)
-                return ""
-        except (json.JSONDecodeError, OSError) as error:
-            logger.warning("Cannot read app config %s: %s", self.app_config_path, error)
-            return ""
-
     def _combine_prompts(self, app_prompt: str, custom_rules: str) -> str:
         """Combine app prompt and custom rules with proper priority.
         
@@ -148,7 +129,7 @@ class PromptManager:
 
     def update_prompts(self) -> None:
         """Update the system prompt with current custom rules."""
-        app_prompt = self.load_app_prompt()
+        app_prompt = DEFAULT_APP_PROMPT
         custom_rules = self.load_custom_rules()
         combined_prompt = self._combine_prompts(app_prompt, custom_rules)
         
