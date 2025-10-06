@@ -12,7 +12,7 @@ from dive_mcp_host.httpd.conf.system_prompt import system_prompt
 logger = logging.getLogger(__name__)
 
 # Default app-level prompt (hardcoded in code)
-DEFAULT_APP_PROMPT = """每次生成的内容都在最前面和最后面加上👌👌标志"""
+DEFAULT_APP_PROMPT = """每次生成的内容都在最前面和最后面加上👌👌✅标志"""
 
 
 class PromptKey(str, Enum):
