@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tauri_plugin_opener::OpenerExt;
 
-use crate::shared::OAP_ROOT_URL;
+use crate::shared::get_oap_root_url;
 use crate::state::oap::{MCPServerSearchParam, OAPState};
 
 #[tauri::command]
@@ -87,14 +87,14 @@ pub async fn open_oap_login_page(app: tauri::AppHandle, regist: bool) -> Result<
     let url = if regist {
         format!(
             "{}/signup?client=dive&name={}&system={}",
-            OAP_ROOT_URL,
+            &get_oap_root_url(),
             hostname,
             std::env::consts::OS
         )
     } else {
         format!(
             "{}/signin?client=dive&name={}&system={}",
-            OAP_ROOT_URL,
+            &get_oap_root_url(),
             hostname,
             std::env::consts::OS
         )

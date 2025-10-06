@@ -9,7 +9,7 @@ export const MODEL_MAPPING = {
 export const MODEL_PROVIDERS = {
     'newmind-medium': { type: 'anthropic', endpoint: '/v1/messages' },
     'newmind-strong': { type: 'anthropic', endpoint: '/v1/messages' },
-    'newmind-small': { type: 'lmstudio', endpoint: '/v1/chat/completions', url: 'http://xiaopenges.tocharian.eu:11234' }
+    'newmind-small': { type: 'lmstudio', endpoint: '/v1/chat/completions', url: process.env.PRODUCTION_API_URL || 'http://localhost:11234' }
 };
 
 // Complete model configuration

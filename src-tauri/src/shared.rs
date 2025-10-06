@@ -1,6 +1,8 @@
 use std::{path::PathBuf, sync::LazyLock};
 
-pub const OAP_ROOT_URL: &str = "http://localhost:3000";
+pub fn get_oap_root_url() -> String {
+    std::env::var("OAP_ROOT_URL").unwrap_or_else(|_| "http://localhost:3000".to_string())
+}
 
 pub static PROJECT_DIRS: LazyLock<Dirs> = LazyLock::new(|| {
     let home = dirs::home_dir().unwrap();

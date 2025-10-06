@@ -138,7 +138,7 @@ async def test_client(
     service_manager.initialize()
     app = create_app(service_manager)
     app.set_status_report_info(listen="127.0.0.1")
-    app.set_listen_port(61990)
+    app.set_listen_port(int(os.getenv("TEST_MCP_PORT", "61990")))
     with TestClient(app, raise_server_exceptions=False) as client:
         # create a simple chat
         client.get("/api/tools/initialized")

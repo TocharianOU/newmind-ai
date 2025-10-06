@@ -73,7 +73,7 @@ async function main() {
       command: 'npx',
       args: JSON.stringify(['@tocharian/mcp-server-elasticsearch-sl']),
       env: JSON.stringify({
-        ES_URL: 'https://xiaopenges.tocharian.eu:9201',
+        ES_URL: process.env.PRODUCTION_ES_URL || 'https://localhost:9201',
         ES_USERNAME: 'elastic',
         ES_PASSWORD: 'tocharian!',
         NODE_TLS_REJECT_UNAUTHORIZED: '0'

@@ -20,7 +20,7 @@ use tokio::{sync::{broadcast, Mutex}, task::JoinHandle};
 
 use tauri_plugin_http::reqwest::{Client, RequestBuilder};
 
-use crate::{shared::OAP_ROOT_URL, state::oap::MCPServerSearchParam};
+use crate::{shared::get_oap_root_url, state::oap::MCPServerSearchParam};
 
 #[derive(Clone)]
 pub struct OAPCredentials {
@@ -196,7 +196,7 @@ impl OAPAPIClient {
 
     #[inline]
     pub fn build_url(&self, path: &str) -> String {
-        format!("{}{}", OAP_ROOT_URL, path)
+        format!("{}{}", get_oap_root_url(), path)
     }
 
     pub async fn get_mcp_servers(&self) -> Result<Value> {
@@ -311,9 +311,10 @@ impl OAPWebSocketClient {
 
         // TODO: 后期需要根据OAP_ROOT_URL的协议动态选择ws://或wss://
         // 当前为了跑通NewmindHub集成，临时使用ws://
-        // 原始代码: format!("wss://{}/api/v1/socket", OAP_ROOT_URL.split("://").nth(1).unwrap())
-        let ws_protocol = if OAP_ROOT_URL.starts_with("https://") { "wss://" } else { "ws://" };
-        let url = format!("{}{}/api/v1/socket", ws_protocol, OAP_ROOT_URL.split("://").nth(1).unwrap());
+        // 原始代码: format!("wss://{}/api/v1/socket", get_oap_root_url().split("://").nth(1).unwrap())
+        let oap_url = get_oap_root_url();
+        let ws_protocol = if oap_url.starts_with("https://") { "wss://" } else { "ws://" };
+        let url = format!("{}{}/api/v1/socket", ws_protocol, oap_url.split("://").nth(1).unwrap());
         let mut request = url.into_client_request().unwrap();
         request.headers_mut().insert("Authorization", format!("Bearer {}", token).parse().unwrap());
 
