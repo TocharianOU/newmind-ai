@@ -2,15 +2,15 @@ import { isElectron } from "./env"
 import { exists, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs"
 import * as path from "@tauri-apps/api/path"
 
-const MODEL_SETTINGS_PATH = ".dive/config/model_settings.json"
-
 export async function getModelSettings() {
   if (isElectron) {
     return window.ipcRenderer.getModelSettings()
   }
 
   const home = await path.homeDir()
-  const configPath = await path.join(home, MODEL_SETTINGS_PATH)
+  const appDir = await path.join(home, ".newmind")
+  const configDir = await path.join(appDir, "config")
+  const configPath = await path.join(configDir, "model_settings.json")
   if (!(await exists(configPath))) {
     return null
   }
@@ -25,6 +25,8 @@ export async function setModelSettings(settings: any) {
   }
 
   const home = await path.homeDir()
-  const configPath = await path.join(home, MODEL_SETTINGS_PATH)
+  const appDir = await path.join(home, ".newmind")
+  const configDir = await path.join(appDir, "config")
+  const configPath = await path.join(configDir, "model_settings.json")
   await writeTextFile(configPath, JSON.stringify(settings))
 }

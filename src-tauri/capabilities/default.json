@@ -12,8 +12,8 @@
     {
       "identifier": "fs:scope",
       "allow": [
-        { "path": "$HOME/.dive" },
-        { "path": "$HOME/.dive/**/*" }
+        { "path": "$HOME/.newmind" },
+        { "path": "$HOME/.newmind/**/*" }
       ]
     },
     "fs:allow-write-text-file",

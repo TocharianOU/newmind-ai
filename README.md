@@ -113,7 +113,7 @@ MCP Kibana 服务器通过以下配置连接：
     "kibana": {
       "enabled": true,
       "command": "node",
-      "args": ["~/.dive/scripts/mcp-server-kibana/dist/index.js"],
+      "args": ["~/.newmind/scripts/mcp-server-kibana/dist/index.js"],
       "env": {
         "KIBANA_URL": "http://your-kibana-url:5601",
         "KIBANA_USERNAME": "your-username",
@@ -205,7 +205,7 @@ MCP Kibana 服务器通过以下配置连接：
 
 1. **检查依赖**：
    ```bash
-   ls -la ~/.dive/scripts/mcp-server-kibana/node_modules/@modelcontextprotocol
+   ls -la ~/.newmind/scripts/mcp-server-kibana/node_modules/@modelcontextprotocol
    ```
 
 2. **重新构建**：

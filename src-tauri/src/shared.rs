@@ -5,17 +5,17 @@ pub const OAP_ROOT_URL: &str = "http://localhost:3000";
 pub static PROJECT_DIRS: LazyLock<Dirs> = LazyLock::new(|| {
     let home = dirs::home_dir().unwrap();
     Dirs {
-        root: home.join(".dive"),
-        cache: home.join(".dive/host_cache"),
-        bus: home.join(".dive/host_cache/bus"),
-        log: home.join(".dive/log"),
-        bin: home.join(".dive/bin"),
-        script: home.join(".dive/scripts"),
+        root: home.join(".newmind"),
+        cache: home.join(".newmind/host_cache"),
+        bus: home.join(".newmind/host_cache/bus"),
+        log: home.join(".newmind/log"),
+        bin: home.join(".newmind/bin"),
+        script: home.join(".newmind/scripts"),
 
         #[cfg(debug_assertions)]
         config: std::env::current_dir().unwrap().join("../.config"),
         #[cfg(not(debug_assertions))]
-        config: home.join(".dive/config"),
+        config: home.join(".newmind/config"),
     }
 });
 
