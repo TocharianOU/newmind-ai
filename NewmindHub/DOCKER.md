@@ -63,6 +63,9 @@ Chat Electron应用
 
 # 运行数据库迁移
 ./docker-deploy.sh migrate
+
+# 重启后端服务（更新.env配置后）
+./docker-deploy.sh restart
 ```
 
 ## 环境变量
@@ -203,6 +206,67 @@ git pull
 # 3. 运行迁移（如有）
 ./docker-deploy.sh migrate
 ```
+
+## 更新系统 Prompt
+
+### 方法 1：使用文件（推荐，支持超长 prompt）
+
+系统会自动读取项目根目录下的 `system-prompt.txt` 文件作为系统 prompt。
+
+```bash
+# 1. 编辑 prompt 文件
+nano system-prompt.txt  # 或使用你喜欢的编辑器
+
+# 2. 写入你的 prompt 内容（支持多行，无长度限制）
+# 例如：
+cat > system-prompt.txt << 'EOF'
+你是一个专业的 Elasticsearch 数据分析助手。
+
+核心能力：
+1. 集群管理和监控
+2. 数据查询和分析
+3. 性能优化建议
+EOF
+
+# 3. 重启后端服务使其生效
+./docker-deploy.sh restart
+
+# 4. 验证配置是否生效
+docker-compose logs backend | grep "PROMPT"
+```
+
+### 方法 2：使用环境变量（简单，短 prompt）
+
+如果你的 prompt 比较短，也可以直接在 `.env` 文件中配置：
+
+```bash
+# 1. 编辑 .env 文件
+nano .env
+
+# 2. 修改 DIVE_OVERRIDE_SYSTEM_PROMPT（单行，不支持多行）
+DIVE_OVERRIDE_SYSTEM_PROMPT="你是一个专业的AI助手"
+
+# 3. 重启后端服务
+./docker-deploy.sh restart
+```
+
+### 方法 3：自定义文件路径
+
+可以通过环境变量指定自定义的 prompt 文件位置：
+
+```bash
+# 在 .env 中添加
+SYSTEM_PROMPT_FILE=/path/to/your/custom-prompt.txt
+
+# 然后重启
+./docker-deploy.sh restart
+```
+
+**注意**：
+- 文件方式优先级高于环境变量方式
+- `system-prompt.txt` 支持任意长度的 prompt
+- `docker-compose restart` 会重新读取文件内容
+- 无需重新构建镜像
 
 ## 技术栈
 

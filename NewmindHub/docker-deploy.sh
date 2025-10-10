@@ -55,6 +55,13 @@ case $COMMAND in
         echo -e "${GREEN}✓ 迁移完成${NC}"
         ;;
     
+    restart)
+        echo -e "${GREEN}重启后端服务...${NC}"
+        docker-compose restart backend
+        echo -e "${GREEN}✓ 后端已重启${NC}"
+        echo -e "${YELLOW}提示: 环境变量(.env)已重新加载${NC}"
+        ;;
+    
     *)
         echo "NewmindHub Docker部署"
         echo ""
@@ -66,5 +73,6 @@ case $COMMAND in
         echo "  logs     - 查看日志 (可选: logs backend/frontend/postgres)"
         echo "  rebuild  - 重新构建并启动"
         echo "  migrate  - 运行数据库迁移"
+        echo "  restart  - 重启后端服务(更新.env后使用)"
         ;;
 esac

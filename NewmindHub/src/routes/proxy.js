@@ -1,19 +1,39 @@
 import express from 'express';
 import fetch from 'node-fetch';
+import { readFile } from 'fs/promises';
+import { existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { authenticateToken, requirePlan } from '../middleware/auth.js';
 import { createResponse, MODEL_MAPPING, MODEL_PROVIDERS, checkModelAccess } from '../config/constants.js';
 import { prisma } from '../config/database.js';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // 系统提示词处理辅助函数
 async function getSystemPromptOverride() {
   try {
-    // 从环境变量获取最高优先级系统提示词
+    // 优先级1：从文件读取（支持超长 prompt）
+    const promptFilePath = process.env.SYSTEM_PROMPT_FILE || join(__dirname, '../../system-prompt.txt');
+    
+    if (existsSync(promptFilePath)) {
+      try {
+        const fileContent = await readFile(promptFilePath, 'utf-8');
+        if (fileContent && fileContent.trim()) {
+          logger.info(`🔥 [PROMPT] Loaded system prompt from file: ${promptFilePath} (length: ${fileContent.trim().length})`);
+          return fileContent.trim();
+        }
+      } catch (fileError) {
+        logger.warn(`⚠️ [PROMPT] Failed to read prompt file: ${fileError.message}`);
+      }
+    }
+    
+    // 优先级2：从环境变量获取（向后兼容）
     const overridePrompt = process.env.DIVE_OVERRIDE_SYSTEM_PROMPT;
     if (overridePrompt && overridePrompt.trim()) {
-      logger.info(`🔥 [PROMPT] Found system prompt override (length: ${overridePrompt.trim().length})`);
+      logger.info(`🔥 [PROMPT] Found system prompt override from env (length: ${overridePrompt.trim().length})`);
       return overridePrompt.trim();
     }
   } catch (error) {
