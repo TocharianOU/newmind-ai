@@ -8,7 +8,7 @@ import './Home.css';
 const Home = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language, changeLanguage } = useLanguage();
   const [downloadUrls, setDownloadUrls] = useState({
     windows: { x64: '' },
     macos: { intel: '', appleSilicon: '' },
@@ -93,6 +93,22 @@ const Home = () => {
 
   return (
     <div className="home-page">
+      {/* Language Switcher */}
+      <div className="language-switcher">
+        <button
+          className={`lang-btn ${language === 'en' ? 'active' : ''}`}
+          onClick={() => changeLanguage('en')}
+        >
+          English
+        </button>
+        <button
+          className={`lang-btn ${language === 'zh' ? 'active' : ''}`}
+          onClick={() => changeLanguage('zh')}
+        >
+          中文
+        </button>
+      </div>
+
       {/* Hero Section */}
       <section className="hero-section">
         <div className="hero-content">
