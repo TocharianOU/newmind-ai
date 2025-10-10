@@ -8,8 +8,9 @@ class OAPConfig(BaseModel):
     """OAP Config."""
 
     auth_key: str | None = None
-    store_url: str = os.getenv("STORE_URL", os.getenv("OAP_ROOT_URL", "http://localhost:3000"))
-    oap_root_url: str = os.getenv("HUB_URL", os.getenv("OAP_ROOT_URL", "http://localhost:3000"))
+    # 使用环境变量 HUB_BACKEND_URL，默认指向 NewmindHub 后端
+    store_url: str = os.getenv("HUB_BACKEND_URL", "http://xiaopenges.tocharian.eu:23000")
+    oap_root_url: str = os.getenv("HUB_BACKEND_URL", "http://xiaopenges.tocharian.eu:23000")
     verify_ssl: bool = False
 
 

@@ -68,7 +68,7 @@ const ChatWindow = () => {
 
       if (data.success) {
         currentChatId.current = id
-        document.title = `${data.data.chat.title.substring(0, 40)}${data.data.chat.title.length > 40 ? "..." : ""} - Newmind Agent`
+        document.title = `${data.data.chat.title.substring(0, 40)}${data.data.chat.title.length > 40 ? "..." : ""} - NewmindChat`
 
         const rawToMessage = (msg: RawMessage): Message => ({
           id: String(msg.messageId || msg.id || currentId.current++),

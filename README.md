@@ -1,4 +1,4 @@
-# Newmind Agent
+# NewmindChat
 
 一个基于 Electron 的智能代理应用，集成了 Kibana MCP 服务器，支持 Elasticsearch 数据分析和可视化。
 

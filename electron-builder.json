@@ -48,9 +48,9 @@
     "entitlementsInherit": "resources/mac/entitlements.mac.plist",
     "darkModeSupport": true,
     "extendInfo": {
-      "NSMicrophoneUsageDescription": "Microphone access may be used by Newmind Agent plugins, such as Jitsi video conferencing.",
-      "NSCameraUsageDescription": "Camera access may be used by Newmind Agent plugins, such as Jitsi video conferencing.",
-      "NSFocusStatusUsageDescription": "Focus status is used by Newmind Agent to determine whether to send notifications or not.",
+      "NSMicrophoneUsageDescription": "Microphone access may be used by NewmindChat plugins, such as Jitsi video conferencing.",
+      "NSCameraUsageDescription": "Camera access may be used by NewmindChat plugins, such as Jitsi video conferencing.",
+      "NSFocusStatusUsageDescription": "Focus status is used by NewmindChat to determine whether to send notifications or not.",
       "LSFileQuarantineEnabled": true,
       "NSAppleEventsUsageDescription": "need this permission to execute some functions",
       "com.apple.security.cs.allow-jit": true,
@@ -135,7 +135,7 @@
   "linux": {
     "target": ["AppImage"],
     "asarUnpack": ["**/*.node"],
-    "executableName": "newmind-agent",
+    "executableName": "newmind-chat",
     "desktop": {
       "entry": {
         "MimeType": "x-scheme-handler/dive;"
@@ -196,6 +196,6 @@
     }
   ],
   "dmg": {
-    "title": "Newmind Agent-${version}"
+    "title": "NewmindChat-${version}"
   }
 }
