@@ -30,8 +30,8 @@
     "dist",
     "prebuilt/**/*"
   ],
-  "afterSign": "./scripts/notarizer.js",
   "mac": {
+    "identity": null,
     "target": [
       {
         "target": "dmg",
@@ -42,16 +42,13 @@
         "arch": ["arm64", "x64"]
       }
     ],
-    "hardenedRuntime": true,
+    "hardenedRuntime": false,
     "gatekeeperAssess": false,
-    "entitlements": "resources/mac/entitlements.mac.plist",
-    "entitlementsInherit": "resources/mac/entitlements.mac.plist",
     "darkModeSupport": true,
     "extendInfo": {
       "NSMicrophoneUsageDescription": "Microphone access may be used by NewmindChat plugins, such as Jitsi video conferencing.",
       "NSCameraUsageDescription": "Camera access may be used by NewmindChat plugins, such as Jitsi video conferencing.",
       "NSFocusStatusUsageDescription": "Focus status is used by NewmindChat to determine whether to send notifications or not.",
-      "LSFileQuarantineEnabled": true,
       "NSAppleEventsUsageDescription": "need this permission to execute some functions",
       "com.apple.security.cs.allow-jit": true,
       "com.apple.security.cs.allow-unsigned-executable-memory": true,
@@ -196,6 +193,24 @@
     }
   ],
   "dmg": {
-    "title": "NewmindChat-${version}"
+    "title": "NewmindChat ${version}",
+    "background": null,
+    "window": {
+      "width": 540,
+      "height": 380
+    },
+    "contents": [
+      {
+        "x": 144,
+        "y": 150,
+        "type": "file"
+      },
+      {
+        "x": 396,
+        "y": 150,
+        "type": "link",
+        "path": "/Applications"
+      }
+    ]
   }
 }
