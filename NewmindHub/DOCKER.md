@@ -84,7 +84,12 @@ BACKEND_PORT=3000
 FRONTEND_PORT=3001
 
 # CORS配置（允许Chat应用访问）
-ALLOWED_ORIGINS=http://localhost:3001,http://localhost:5173
+# 本地开发：localhost origins + file:// (Chat Electron)
+# 生产环境：添加服务器IP/域名
+ALLOWED_ORIGINS=http://localhost:3001,http://localhost:5173,file://,tauri://localhost
+
+# 生产示例（添加你的服务器地址）：
+# ALLOWED_ORIGINS=http://your-server:3001,http://your-server:3000,file://,tauri://localhost
 ```
 
 ## 服务说明
@@ -94,6 +99,30 @@ ALLOWED_ORIGINS=http://localhost:3001,http://localhost:5173
 | Frontend | 3001 | Web管理界面（React + Nginx） |
 | Backend | 3000 | API服务（Node.js + Express） |
 | PostgreSQL | 5432 | 数据库（内部） |
+
+## CORS配置说明
+
+Chat Electron应用需要访问Hub后端API，必须正确配置CORS。
+
+**本地开发**（Chat应用和Hub在同一台机器）：
+```env
+ALLOWED_ORIGINS=http://localhost:3001,http://localhost:5173,file://,tauri://localhost
+```
+
+**远程部署**（Chat应用连接到远程服务器）：
+```env
+# 添加服务器的IP/域名
+ALLOWED_ORIGINS=http://your-server-ip:3001,http://your-server-ip:3000,file://,tauri://localhost
+
+# 或使用域名
+ALLOWED_ORIGINS=https://hub.yourdomain.com,file://,tauri://localhost
+```
+
+**包含的origins说明**：
+- `http://localhost:3001` - Hub Web前端
+- `http://localhost:5173` - 开发环境
+- `file://` - Chat Electron应用（file协议）
+- `tauri://localhost` - Tauri应用协议
 
 ## 故障排除
 
