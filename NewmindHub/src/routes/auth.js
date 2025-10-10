@@ -7,16 +7,43 @@ import logger from '../utils/logger.js';
 
 const router = express.Router();
 
+// Get auth configuration (e.g., invite code requirement)
+router.get('/config', (req, res) => {
+  try {
+    const inviteCodes = process.env.INVITE_CODES;
+    const inviteCodeRequired = !!(inviteCodes && inviteCodes.trim());
+    
+    res.json(createResponse({
+      inviteCodeRequired
+    }));
+  } catch (error) {
+    logger.error('Config fetch error:', error);
+    res.status(500).json(createResponse(null, 'Failed to fetch configuration'));
+  }
+});
+
 // Register new user
 router.post('/register', async (req, res) => {
   try {
-    const { email, username, password } = req.body;
+    const { email, username, password, inviteCode } = req.body;
 
     // Validate input
     if (!email || !username || !password) {
       return res.status(400).json(
         createResponse(null, 'Email, username and password are required')
       );
+    }
+
+    // Check invite code if enabled
+    const inviteCodes = process.env.INVITE_CODES;
+    if (inviteCodes && inviteCodes.trim()) {
+      const validCodes = inviteCodes.split(',').map(code => code.trim());
+      
+      if (!inviteCode || !validCodes.includes(inviteCode)) {
+        return res.status(400).json(
+          createResponse(null, 'Invalid or missing invite code')
+        );
+      }
     }
 
     // Check if user exists

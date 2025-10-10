@@ -82,12 +82,19 @@ export const AuthProvider = ({ children }) => {
     throw new Error(response.data.error || 'Login failed');
   };
 
-  const register = async (email, username, password) => {
-    const response = await api.post('/api/auth/register', {
+  const register = async (email, username, password, inviteCode = null) => {
+    const requestData = {
       email,
       username,
       password
-    });
+    };
+    
+    // Only include inviteCode if provided
+    if (inviteCode) {
+      requestData.inviteCode = inviteCode;
+    }
+    
+    const response = await api.post('/api/auth/register', requestData);
     if (response.data.status === 'success') {
       localStorage.setItem('authToken', response.data.data.token);
       setUser(response.data.data.user);

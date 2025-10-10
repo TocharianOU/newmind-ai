@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../config/api';
 import './Auth.css';
 
 const Register = () => {
@@ -10,10 +11,31 @@ const Register = () => {
     email: '',
     username: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    inviteCode: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [inviteCodeRequired, setInviteCodeRequired] = useState(false);
+  const [configLoading, setConfigLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch auth config to check if invite code is required
+    const fetchConfig = async () => {
+      try {
+        const response = await api.get('/api/auth/config');
+        if (response.data.status === 'success') {
+          setInviteCodeRequired(response.data.data.inviteCodeRequired);
+        }
+      } catch (error) {
+        console.error('Failed to fetch auth config:', error);
+      } finally {
+        setConfigLoading(false);
+      }
+    };
+    
+    fetchConfig();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,7 +55,12 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await register(formData.email, formData.username, formData.password);
+      await register(
+        formData.email, 
+        formData.username, 
+        formData.password,
+        inviteCodeRequired ? formData.inviteCode : null
+      );
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
@@ -117,10 +144,26 @@ const Register = () => {
             />
           </div>
 
+          {inviteCodeRequired && (
+            <div className="form-group">
+              <label htmlFor="inviteCode">Invite Code</label>
+              <input
+                type="text"
+                id="inviteCode"
+                name="inviteCode"
+                value={formData.inviteCode}
+                onChange={handleChange}
+                required
+                placeholder="Enter your invite code"
+                autoComplete="off"
+              />
+            </div>
+          )}
+
           <button
             type="submit"
             className="auth-button"
-            disabled={loading}
+            disabled={loading || configLoading}
           >
             {loading ? 'Creating account...' : 'Sign up'}
           </button>
