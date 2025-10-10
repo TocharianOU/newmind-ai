@@ -20,7 +20,8 @@
     "savingChanges": "保存中...",
     "saveChanges": "保存更改",
     "savePreferences": "保存偏好设置",
-    "notAvailable": "暂无"
+    "notAvailable": "暂无",
+    "download": "下载"
   },
   "navigation": {
     "dashboard": "仪表板",
@@ -137,5 +138,34 @@
     "language": "语言",
     "notifications": "通知",
     "emailNotifications": "邮件通知"
+  },
+  "home": {
+    "heroTitle": "欢迎使用 NewmindChat",
+    "heroSubtitle": "您的 AI 智能对话助手",
+    "heroDescription": "体验无缝的 AI 交互，强大的功能和直观的设计",
+    "getStarted": "开始使用",
+    "signIn": "登录",
+    "whyChoose": "为什么选择 NewmindChat？",
+    "feature1Title": "AI 对话",
+    "feature1Desc": "与先进的 AI 模型进行自然、智能的对话",
+    "feature2Title": "多模型支持",
+    "feature2Desc": "在一个平台访问包括 Claude、GPT 等多种 AI 模型",
+    "feature3Title": "MCP 集成",
+    "feature3Desc": "通过模型上下文协议工具集成扩展功能",
+    "feature4Title": "云端同步",
+    "feature4Desc": "在所有设备上无缝访问您的对话历史",
+    "downloadTitle": "下载 NewmindChat",
+    "downloadSubtitle": "选择您的平台",
+    "loadingDownloads": "正在加载下载选项...",
+    "recommended": "推荐",
+    "windows": "Windows",
+    "macos": "macOS",
+    "linux": "Linux",
+    "downloadFor": "下载",
+    "appleSilicon": "Apple Silicon",
+    "intelMac": "Intel Mac",
+    "linuxX64": "Linux x64",
+    "linuxArm64": "Linux ARM64",
+    "copyright": "© 2025 NewmindChat. 保留所有权利。"
   }
 }

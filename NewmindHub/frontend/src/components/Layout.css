@@ -317,3 +317,29 @@
   color: var(--text-secondary);
   margin: 0;
 }
+
+/* Download Link */
+.download-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(103, 126, 234, 0.1);
+  border: 1px solid rgba(103, 126, 234, 0.3);
+  border-radius: 8px;
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.download-link:hover {
+  background: rgba(103, 126, 234, 0.2);
+  border-color: #667eea;
+  transform: translateY(-1px);
+}
+
+.download-link svg {
+  width: 20px;
+  height: 20px;
+}

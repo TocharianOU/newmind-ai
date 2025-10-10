@@ -20,7 +20,8 @@
     "savingChanges": "Saving...",
     "saveChanges": "Save Changes",
     "savePreferences": "Save Preferences",
-    "notAvailable": "N/A"
+    "notAvailable": "N/A",
+    "download": "Download"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -137,5 +138,34 @@
     "language": "Language",
     "notifications": "Notifications",
     "emailNotifications": "Email Notifications"
+  },
+  "home": {
+    "heroTitle": "Welcome to NewmindChat",
+    "heroSubtitle": "Your AI-Powered Conversation Assistant",
+    "heroDescription": "Experience seamless AI interactions with powerful features and intuitive design",
+    "getStarted": "Get Started",
+    "signIn": "Sign In",
+    "whyChoose": "Why Choose NewmindChat?",
+    "feature1Title": "AI Conversations",
+    "feature1Desc": "Engage in natural, intelligent conversations powered by advanced AI models",
+    "feature2Title": "Multiple Models",
+    "feature2Desc": "Access various AI models including Claude, GPT, and more in one place",
+    "feature3Title": "MCP Integration",
+    "feature3Desc": "Extend functionality with Model Context Protocol tool integrations",
+    "feature4Title": "Cloud Sync",
+    "feature4Desc": "Access your conversation history across all your devices seamlessly",
+    "downloadTitle": "Download NewmindChat",
+    "downloadSubtitle": "Choose your platform",
+    "loadingDownloads": "Loading download options...",
+    "recommended": "Recommended",
+    "windows": "Windows",
+    "macos": "macOS",
+    "linux": "Linux",
+    "downloadFor": "Download for",
+    "appleSilicon": "Apple Silicon",
+    "intelMac": "Intel Mac",
+    "linuxX64": "Linux x64",
+    "linuxArm64": "Linux ARM64",
+    "copyright": "© 2025 NewmindChat. All rights reserved."
   }
 }
