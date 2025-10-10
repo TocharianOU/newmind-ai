@@ -9,8 +9,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install dependencies
-RUN npm ci --only=production && \
+# Install dependencies (使用npm install代替npm ci)
+RUN npm install --omit=dev && \
     npx prisma generate
 
 # Production image
