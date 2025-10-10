@@ -153,5 +153,5 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   logger.info(`🚀 NewmindHub server running on port ${PORT}`);
   logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
-  logger.info(`🌐 CORS origins: ${corsOrigins.join(',')}`);
+  logger.info(`🌐 CORS origins: ${allowedOrigins.join(',')}`);
 });
