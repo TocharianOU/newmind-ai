@@ -12,17 +12,9 @@ interface EmbeddedLoginProps {
 const EmbeddedLogin: React.FC<EmbeddedLoginProps> = ({ onCancel, onSuccess }) => {
   const { t } = useTranslation()
   
-  // Test accounts for quick selection
-  const testAccounts = [
-    { email: 'base@test.com', password: 'password123', plan: 'BASE', description: 'BASE 计划 - 基础功能' },
-    { email: 'pro@test.com', password: 'password123', plan: 'PRO', description: 'PRO 计划 - 专业功能' },
-    { email: 'enterprise@test.com', password: 'password123', plan: 'ENTERPRISE', description: 'ENTERPRISE 计划 - 全部功能' }
-  ]
-  
-  // Default to enterprise test account for development
   const [formData, setFormData] = useState({
-    email: 'enterprise@test.com',
-    password: 'password123'
+    email: '',
+    password: ''
   })
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -95,18 +87,6 @@ const EmbeddedLogin: React.FC<EmbeddedLoginProps> = ({ onCancel, onSuccess }) =>
     }
   }
 
-  const handleAccountSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedAccount = testAccounts.find(acc => acc.email === e.target.value)
-    if (selectedAccount) {
-      setFormData({
-        email: selectedAccount.email,
-        password: selectedAccount.password
-      })
-      // Clear any existing errors
-      setErrors({})
-    }
-  }
-
   return (
     <div className="embedded-login-overlay">
       <div className="embedded-login-modal">
@@ -121,42 +101,6 @@ const EmbeddedLogin: React.FC<EmbeddedLoginProps> = ({ onCancel, onSuccess }) =>
         </div>
         
         <form onSubmit={handleSubmit} className="embedded-login-form">
-          {/* Test account selection */}
-          <div style={{ 
-            padding: '12px', 
-            backgroundColor: '#e8f4f8', 
-            borderRadius: '6px',
-            marginBottom: '15px',
-            fontSize: '13px',
-            color: '#0066cc',
-            border: '1px solid #b3d9e6'
-          }}>
-            <strong>🔑 选择测试账号</strong><br/>
-            <div style={{ marginTop: '8px' }}>
-              <select 
-                value={formData.email} 
-                onChange={handleAccountSelect}
-                style={{
-                  width: '100%',
-                  padding: '6px 8px',
-                  borderRadius: '4px',
-                  border: '1px solid #ccc',
-                  fontSize: '12px',
-                  backgroundColor: 'white'
-                }}
-              >
-                {testAccounts.map(account => (
-                  <option key={account.email} value={account.email}>
-                    {account.email} - {account.description}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div style={{fontSize: '11px', color: '#666', marginTop: '5px'}}>
-              所有测试账号密码均为：password123
-            </div>
-          </div>
-          
           {errors.general && (
             <div className="error-message general-error">
               {errors.general}
