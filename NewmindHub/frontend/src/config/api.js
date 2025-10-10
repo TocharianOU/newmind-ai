@@ -26,8 +26,11 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Unauthorized - clear token and redirect to login
+    // 只在非登录/注册页面处理401错误（避免登录失败时页面刷新）
+    const isAuthPage = window.location.pathname === '/login' || window.location.pathname === '/register';
+    
+    if (error.response?.status === 401 && !isAuthPage) {
+      // Unauthorized - clear token and redirect to login (仅在已登录状态)
       localStorage.removeItem('authToken');
       window.location.href = '/login';
     }
