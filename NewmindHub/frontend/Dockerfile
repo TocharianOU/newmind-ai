@@ -1,5 +1,6 @@
 # Frontend Dockerfile for NewmindHub
-FROM node:20-alpine AS builder
+FROM node:20-alpine
+
 WORKDIR /app
 
 # 接收构建参数
@@ -18,21 +19,15 @@ COPY . .
 # Build the app
 RUN npm run build
 
-# Production image with nginx
-FROM nginx:alpine AS runner
-
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Copy built files from builder
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Install serve for production
+RUN npm install -g serve
 
 # Expose port
-EXPOSE 80
+EXPOSE 3001
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:80/ || exit 1
+  CMD wget --quiet --tries=1 --spider http://localhost:3001/ || exit 1
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start serve on port 3001
+CMD ["serve", "-s", "dist", "-l", "3001"]

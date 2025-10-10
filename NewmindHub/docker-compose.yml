@@ -8,10 +8,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-newmindhub_auth}
+    ports:
+      - "${POSTGRES_PORT:-25432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
@@ -46,7 +46,7 @@ services:
       DOWNLOAD_URL_LINUX_X64: ${DOWNLOAD_URL_LINUX_X64:-}
       DOWNLOAD_URL_LINUX_ARM64: ${DOWNLOAD_URL_LINUX_ARM64:-}
     ports:
-      - "${BACKEND_PORT:-3000}:3000"
+      - "${BACKEND_PORT:-23000}:3000"
     volumes:
       - ./logs:/app/logs
     healthcheck:
@@ -70,9 +70,9 @@ services:
     depends_on:
       - backend
     ports:
-      - "${FRONTEND_PORT:-3001}:80"
+      - "${FRONTEND_PORT:-23001}:3001"
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/"]
       interval: 30s
       timeout: 3s
       retries: 3
