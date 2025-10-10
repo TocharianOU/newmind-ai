@@ -1,6 +1,6 @@
 {
   "header": {
-    "title": "Newmind AI",
+    "title": "NewmindChat",
     "openSidebar": "Open sidebar",
     "closeSidebar": "Close sidebar"
   },
@@ -47,7 +47,7 @@
     }
   },
   "welcome": {
-    "title": "Welcome to NewmindAI",
+    "title": "Welcome to NewmindChat",
     "subtitle": "Start your AI conversation",
     "startChat": "Start Chat"
   },

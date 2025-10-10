@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "com.newmind.agent",
-  "productName": "Newmind Agent",
+  "appId": "com.newmind.chat",
+  "productName": "NewmindChat",
   "copyright": "Copyright © 2025 Newmind Technologies",
   "asar": true,
   "artifactName": "${productName}-electron-${version}-${os}-${arch}.${ext}",
