@@ -1,6 +1,9 @@
 # Backend Dockerfile for NewmindHub
 FROM node:20-alpine AS base
 
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl
+
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
@@ -14,8 +17,11 @@ RUN npm install --omit=dev && \
     npx prisma generate
 
 # Production image
-FROM base AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
+
+# Install OpenSSL for Prisma runtime
+RUN apk add --no-cache openssl
 
 # Set to production
 ENV NODE_ENV=production
