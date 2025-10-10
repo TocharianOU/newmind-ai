@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import Layout from './components/Layout';
+import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -52,6 +53,9 @@ const PublicRoute = ({ children }) => {
 function AppRoutes() {
   return (
     <Routes>
+      {/* Home/Landing Page */}
+      <Route path="/" element={<Home />} />
+
       {/* Public Routes */}
       <Route
         path="/login"
@@ -72,17 +76,25 @@ function AppRoutes() {
 
       {/* Protected Routes */}
       <Route
-        path="/"
+        path="/dashboard"
         element={
           <ProtectedRoute>
-            <Layout />
+            <Layout>
+              <Dashboard />
+            </Layout>
           </ProtectedRoute>
         }
-      >
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="settings" element={<Settings />} />
-      </Route>
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Settings />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
 
       {/* 404 */}
       <Route path="*" element={<Navigate to="/" replace />} />

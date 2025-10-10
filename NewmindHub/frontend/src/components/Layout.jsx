@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Link, useLocation, Outlet } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Layout.css';
 
-const Layout = () => {
+const Layout = ({ children }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { t } = useLanguage();
@@ -117,7 +117,7 @@ const Layout = () => {
 
         {/* Page Content */}
         <main className="page-content">
-          <Outlet />
+          {children}
         </main>
       </div>
 

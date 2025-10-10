@@ -22,6 +22,28 @@ router.get('/config', (req, res) => {
   }
 });
 
+// Get download configuration (public endpoint)
+router.get('/download-config', (req, res) => {
+  try {
+    res.json(createResponse({
+      windows: {
+        x64: process.env.DOWNLOAD_URL_WINDOWS_X64 || ''
+      },
+      macos: {
+        intel: process.env.DOWNLOAD_URL_MACOS_INTEL || '',
+        appleSilicon: process.env.DOWNLOAD_URL_MACOS_APPLE_SILICON || ''
+      },
+      linux: {
+        x64: process.env.DOWNLOAD_URL_LINUX_X64 || '',
+        arm64: process.env.DOWNLOAD_URL_LINUX_ARM64 || ''
+      }
+    }));
+  } catch (error) {
+    logger.error('Download config fetch error:', error);
+    res.status(500).json(createResponse(null, 'Failed to fetch download configuration'));
+  }
+});
+
 // Register new user
 router.post('/register', async (req, res) => {
   try {
