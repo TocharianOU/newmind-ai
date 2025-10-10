@@ -37,22 +37,30 @@ const wss = new WebSocketServer({
 });
 
 // CORS configuration
-const corsOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) || [
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  'http://localhost:3001'
 ];
 
 // Add Hub frontend URL if specified
 if (process.env.HUB_FRONTEND_URL) {
-  corsOrigins.push(process.env.HUB_FRONTEND_URL);
+  allowedOrigins.push(process.env.HUB_FRONTEND_URL);
 }
 
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: corsOrigins,
+  origin: (origin, callback) => {
+    // 允许通配符或特定origins
+    if (allowedOrigins.includes('*') || !origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
