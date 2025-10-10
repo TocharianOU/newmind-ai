@@ -62,12 +62,12 @@ export const MODEL_CONFIG = {
 export const PLAN_LIMITS = {
   BASE: {
     models: ['newmind-medium','newmind-strong','newmind-small'],
-    dailyTokens: 100000,
-    mcpServers: 10
+    dailyTokens: 10000000,
+    mcpServers: 100
   },
   PRO: {
     models: [ 'newmind-medium','newmind-strong','newmind-small'],
-    dailyTokens: 1000000,
+    dailyTokens: 50000000,
     mcpServers: 20
   },
   ENTERPRISE: {
