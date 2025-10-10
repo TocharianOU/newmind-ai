@@ -222,6 +222,10 @@
     }
 
     .history-footer-user {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
       .user-info {
         display: flex;
         align-items: center;
@@ -231,6 +235,8 @@
         background: var(--bg-op-dark-extremeweak);
         transition: background $transition-fast;
         cursor: pointer;
+        flex: 1;
+        min-width: 0;
 
         &:hover {
           background: var(--bg-op-dark-ultraweak);
@@ -271,6 +277,36 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
           }
+        }
+      }
+
+      .hub-jump-btn {
+        width: 32px;
+        height: 32px;
+        padding: 7px;
+        background: none;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all $transition-fast;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-pri-blue);
+        flex-shrink: 0;
+
+        &:hover {
+          background: var(--bg-op-blue-ultraweak);
+        }
+
+        &:active {
+          transform: scale(0.95);
+        }
+
+        svg {
+          width: 18px;
+          height: 18px;
+          fill: currentColor;
         }
       }
     }
