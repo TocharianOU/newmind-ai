@@ -17,12 +17,24 @@ const Home = () => {
   const [detected, setDetected] = useState({ os: 'unknown', arch: 'x64' });
   const [loading, setLoading] = useState(true);
 
-  // Redirect to dashboard if already logged in
+  // Redirect to dashboard if already logged in (unless accessing download section)
   useEffect(() => {
-    if (user) {
+    if (user && window.location.hash !== '#download') {
       navigate('/dashboard');
     }
   }, [user, navigate]);
+
+  // Scroll to download section if hash is present
+  useEffect(() => {
+    if (window.location.hash === '#download') {
+      setTimeout(() => {
+        const downloadSection = document.getElementById('download');
+        if (downloadSection) {
+          downloadSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }, []);
 
   // Detect user's platform and architecture
   useEffect(() => {
