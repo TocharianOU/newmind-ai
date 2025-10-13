@@ -9,11 +9,11 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { openOverlayAtom } from "../../atoms/layerState"
 import { useTranslation } from "react-i18next"
 import { imgPrefix } from "../../ipc"
-import { OAP_ROOT_URL } from "../../../shared/oap"
-import { openUrl } from "../../ipc/util"
 import { isLoggedInOAPAtom, oapUserAtom, OAPLevelAtom } from "../../atoms/oapState"
 import { version } from "../../../package.json"
 import { settingTabAtom } from "../../atoms/globalState"
+import { ENV_CONFIG } from "../../config/env"
+import { oapGetToken } from "../../ipc/oap"
 
 const tabs = ["Tools", "Model", "Account", "System"] as const
 export type Tab = (typeof tabs)[number]
@@ -30,10 +30,30 @@ const Setting = ({ _tab }: { _tab: Tab }) => {
     setSettingTab(_tab)
   }, [_tab])
 
-  const handleOAP = () => {
-    // TODO: 后期可能需要根据不同环境配置不同的URL
-    // 当前跳转到NewmindHub的dashboard页面
-    openUrl(`${OAP_ROOT_URL}/dashboard`)
+  // 打开NewmindHub Dashboard（带token自动登录）
+  const handleOAP = async () => {
+    try {
+      const token = await oapGetToken()
+      const url = `${ENV_CONFIG.HUB_BASE_URL}/dashboard${token ? `?token=${token}` : ''}`
+      console.log('🔗 Opening NewmindHub Dashboard:', url)
+      
+      if (window.ipcRenderer && window.ipcRenderer.invoke) {
+        // 使用IPC在外部浏览器中打开
+        window.ipcRenderer.invoke('open-external-url', url)
+      } else {
+        // 降级方案：使用window.open
+        window.open(url, '_blank')
+      }
+    } catch (error) {
+      console.error('🔗 Error opening NewmindHub:', error)
+      // 即使获取token失败，也尝试打开（不带token）
+      const fallbackUrl = `${ENV_CONFIG.HUB_BASE_URL}/dashboard`
+      if (window.ipcRenderer && window.ipcRenderer.invoke) {
+        window.ipcRenderer.invoke('open-external-url', fallbackUrl)
+      } else {
+        window.open(fallbackUrl, '_blank')
+      }
+    }
   }
 
   return (
