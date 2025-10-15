@@ -15,6 +15,7 @@ import Tooltip from "../../../../components/Tooltip"
 import PopupConfirm from "../../../../components/PopupConfirm"
 import Button from "../../../../components/Button"
 import Switch from "../../../../components/Switch"
+import Select from "../../../../components/Select"
 
 export interface customListProps {
   name: string
@@ -901,7 +902,7 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
             />
           </div>
           {/* Transport */}
-          {/* <div className="field-item">
+          <div className="field-item">
             <label>Transport</label>
             <Select
               options={FieldType.transport.options.map((option) => ({
@@ -919,7 +920,17 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
               value={currentMcpServers.transport ?? FieldType.transport.options[0]}
               onSelect={(value) => handleCustomChange("transport", value)}
             />
-          </div> */}
+          </div>
+          {/* URL - for HTTP/SSE/Streamable transports */}
+          <div className="field-item">
+            <label>URL</label>
+            <input
+              placeholder={t("tools.urlPlaceholder")}
+              type="text"
+              value={currentMcpServers.url || ""}
+              onChange={(e) => handleCustomChange("url", e.target.value)}
+            />
+          </div>
           {/* Args */}
           <div className="field-item">
             <label>
