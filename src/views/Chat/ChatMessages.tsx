@@ -125,7 +125,7 @@ const ChatMessages = ({ messages, isLoading, onRetry, onEdit }: Props) => {
       <div className="chat-messages" ref={scrollContainerRef}>
         {messages.map((message, index) => (
           <Message
-            key={index}
+            key={message.id}
             text={message.text}
             isSent={message.isSent}
             timestamp={message.timestamp}
