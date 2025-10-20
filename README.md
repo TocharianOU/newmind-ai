@@ -84,8 +84,17 @@ newmind-ai/
 │   └── preload/             # 预加载脚本
 ├── src/                     # 渲染进程代码（React）
 ├── prebuilt/scripts/        # 预构建的脚本
-│   ├── echo.js             # 基础脚本
-│   └── mcp-server-kibana/   # Kibana MCP 服务器
+│   ├── mcp-server-echo/     # Echo 测试服务器
+│   │   ├── dist/           # 构建输出
+│   │   ├── node_modules/   # 独立依赖
+│   │   ├── src/           # 源代码
+│   │   └── package.json   # 独立配置
+│   ├── mcp-server-kibana/   # Kibana MCP 服务器
+│   │   ├── dist/           # 构建输出
+│   │   ├── node_modules/   # 独立依赖
+│   │   ├── src/           # 源代码
+│   │   └── package.json   # 独立配置
+│   └── mcp-server-elasticsearch-sl/  # Elasticsearch MCP 服务器
 │       ├── dist/           # 构建输出
 │       ├── node_modules/   # 独立依赖
 │       ├── src/           # 源代码
@@ -173,9 +182,15 @@ MCP Kibana 服务器通过以下配置连接：
 
 ### 构建脚本说明
 
+- `build:mcp-echo`：构建 MCP Echo 服务器（开发依赖 + 生产依赖）
+- `prepare:mcp-echo`：准备生产环境（只保留生产依赖）
+- `clean:mcp-echo`：清理构建文件
 - `build:mcp-kibana`：构建 MCP Kibana 服务器（开发依赖 + 生产依赖）
 - `prepare:mcp-kibana`：准备生产环境（只保留生产依赖）
 - `clean:mcp-kibana`：清理构建文件
+- `build:mcp-elasticsearch`：构建 MCP Elasticsearch 服务器（开发依赖 + 生产依赖）
+- `prepare:mcp-elasticsearch`：准备生产环境（只保留生产依赖）
+- `clean:mcp-elasticsearch`：清理构建文件
 - `build:electron`：构建主应用
 
 ## 📋 可用脚本
@@ -188,8 +203,12 @@ MCP Kibana 服务器通过以下配置连接：
 ### 构建脚本
 - `npm run build`：构建渲染进程
 - `npm run build:electron`：构建 Electron 应用
+- `npm run build:mcp-echo`：构建 MCP Echo 服务器
+- `npm run prepare:mcp-echo`：准备生产环境
 - `npm run build:mcp-kibana`：构建 MCP Kibana 服务器
 - `npm run prepare:mcp-kibana`：准备生产环境
+- `npm run build:mcp-elasticsearch`：构建 MCP Elasticsearch 服务器
+- `npm run prepare:mcp-elasticsearch`：准备生产环境
 
 ### 打包脚本
 - `npm run package:darwin`：打包 macOS 应用

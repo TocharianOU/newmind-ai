@@ -217,8 +217,51 @@ async function migratePrebuiltScripts() {
     await fse.copy(rebuiltScriptsPath, scriptsDir)
   }
 
-  // update prebuilt scripts
-  compareFilesAndReplace(path.join(rebuiltScriptsPath, "echo.js"), path.join(scriptsDir, "echo.js"))
+  // copy mcp-server-echo if exists (完整独立复制，包含所有依赖)
+  const echoSourcePath = path.join(rebuiltScriptsPath, "mcp-server-echo")
+  const echoTargetPath = path.join(scriptsDir, "mcp-server-echo")
+  if (await fse.pathExists(echoSourcePath)) {
+    console.log("Processing mcp-server-echo...")
+    
+    const hasNodeModules = await fse.pathExists(path.join(echoSourcePath, "node_modules"))
+    const hasDist = await fse.pathExists(path.join(echoSourcePath, "dist"))
+    
+    if (!hasNodeModules || !hasDist) {
+      console.warn("⚠️  Warning: mcp-server-echo is missing node_modules or dist directory")
+      console.warn("Please run: npm run build:mcp-echo && npm run prepare:mcp-echo")
+    }
+    
+    let needsCopy = true
+    if (await fse.pathExists(echoTargetPath)) {
+      const sourcePackageJson = await fse.readJSON(path.join(echoSourcePath, "package.json")).catch(() => ({}))
+      const targetPackageJson = await fse.readJSON(path.join(echoTargetPath, "package.json")).catch(() => ({}))
+      
+      if (sourcePackageJson.version === targetPackageJson.version) {
+        console.log(`mcp-server-echo v${sourcePackageJson.version} already exists, skipping copy`)
+        needsCopy = false
+      } else {
+        console.log(`Updating mcp-server-echo from v${targetPackageJson.version} to v${sourcePackageJson.version}`)
+        await fse.remove(echoTargetPath)
+      }
+    }
+    
+    if (needsCopy) {
+      console.log("Copying mcp-server-echo (complete with all dependencies)...")
+      await fse.copy(echoSourcePath, echoTargetPath, {
+        dereference: true,
+        filter: (src) => {
+          const relativePath = path.relative(echoSourcePath, src)
+          if (relativePath.includes('.git') || 
+              relativePath.includes('tsconfig.json') ||
+              relativePath.startsWith('src/')) {
+            return false
+          }
+          return true
+        }
+      })
+      console.log("✓ Copied mcp-server-echo successfully")
+    }
+  }
 
   // copy mcp-server-kibana if exists (完整独立复制，包含所有依赖)
   const kibanaSourcePath = path.join(rebuiltScriptsPath, "mcp-server-kibana")
@@ -323,15 +366,6 @@ async function migratePrebuiltScripts() {
       })
       console.log("✓ Copied mcp-server-elasticsearch-sl successfully (complete independent package)")
     }
-  }
-
-  // install dependencies for prebuilt scripts (echo.js 的依赖)
-  await npmInstall(scriptsDir).catch(console.error)
-  await npmInstall(scriptsDir, ["install", "express", "cors"]).catch(console.error)
-
-  // remove echo.cjs
-  if (await fse.pathExists(path.join(scriptsDir, "echo.cjs"))) {
-    await fse.unlink(path.join(scriptsDir, "echo.cjs"))
   }
 }
 

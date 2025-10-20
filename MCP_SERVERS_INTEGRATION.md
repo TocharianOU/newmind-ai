@@ -86,9 +86,13 @@
 newmind-ai/
 ├── prebuilt/
 │   └── scripts/
-│       ├── echo.js                          # Echo 测试服务器
-│       ├── package.json                     # Echo 依赖
-│       ├── package-lock.json
+│       ├── mcp-server-echo/                 # Echo 测试服务器
+│       │   ├── dist/                        # 编译后的代码
+│       │   ├── node_modules/                # 独立依赖
+│       │   ├── src/                         # 源代码
+│       │   ├── package.json
+│       │   ├── package-lock.json
+│       │   └── tsconfig.json
 │       ├── mcp-server-kibana/               # Kibana MCP 服务器
 │       │   ├── dist/                        # 编译后的代码
 │       │   ├── node_modules/                # 独立依赖
@@ -147,7 +151,7 @@ export const DEF_MCP_SERVER_CONFIG = {
       "enabled": true,
       "command": "node",
       "args": [
-        path.join(scriptsDir, "echo.js")
+        path.join(scriptsDir, "mcp-server-echo", "dist", "index.js")
       ]
     },
     "kibana": {

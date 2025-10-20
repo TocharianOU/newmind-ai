@@ -8,7 +8,7 @@ import cors from "cors";
 import express from "express";
 
 // Add delay function for simulating processing time
-function delay(ms) {
+function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
@@ -50,7 +50,7 @@ function createServer() {
 }
 
 // Type guard to validate echo tool arguments
-function isEchoArgs(args) {
+function isEchoArgs(args: any): args is { message: string; delayMs?: number } {
   return (
     typeof args === "object" &&
     args !== null &&
@@ -61,7 +61,7 @@ function isEchoArgs(args) {
 }
 
 // Set up tool handlers for the server
-function setupServerHandlers(server) {
+function setupServerHandlers(server: Server) {
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: [ECHO_TOOL],
   }));
@@ -281,3 +281,4 @@ async function runServer() {
 runServer().catch((error) => {
   process.exit(1);
 });
+
