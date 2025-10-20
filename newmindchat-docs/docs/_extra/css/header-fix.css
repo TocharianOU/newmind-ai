@@ -1,0 +1,17 @@
+/* Logo size control - adjust if needed */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+    max-height: 2.0rem;
+    width: auto;
+    height: auto;
+}
+
+/* Hide duplicate site title next to logo */
+.md-header__topic:first-child {
+    display: none;
+}
+
+/* Keep only the logo visible */
+.md-header__button.md-logo {
+    display: inline-block;
+}

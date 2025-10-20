@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  docs:
+    image: python:3.11-slim
+    working_dir: /docs
+    volumes:
+      - ./:/docs
+    ports:
+      - "8002:8002"
+    command: >
+      sh -c "pip install uv && uv pip install -r requirements.txt && uv run mkdocs serve -a 0.0.0.0:8002"
+    environment:
+      - PYTHONUNBUFFERED=1
