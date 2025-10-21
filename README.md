@@ -1,271 +1,283 @@
 # NewmindChat
 
-一个基于 Electron 的智能代理应用，集成了 Kibana MCP 服务器，支持 Elasticsearch 数据分析和可视化。
+AI 驱动的桌面聊天应用，支持 MCP 服务器集成和 Hub 市场。
 
-## 🚀 快速开始
+## 项目简介
+
+NewmindChat 是一款现代化的 AI 桌面应用，提供强大的对话能力和工具集成。通过 Model Context Protocol (MCP) 支持，可以连接各种外部服务和数据源，实现真正的 AI 助手体验。
+
+## 主要特性
+
+- **自研 AI 模型**：提供 newmind-medium、newmind-strong、newmind-small 三种模型
+- **MCP 集成**：支持 Elasticsearch、Kibana、GitHub 等多种 MCP 服务器
+- **Hub 市场**：预配置模型和工具，一键安装使用
+- **跨平台支持**：支持 macOS、Windows 和 Linux
+- **本地优先**：数据本地存储，保护隐私
+- **流式响应**：实时显示 AI 响应内容
+
+## 项目架构
+
+本项目采用 Monorepo 架构，包含以下主要组件：
+
+### 1. NewmindChat Desktop（主应用）
+
+基于 Electron + React 的桌面应用程序。
+
+**技术栈**：
+- Electron 31.x
+- React 18.x
+- TypeScript
+- Vite
+
+**主要功能**：
+- AI 对话界面
+- 模型管理
+- MCP 服务器配置
+- 会话历史管理
+
+### 2. NewmindHub（Hub 服务）
+
+用户认证、模型管理和订阅系统。
+
+**技术栈**：
+- Node.js + Express
+- PostgreSQL
+- Prisma ORM
+- React（前端）
+
+**主要功能**：
+- 用户认证和授权
+- 模型代理和计费
+- 订阅计划管理
+- 使用统计和分析
+
+**文档**：[NewmindHub README](./NewmindHub/README.md)
+
+### 3. MCP Host（MCP 服务）
+
+Model Context Protocol 服务器主机，管理和运行 MCP 插件。
+
+**技术栈**：
+- Python 3.12+
+- LangChain / LangGraph
+- FastAPI
+- SQLAlchemy
+
+**主要功能**：
+- MCP 服务器托管
+- 多模型支持
+- 会话管理
+- HTTP API 和 WebSocket
+
+**文档**：[MCP Host README](./mcp-host/README.md)
+
+### 4. 用户文档网站
+
+基于 MkDocs Material 的用户文档站点。
+
+**技术栈**：
+- MkDocs
+- Python
+- Docker
+
+**文档**：[文档 README](./newmindchat-docs/README.md)
+
+## 快速开始
+
+### 下载应用
+
+访问官方下载页面获取最新版本：
+
+**[立即下载 NewmindChat](http://xiaopenges.tocharian.eu:23001/)**
+
+支持平台：
+- macOS（Apple Silicon / Intel）
+- Windows（x64）
+- Linux（x64 AppImage）
+
+### 注册账号
+
+访问 NewmindHub 创建账号并登录：
+
+**[访问 NewmindHub](http://xiaopenges.tocharian.eu:23001/login)**
+
+### 查看文档
+
+本地运行文档站点：
+
+```bash
+cd newmindchat-docs
+uv run mkdocs serve -a 0.0.0.0:8002
+```
+
+访问 http://localhost:8002 查看完整文档。
+
+## 开发指南
 
 ### 环境要求
 
-- Node.js >= 18
-- npm >= 8
-- Git
+- **Node.js**: 18.x 或更高
+- **Python**: 3.12 或更高
+- **PostgreSQL**: 14.x 或更高（用于 Hub）
+- **uv**: Python 包管理器
 
-### 安装和构建
+### 安装依赖
 
-#### 1. 克隆项目
 ```bash
-git clone https://github.com/TocharianOU/newmind-ai.git
-cd newmind-ai
-```
-
-#### 2. 安装依赖
-```bash
+# 主应用
 npm install
+
+# NewmindHub
+cd NewmindHub
+npm install
+
+# MCP Host
+cd mcp-host
+uv sync --frozen
+
+# 文档
+cd newmindchat-docs
+uv pip install -r requirements.txt
 ```
 
-#### 3. 构建 MCP Kibana 服务器
-```bash
-# 构建完整的 MCP Kibana 服务器（包含所有依赖）
-npm run build:mcp-kibana
+### 启动开发环境
 
-# 准备生产环境的 MCP Kibana（只保留生产依赖）
-npm run prepare:mcp-kibana
+#### 主应用
+
+```bash
+# 开发模式
+npm run dev
+
+# 或使用启动脚本
+./start-dev.sh
 ```
 
-#### 4. 构建主应用
-```bash
-npm run build:electron
-```
+#### NewmindHub
 
-### 开发模式
+参考 [NewmindHub/START.md](./NewmindHub/START.md)
 
 ```bash
-# 启动开发服务器（包含热重载）
+cd NewmindHub
 npm run dev
 ```
 
-### 生产模式
+#### MCP Host
 
-#### 方法一：直接运行构建后的应用
+参考 [mcp-host/START.md](./mcp-host/START.md)
+
 ```bash
-npm run build:electron
-# 然后运行构建后的应用
-./dist-electron/main/index.js
+cd mcp-host
+source .venv/bin/activate
+dive_httpd
 ```
 
-#### 方法二：打包成可执行文件
+#### 文档站点
 
-**macOS:**
+参考 [newmindchat-docs/START.md](./newmindchat-docs/START.md)
+
 ```bash
-# 打包所有架构
-npm run package:darwin
-
-# 或者分别打包
-npm run package:darwin-dmg:arm64  # Apple Silicon
-npm run package:darwin-dmg:x64    # Intel
+cd newmindchat-docs
+uv run mkdocs serve -a 0.0.0.0:8002
 ```
 
-**Windows:**
+### 构建应用
+
 ```bash
-npm run package:windows
+# 构建主应用
+npm run build
+
+# 打包为可执行文件
+npm run build:mac     # macOS
+npm run build:win     # Windows
+npm run build:linux   # Linux
 ```
 
-**Linux:**
-```bash
-npm run package:linux
-```
+## 子项目文档
 
-## 📦 项目结构
+每个子项目都有详细的构建和启动文档：
 
-```
-newmind-ai/
-├── electron/                 # Electron 主进程代码
-│   ├── main/                # 主进程
-│   └── preload/             # 预加载脚本
-├── src/                     # 渲染进程代码（React）
-├── prebuilt/scripts/        # 预构建的脚本
-│   ├── mcp-server-echo/     # Echo 测试服务器
-│   │   ├── dist/           # 构建输出
-│   │   ├── node_modules/   # 独立依赖
-│   │   ├── src/           # 源代码
-│   │   └── package.json   # 独立配置
-│   ├── mcp-server-kibana/   # Kibana MCP 服务器
-│   │   ├── dist/           # 构建输出
-│   │   ├── node_modules/   # 独立依赖
-│   │   ├── src/           # 源代码
-│   │   └── package.json   # 独立配置
-│   └── mcp-server-elasticsearch-sl/  # Elasticsearch MCP 服务器
-│       ├── dist/           # 构建输出
-│       ├── node_modules/   # 独立依赖
-│       ├── src/           # 源代码
-│       └── package.json   # 独立配置
-├── mcp-host/               # MCP 主机服务
-└── scripts/               # 构建脚本
-```
+| 项目 | 构建文档 | 启动文档 | 项目说明 |
+|------|----------|----------|----------|
+| **NewmindHub** | [BUILD.md](./NewmindHub/BUILD.md) | [START.md](./NewmindHub/START.md) | [README.md](./NewmindHub/README.md) |
+| **MCP Host** | [BUILD.md](./mcp-host/BUILD.md) | [START.md](./mcp-host/START.md) | [README.md](./mcp-host/README.md) |
+| **文档站点** | [BUILD.md](./newmindchat-docs/BUILD.md) | [START.md](./newmindchat-docs/START.md) | [README.md](./newmindchat-docs/README.md) |
 
-## 🔧 MCP Kibana 服务器
+## 订阅计划
 
-### 特性
+NewmindChat 提供灵活的订阅计划：
 
-- **完全独立**：包含所有必要的 Node.js 依赖
-- **自动复制**：应用启动时自动复制到用户目录
-- **版本控制**：支持版本检查和更新
-- **多平台支持**：支持 macOS、Windows、Linux
+### BASE（免费）
+- 每日 10M tokens
+- newmind-medium 和 newmind-small 模型
+- 最多 100 个 MCP 服务器
 
-### 配置
+### PRO
+- 每日 50M tokens
+- newmind-medium 和 newmind-small 模型
+- 最多 20 个 MCP 服务器
+- 优先技术支持
 
-MCP Kibana 服务器通过以下配置连接：
+### ENTERPRISE
+- 无限 tokens
+- 所有模型（包括 newmind-strong）
+- 无限 MCP 服务器
+- 专属客户成功经理
+- SLA 服务保障
 
-```json
-{
-  "mcpServers": {
-    "kibana": {
-      "enabled": true,
-      "command": "node",
-      "args": ["~/.newmind/scripts/mcp-server-kibana/dist/index.js"],
-      "env": {
-        "KIBANA_URL": "http://your-kibana-url:5601",
-        "KIBANA_USERNAME": "your-username",
-        "KIBANA_PASSWORD": "your-password"
-      }
-    }
-  }
-}
-```
+详细定价：[订阅计划文档](./newmindchat-docs/docs/hub/subscription.md)
 
-### 支持的操作
+## 模型定价
 
-- **搜索 Kibana 对象**：搜索仪表板、可视化、索引模式等
-- **获取对象详情**：获取特定对象的详细信息
-- **创建对象**：创建新的 Kibana 对象
-- **更新对象**：更新现有对象
-- **删除对象**：删除不需要的对象
-- **批量操作**：支持批量创建、更新、删除
+| 模型 | 输入价格 | 输出价格 | 适用场景 |
+|------|----------|----------|----------|
+| newmind-medium | $3/1M | $15/1M | 通用场景，推荐使用 |
+| newmind-strong | $15/1M | $75/1M | 复杂推理，企业专属 |
+| newmind-small | $1/1M | $2/1M | 简单任务，快速响应 |
 
-## 🛠️ 开发指南
+## 技术栈
 
-### 添加新的 MCP 服务器
+### 前端
+- React 18
+- TypeScript
+- Vite
+- Electron
 
-1. **创建服务器目录**：
-   ```bash
-   mkdir prebuilt/scripts/your-mcp-server
-   cd prebuilt/scripts/your-mcp-server
-   ```
+### 后端
+- Node.js + Express
+- Python + FastAPI
+- PostgreSQL
+- Prisma ORM
 
-2. **初始化项目**：
-   ```bash
-   npm init -y
-   # 添加必要的依赖
-   npm install @modelcontextprotocol/sdk
-   ```
+### AI/ML
+- LangChain
+- LangGraph
+- Model Context Protocol
 
-3. **配置独立安装**：
-   创建 `.npmrc` 文件：
-   ```
-   legacy-peer-deps=true
-   install-links=false
-   ```
+### 部署
+- Docker
+- Docker Compose
 
-4. **更新构建脚本**：
-   在 `package.json` 中添加构建命令：
-   ```json
-   {
-     "scripts": {
-       "build:your-mcp": "cd prebuilt/scripts/your-mcp-server && npm install && npm run build",
-       "prepare:your-mcp": "cd prebuilt/scripts/your-mcp-server && npm ci --omit=dev --ignore-scripts"
-     }
-   }
-   ```
+## 贡献指南
 
-5. **更新复制逻辑**：
-   在 `electron/main/service.ts` 中添加复制逻辑
+欢迎贡献代码、报告问题或提出建议！
 
-### 构建脚本说明
+1. Fork 本仓库
+2. 创建功能分支
+3. 提交更改
+4. 推送到分支
+5. 创建 Pull Request
 
-- `build:mcp-echo`：构建 MCP Echo 服务器（开发依赖 + 生产依赖）
-- `prepare:mcp-echo`：准备生产环境（只保留生产依赖）
-- `clean:mcp-echo`：清理构建文件
-- `build:mcp-kibana`：构建 MCP Kibana 服务器（开发依赖 + 生产依赖）
-- `prepare:mcp-kibana`：准备生产环境（只保留生产依赖）
-- `clean:mcp-kibana`：清理构建文件
-- `build:mcp-elasticsearch`：构建 MCP Elasticsearch 服务器（开发依赖 + 生产依赖）
-- `prepare:mcp-elasticsearch`：准备生产环境（只保留生产依赖）
-- `clean:mcp-elasticsearch`：清理构建文件
-- `build:electron`：构建主应用
+## 许可证
 
-## 📋 可用脚本
+本项目采用 MIT 许可证。详见 [LICENSE](./LICENSE) 文件。
 
-### 开发脚本
-- `npm run dev`：启动开发服务器
-- `npm run lint`：代码检查
-- `npm run check`：类型检查
+## 联系我们
 
-### 构建脚本
-- `npm run build`：构建渲染进程
-- `npm run build:electron`：构建 Electron 应用
-- `npm run build:mcp-echo`：构建 MCP Echo 服务器
-- `npm run prepare:mcp-echo`：准备生产环境
-- `npm run build:mcp-kibana`：构建 MCP Kibana 服务器
-- `npm run prepare:mcp-kibana`：准备生产环境
-- `npm run build:mcp-elasticsearch`：构建 MCP Elasticsearch 服务器
-- `npm run prepare:mcp-elasticsearch`：准备生产环境
-
-### 打包脚本
-- `npm run package:darwin`：打包 macOS 应用
-- `npm run package:windows`：打包 Windows 应用
-- `npm run package:linux`：打包 Linux 应用
-
-### 清理脚本
-- `npm run clean:mcp-kibana`：清理 MCP Kibana 构建文件
-
-## 🔍 故障排除
-
-### MCP 服务器无法启动
-
-1. **检查依赖**：
-   ```bash
-   ls -la ~/.newmind/scripts/mcp-server-kibana/node_modules/@modelcontextprotocol
-   ```
-
-2. **重新构建**：
-   ```bash
-   npm run clean:mcp-kibana
-   npm run build:mcp-kibana
-   npm run prepare:mcp-kibana
-   ```
-
-3. **检查日志**：
-   查看应用日志中的错误信息
-
-### 构建失败
-
-1. **清理缓存**：
-   ```bash
-   npm cache clean --force
-   rm -rf node_modules package-lock.json
-   npm install
-   ```
-
-2. **检查 Node.js 版本**：
-   ```bash
-   node --version  # 应该是 >= 18
-   ```
-
-## 📄 许可证
-
-本项目采用 Apache-2.0 许可证。详见 [LICENSE](LICENSE) 文件。
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-## 📞 支持
-
-如有问题，请通过以下方式联系：
-
-- GitHub Issues: [https://github.com/TocharianOU/newmind-ai/issues](https://github.com/TocharianOU/newmind-ai/issues)
-- 邮箱: [your-email@example.com]
+- **官网**: http://xiaopenges.tocharian.eu:23001/
+- **文档**: http://localhost:8002（本地）
+- **问题反馈**: GitHub Issues
 
 ---
 
-**注意**：本项目集成了 Kibana MCP 服务器，需要有效的 Kibana 实例才能使用相关功能。
+**NewmindChat** - 让 AI 对话更强大
+
