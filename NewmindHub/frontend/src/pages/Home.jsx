@@ -2,20 +2,26 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import api from '../config/api';
+import api, { DOCS_URL } from '../config/api';
 import './Home.css';
 
 const Home = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t, language, changeLanguage } = useLanguage();
-  const [downloadUrls, setDownloadUrls] = useState({
+  // Hardcoded default download URLs to avoid env/API differences
+  const DEFAULT_DOWNLOAD_URLS = {
     windows: { x64: '' },
-    macos: { intel: '', appleSilicon: '' },
+    macos: {
+      intel: 'http://xiaopenges.tocharian.eu/download/NewmindChat-electron-1.0.0-mac-x64.dmg',
+      appleSilicon: 'http://xiaopenges.tocharian.eu/download/NewmindChat-electron-1.0.0-mac-arm64.dmg'
+    },
     linux: { x64: '', arm64: '' }
-  });
+  };
+
+  const [downloadUrls, setDownloadUrls] = useState(DEFAULT_DOWNLOAD_URLS);
   const [detected, setDetected] = useState({ os: 'unknown', arch: 'x64' });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // Redirect to dashboard if already logged in (unless accessing download section)
   useEffect(() => {
@@ -65,18 +71,16 @@ const Home = () => {
     setDetected(detectPlatform());
   }, []);
 
-  // Fetch download configuration
+  // Try to fetch download configuration (optional override)
   useEffect(() => {
     const fetchDownloadConfig = async () => {
       try {
         const response = await api.get('/api/auth/download-config');
-        if (response.data.status === 'success') {
-          setDownloadUrls(response.data.data);
+        if (response?.data?.status === 'success' && response?.data?.data) {
+          setDownloadUrls(prev => ({ ...prev, ...response.data.data }));
         }
-      } catch (error) {
-        console.error('Failed to fetch download config:', error);
-      } finally {
-        setLoading(false);
+      } catch (_error) {
+        // Ignore errors: keep hardcoded defaults
       }
     };
 
@@ -168,9 +172,7 @@ const Home = () => {
         <h2 className="section-title">{t('home.downloadTitle')}</h2>
         <p className="section-subtitle">{t('home.downloadSubtitle')}</p>
         
-        {loading ? (
-          <div className="loading">{t('home.loadingDownloads')}</div>
-        ) : (
+        {
           <div className="download-grid">
             {/* Windows */}
             <div className="platform-card">
@@ -252,7 +254,7 @@ const Home = () => {
               </button>
             </div>
           </div>
-        )}
+        }
       </section>
 
       {/* Footer */}
@@ -263,6 +265,10 @@ const Home = () => {
             <Link to="/login">{t('home.signIn')}</Link>
             <span className="separator">·</span>
             <Link to="/register">{t('home.getStarted')}</Link>
+            <span className="separator">·</span>
+            <a href={DOCS_URL} target="_blank" rel="noopener noreferrer">
+              {t('common.documentation')}
+            </a>
           </div>
         </div>
       </footer>

@@ -22,8 +22,9 @@ case $COMMAND in
         echo -e "${GREEN}启动NewmindHub服务...${NC}"
         docker-compose up -d
         echo -e "${GREEN}✓ 服务已启动${NC}"
-        echo -e "${GREEN}前端: http://localhost:3001${NC}"
-        echo -e "${GREEN}后端: http://localhost:3000${NC}"
+        echo -e "${GREEN}前端: http://localhost:23001${NC}"
+        echo -e "${GREEN}后端: http://localhost:23000${NC}"
+        echo -e "${GREEN}文档: http://localhost:23002${NC}"
         ;;
     
     down)

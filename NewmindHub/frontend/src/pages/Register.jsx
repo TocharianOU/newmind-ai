@@ -20,21 +20,21 @@ const Register = () => {
   const [configLoading, setConfigLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch auth config to check if invite code is required
-    const fetchConfig = async () => {
+    // Always require invite code to avoid env variability; fallback to API if needed
+    setInviteCodeRequired(true);
+    setConfigLoading(false);
+
+    // Optional: try to sync from backend (non-blocking)
+    (async () => {
       try {
         const response = await api.get('/api/auth/config');
-        if (response.data.status === 'success') {
-          setInviteCodeRequired(response.data.data.inviteCodeRequired);
+        if (response?.data?.status === 'success') {
+          setInviteCodeRequired(Boolean(response.data.data.inviteCodeRequired));
         }
-      } catch (error) {
-        console.error('Failed to fetch auth config:', error);
-      } finally {
-        setConfigLoading(false);
+      } catch (_error) {
+        // ignore - keep hardcoded true
       }
-    };
-    
-    fetchConfig();
+    })();
   }, []);
 
   const handleSubmit = async (e) => {

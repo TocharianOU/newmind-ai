@@ -4,17 +4,15 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../config/database.js';
 import { createResponse } from '../config/constants.js';
 import logger from '../utils/logger.js';
+import HARDCODED_CONFIG from '../config/hardcoded.js';
 
 const router = express.Router();
 
 // Get auth configuration (e.g., invite code requirement)
 router.get('/config', (req, res) => {
   try {
-    const inviteCodes = process.env.INVITE_CODES;
-    const inviteCodeRequired = !!(inviteCodes && inviteCodes.trim());
-    
     res.json(createResponse({
-      inviteCodeRequired
+      inviteCodeRequired: HARDCODED_CONFIG.INVITE_CODE_ENABLED
     }));
   } catch (error) {
     logger.error('Config fetch error:', error);
@@ -25,19 +23,7 @@ router.get('/config', (req, res) => {
 // Get download configuration (public endpoint)
 router.get('/download-config', (req, res) => {
   try {
-    res.json(createResponse({
-      windows: {
-        x64: process.env.DOWNLOAD_URL_WINDOWS_X64 || ''
-      },
-      macos: {
-        intel: process.env.DOWNLOAD_URL_MACOS_INTEL || '',
-        appleSilicon: process.env.DOWNLOAD_URL_MACOS_APPLE_SILICON || ''
-      },
-      linux: {
-        x64: process.env.DOWNLOAD_URL_LINUX_X64 || '',
-        arm64: process.env.DOWNLOAD_URL_LINUX_ARM64 || ''
-      }
-    }));
+    res.json(createResponse(HARDCODED_CONFIG.DOWNLOAD_URLS));
   } catch (error) {
     logger.error('Download config fetch error:', error);
     res.status(500).json(createResponse(null, 'Failed to fetch download configuration'));
@@ -56,12 +42,9 @@ router.post('/register', async (req, res) => {
       );
     }
 
-    // Check invite code if enabled
-    const inviteCodes = process.env.INVITE_CODES;
-    if (inviteCodes && inviteCodes.trim()) {
-      const validCodes = inviteCodes.split(',').map(code => code.trim());
-      
-      if (!inviteCode || !validCodes.includes(inviteCode)) {
+    // Check invite code
+    if (HARDCODED_CONFIG.INVITE_CODE_ENABLED) {
+      if (!inviteCode || !HARDCODED_CONFIG.VALID_INVITE_CODES.includes(inviteCode)) {
         return res.status(400).json(
           createResponse(null, 'Invalid or missing invite code')
         );

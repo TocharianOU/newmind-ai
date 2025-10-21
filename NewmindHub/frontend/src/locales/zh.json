@@ -21,7 +21,8 @@
     "saveChanges": "保存更改",
     "savePreferences": "保存偏好设置",
     "notAvailable": "暂无",
-    "download": "下载"
+    "download": "下载",
+    "documentation": "文档"
   },
   "navigation": {
     "dashboard": "仪表板",
@@ -30,7 +31,8 @@
     "preferences": "偏好设置",
     "account": "账户",
     "security": "安全",
-    "notifications": "通知"
+    "notifications": "通知",
+    "documentation": "文档"
   },
   "auth": {
     "login": "登录",

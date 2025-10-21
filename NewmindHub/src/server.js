@@ -51,7 +51,26 @@ if (process.env.HUB_FRONTEND_URL) {
 }
 
 // Middleware
-app.use(helmet());
+// 配置 helmet 以兼容 Tor 浏览器和现代前端框架
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // 允许 inline scripts 和 eval（Vite 需要）
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"], // 允许 inline styles
+      imgSrc: ["'self'", "data:", "blob:", "https:", "http:"], // 允许各种来源的图片
+      fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
+      connectSrc: ["'self'", "http://xiaopenges.tocharian.eu:11234", "http://xiaopenges.tocharian.eu:23000", "http://localhost:23000", "https:", "http:"], // 允许 API 连接
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'self'"]
+    }
+  },
+  crossOriginEmbedderPolicy: false, // 关闭以避免下载问题
+  crossOriginResourcePolicy: { policy: "cross-origin" } // 允许跨域资源
+}));
+
+// CORS 配置 - 允许下载地址域名
 app.use(cors({
   origin: (origin, callback) => {
     // 允许通配符或特定origins
@@ -63,7 +82,8 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Range'], // 添加 Range 支持断点续传
+  exposedHeaders: ['Content-Length', 'Content-Range', 'Accept-Ranges'] // 暴露下载相关头
 }));
 app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) }}));
 // 移除所有请求体大小限制，直到大模型报错为止

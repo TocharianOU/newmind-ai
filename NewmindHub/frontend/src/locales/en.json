@@ -21,7 +21,8 @@
     "saveChanges": "Save Changes",
     "savePreferences": "Save Preferences",
     "notAvailable": "N/A",
-    "download": "Download"
+    "download": "Download",
+    "documentation": "Documentation"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -30,7 +31,8 @@
     "preferences": "Preferences",
     "account": "Account",
     "security": "Security",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "documentation": "Documentation"
   },
   "auth": {
     "login": "Login",
