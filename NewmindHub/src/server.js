@@ -17,6 +17,7 @@ import proxyRoutes from './routes/proxy.js';
 import mcpRoutes from './routes/mcp.js';
 import llmRoutes from './routes/llms.js';
 import systemPromptRoutes from './routes/system-prompt.js';
+import paymentRoutes, { stripeWebhookHandler } from './routes/payment.js';
 // import syncRoutes from './routes/sync.js';
 
 // Import middleware
@@ -25,6 +26,7 @@ import { rateLimiter } from './middleware/rateLimiter.js';
 
 // Import utilities
 import logger from './utils/logger.js';
+import { startSubscriptionExpirationCheck } from './utils/subscriptionExpiration.js';
 
 // Create Express app
 const app = express();
@@ -86,6 +88,10 @@ app.use(cors({
   exposedHeaders: ['Content-Length', 'Content-Range', 'Accept-Ranges'] // 暴露下载相关头
 }));
 app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) }}));
+
+// ⚠️ CRITICAL: Stripe webhook 必须在 express.json() 之前挂载，需要原始请求体
+app.post('/api/v1/payment/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
+
 // 移除所有请求体大小限制，直到大模型报错为止
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -110,6 +116,7 @@ app.use('/api/v1', proxyRoutes);
 app.use('/api/v1', mcpRoutes);
 app.use('/api/v1', llmRoutes);
 app.use('/api/v1/system-prompt', systemPromptRoutes);
+app.use('/api/v1/payment', paymentRoutes);
 // app.use('/api/v1/sync', syncRoutes);     // Cloud sync endpoints (still disabled)
 
 // WebSocket handling
@@ -175,4 +182,7 @@ server.listen(PORT, () => {
   logger.info(`🚀 NewmindHub server running on port ${PORT}`);
   logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
   logger.info(`🌐 CORS origins: ${allowedOrigins.join(',')}`);
+  
+  // 启动订阅过期检查定时任务
+  startSubscriptionExpirationCheck();
 });

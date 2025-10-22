@@ -8,6 +8,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
+import Billing from './pages/Billing';
+import PaymentSuccess from './pages/PaymentSuccess';
 import './App.css';
 
 // Protected Route Component
@@ -92,6 +94,24 @@ function AppRoutes() {
             <Layout>
               <Settings />
             </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/billing"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Billing />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payment/success"
+        element={
+          <ProtectedRoute>
+            <PaymentSuccess />
           </ProtectedRoute>
         }
       />

@@ -124,6 +124,53 @@ PORT=3100
 FRONTEND_PORT=3101
 ```
 
+## Docker 构建
+
+### 首次构建和部署
+
+```bash
+# 1. 配置环境变量
+cp env.docker.example .env
+
+# 2. 启动并构建
+./docker-deploy.sh up
+
+# 3. 运行数据库迁移
+./docker-deploy.sh migrate
+```
+
+### 代码更新后重新构建
+
+当你修改了源代码后：
+
+```bash
+# 一键重新构建和部署（推荐）
+./docker-deploy.sh rebuild
+```
+
+这是代码更新后最简单的方式，会自动：
+- 停止所有服务
+- 清除缓存重新构建镜像
+- 启动所有服务
+
+### 部分重建（高级）
+
+如果只修改了特定部分的代码：
+
+```bash
+# 只重建后端
+docker-compose build --no-cache backend
+docker-compose up -d backend
+
+# 只重建前端
+docker-compose build --no-cache frontend
+docker-compose up -d frontend
+
+# 只重建文档
+docker-compose build --no-cache docs
+docker-compose up -d docs
+```
+
 ## 下一步
 
 查看 [START.md](./START.md) 了解如何启动服务。

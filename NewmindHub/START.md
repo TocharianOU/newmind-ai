@@ -80,14 +80,40 @@ cp env.docker.example .env
 # 停止服务
 ./docker-deploy.sh down
 
-# 重启服务
+# 重启服务（仅重启，不重新构建）
 ./docker-deploy.sh restart
 
 # 查看状态
-./docker-deploy.sh status
+docker-compose ps
 
-# 进入容器
-./docker-deploy.sh exec
+# 运行数据库迁移
+./docker-deploy.sh migrate
+```
+
+### 代码更新后重新部署
+
+**当你修改了源代码后，使用此命令重新构建并部署：**
+
+```bash
+# 一键重新构建和部署（推荐）
+./docker-deploy.sh rebuild
+```
+
+此命令会：
+1. 停止所有运行的容器
+2. 清除缓存并重新构建 Docker 镜像
+3. 启动所有服务
+
+如果只修改了特定服务的代码，也可以单独重建：
+
+```bash
+# 只重建后端
+docker-compose build --no-cache backend
+docker-compose up -d backend
+
+# 只重建前端
+docker-compose build --no-cache frontend
+docker-compose up -d frontend
 ```
 
 详细 Docker 部署说明请参考 [DOCKER.md](./DOCKER.md)。

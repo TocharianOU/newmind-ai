@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { authenticateToken, requirePlan } from '../middleware/auth.js';
 import { createResponse, MODEL_MAPPING, MODEL_PROVIDERS, checkModelAccess } from '../config/constants.js';
 import { prisma } from '../config/database.js';
+import { deductTokens } from '../utils/tokenBalance.js';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
@@ -146,6 +147,7 @@ async function ensureLMStudioModelLoaded(baseUrl, modelName, maxRetries = 3) {
 // Async function to record usage
 async function recordUsage(userId, model, inputTokens, outputTokens) {
   try {
+    const totalTokens = inputTokens + outputTokens;
     const cost = (inputTokens * 0.003 + outputTokens * 0.015) / 1000; // Claude pricing
     
     await prisma.usageRecord.create({
@@ -159,6 +161,14 @@ async function recordUsage(userId, model, inputTokens, outputTokens) {
     });
     
     logger.info(`📊 Usage recorded: ${model}, input: ${inputTokens}, output: ${outputTokens}`);
+    
+    // 扣减 Token 余额（如果有）
+    try {
+      await deductTokens(userId, totalTokens);
+    } catch (error) {
+      // Token 余额不足不影响使用（仍然可以使用订阅的每日额度）
+      logger.debug(`Token deduction skipped for user ${userId}: ${error.message}`);
+    }
   } catch (error) {
     logger.error('❌ Error recording usage:', error);
   }

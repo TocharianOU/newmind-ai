@@ -14,6 +14,7 @@ model User {
   password      String
   picture       String?  @db.VarChar(500)
   team          String?
+  tokenBalance  Int      @default(0)  // 用户 Token 余额
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -22,6 +23,8 @@ model User {
   usageRecords  UsageRecord[]
   mcpConfigs    UserMcpConfig[]
   refreshTokens RefreshToken[]
+  tokenPurchases TokenPurchase[]
+  subscriptionPayments SubscriptionPayment[]
   // 预留聊天关系（暂时不使用）
   chatSessions  ChatSession[]
   messages      Message[]
@@ -38,10 +41,14 @@ model Subscription {
   endDate          DateTime?
   nextBillingDate  DateTime?
   isActive         Boolean  @default(true)
+  stripeCustomerId       String?
+  stripeSubscriptionId   String?
+  stripePriceId          String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments SubscriptionPayment[]
 
   @@index([userId])
 }
@@ -189,4 +196,52 @@ enum MessageRole {
   assistant
   tool_call
   tool_result
+}
+
+// Token 包充值记录
+model TokenPurchase {
+  id                String   @id @default(uuid())
+  userId            String
+  stripePaymentId   String   @unique
+  stripeSessionId   String?  @unique
+  amount            Float              // 支付金额（美元）
+  amountInEur       Float?             // 实际收到金额（欧元）
+  tokensAmount      Int                // 购买的 Token 数量
+  status            PaymentStatus      @default(PENDING)
+  metadata          Json?              // 额外元数据
+  createdAt         DateTime @default(now())
+  completedAt       DateTime?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+// 订阅支付记录
+model SubscriptionPayment {
+  id                String   @id @default(uuid())
+  userId            String
+  subscriptionId    String
+  stripePaymentId   String   @unique
+  stripeInvoiceId   String?
+  amount            Float              // 支付金额（美元）
+  amountInEur       Float?             // 实际收到金额（欧元）
+  period            String             // monthly, yearly
+  status            PaymentStatus      @default(PENDING)
+  createdAt         DateTime @default(now())
+  paidAt            DateTime?
+  
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, createdAt])
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
 }

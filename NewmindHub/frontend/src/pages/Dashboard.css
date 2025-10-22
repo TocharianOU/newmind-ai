@@ -152,6 +152,11 @@
   color: #00b4d8;
 }
 
+.stat-icon.token-balance {
+  background: linear-gradient(135deg, #10b98122 0%, #05966922 100%);
+  color: #10b981;
+}
+
 .stat-icon.plan-info {
   background: linear-gradient(135deg, #43e97b22 0%, #38f9d722 100%);
   color: #10b981;
@@ -176,6 +181,21 @@
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.refill-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  color: #667eea;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.refill-link:hover {
+  color: #764ba2;
+  transform: translateX(4px);
 }
 
 .stat-change {

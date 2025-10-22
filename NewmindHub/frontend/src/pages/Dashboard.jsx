@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import api from '../config/api';
@@ -119,6 +120,21 @@ const Dashboard = () => {
           <div className="stat-content">
             <h3>{formatNumber(stats?.summary?.averageTokensPerCall || 0)}</h3>
             <p>{t('dashboard.avgTokensPerCall', 'Avg Tokens/Call')}</p>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon token-balance">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M13 10V3L4 14h7v7l9-11h-7z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div className="stat-content">
+            <h3>{formatNumber(user?.tokenBalance || 0)}</h3>
+            <p>{t('dashboard.availableTokens', 'Available Tokens')}</p>
+            <Link to="/billing" className="refill-link">
+              {t('dashboard.refill', 'Refill')} →
+            </Link>
           </div>
         </div>
 

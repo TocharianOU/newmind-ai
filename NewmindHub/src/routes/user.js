@@ -27,6 +27,7 @@ router.get('/me', authenticateToken, async (req, res) => {
       username: user.username,
       picture: user.picture || '',
       team: user.team || '',
+      tokenBalance: user.tokenBalance || 0,
       subscription: {
         PlanName: user.subscription?.planName || 'BASE',
         IsDefaultPlan: user.subscription?.isDefaultPlan || true,
