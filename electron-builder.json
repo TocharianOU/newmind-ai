@@ -80,6 +80,7 @@
   },
   "win": {
     "icon": "public/icon.png",
+    "signAndEditExecutable": false,
     "target": [
       {
         "target": "nsis",
