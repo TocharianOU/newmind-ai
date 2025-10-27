@@ -247,6 +247,7 @@
     "close": "Close",
     "confirm": "Confirm",
     "cancel": "Cancel",
+    "delete": "Delete",
     "copy": "Copy",
     "copySuccess": "Copied",
     "zoomInImage": "Zoom In Image",
@@ -437,5 +438,31 @@
   },
   "deeplink": {
     "mcpInstallConfirm": "Add stdio MCP Service - You will add MCP via the following command, please confirm:"
+  },
+  "memory": {
+    "title": "Memory",
+    "togglePanel": "Toggle Memory Panel",
+    "resizeHint": "Drag to resize",
+    "search": "Search",
+    "clearSearch": "Clear search",
+    "deleteItem": "Delete this memory",
+    "total": "Total",
+    "type": "Type",
+    "content": "Content",
+    "relevance": "Relevance",
+    "created": "Created",
+    "updated": "Updated",
+    "metadata": "Metadata",
+    "fromChat": "From Chat",
+    "searchPlaceholder": "Search memories...",
+    "empty": "No memories yet",
+    "noResults": "No matching memories found",
+    "deleteSuccess": "Memory deleted",
+    "deleteFailed": "Delete failed",
+    "deleteAll": "Clear All Memories",
+    "confirmDeleteAll": "Are you sure you want to clear all memories?",
+    "deleteAllWarning": "This action will permanently delete all memories and cannot be undone.",
+    "deleteAllSuccess": "All memories cleared",
+    "deleteAllFailed": "Clear failed"
   }
 }

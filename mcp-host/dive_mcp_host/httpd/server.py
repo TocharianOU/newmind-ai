@@ -17,10 +17,13 @@ from sqlalchemy.ext.asyncio import (
 )
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from langgraph.store.memory import InMemoryStore
+
 from dive_mcp_host.host.conf import HostConfig, ServerConfig
 from dive_mcp_host.host.conf.llm import LLMConfig
 from dive_mcp_host.host.host import DiveMcpHost
 from dive_mcp_host.host.store.base import StoreManagerProtocol
+from dive_mcp_host.host.store.memory_store import LongTermMemoryStore
 from dive_mcp_host.httpd.abort_controller import AbortController
 from dive_mcp_host.httpd.conf.command_alias import CommandAliasManager
 from dive_mcp_host.httpd.conf.httpd_service import ServiceManager
@@ -72,6 +75,7 @@ class DiveHostAPI(FastAPI):
     """DiveHostAPI is a FastAPI application that is used to host the DiveHost API."""
 
     dive_host: dict[str, DiveMcpHost]  # shoud init "default" when preapre stage
+    long_term_memory_store: LongTermMemoryStore | None  # long-term memory store
 
     def __init__(
         self,
@@ -167,6 +171,18 @@ class DiveHostAPI(FastAPI):
         )
         self._db_sessionmaker = async_sessionmaker(self._engine, class_=AsyncSession)
         self._msg_store = SQLiteMessageStore
+        
+        # Auto-create long_term_memories table if it doesn't exist
+        # This avoids migration conflicts
+        try:
+            from dive_mcp_host.httpd.database.orm_models import Base, LongTermMemory
+            async with self._engine.begin() as conn:
+                # Only create the LongTermMemory table, don't touch existing tables
+                await conn.run_sync(LongTermMemory.__table__.create, checkfirst=True)
+            logger.info("Long-term memory table checked/created")
+        except Exception as e:
+            logger.warning(f"Failed to create long-term memory table: {e}")
+            # Non-critical, continue startup
 
         # ================================================
         # Store
@@ -189,6 +205,22 @@ class DiveHostAPI(FastAPI):
             default_host = DiveMcpHost(config, self._store)
             await stack.enter_async_context(default_host)
             self.dive_host = {"default": default_host}
+
+            # ================================================
+            # Long-term Memory Store
+            # ================================================
+            try:
+                # Initialize InMemoryStore for long-term memory
+                # We don't pass db_session here, it will be passed per-request in API routes
+                memory_store = InMemoryStore()
+                self.long_term_memory_store = LongTermMemoryStore(
+                    store=memory_store,
+                    db_session=None,  # Will be set per-request in API routes
+                )
+                logger.info("Long-term memory store initialized with InMemoryStore")
+            except Exception as e:
+                logger.warning(f"Failed to initialize long-term memory store: {e}")
+                self.long_term_memory_store = None
 
             logger.info("Server Prepare Complete")
             yield

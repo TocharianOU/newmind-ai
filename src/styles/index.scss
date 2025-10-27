@@ -18,6 +18,7 @@
 @use "./components/Keymap";
 @use "./pages/Welcome";
 @use "./pages/Chat";
+@use "./memory-panel";
 @use "./overlay/Overlay";
 
 * {
