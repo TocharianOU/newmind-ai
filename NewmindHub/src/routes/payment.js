@@ -167,7 +167,9 @@ export async function stripeWebhookHandler(req, res) {
   let event;
   
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    // req.body 是 Buffer（由 express.raw() 解析），需要转换为字符串
+    const payload = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : req.body;
+    event = stripe.webhooks.constructEvent(payload, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     logger.error('⚠️ Webhook signature verification failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);

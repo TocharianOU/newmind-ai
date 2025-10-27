@@ -4,20 +4,48 @@ NewmindHub平台的Docker部署指南。Chat Electron应用将连接到这个Hub
 
 ## 快速开始
 
+### 本地开发环境
+
 ```bash
 # 1. 配置环境（如果还没有.env文件）
 cp env.docker.example .env
-# 根据需要编辑.env
 
-# 2. 启动服务
+# 2. 编辑 .env，确保配置正确
+nano .env
+# PUBLIC_WEBHOOK_URL=http://localhost:23000  # 本地开发
+
+# 3. 启动服务
 ./docker-deploy.sh up
 
-# 3. 运行数据库迁移
+# 4. 运行数据库迁移
 ./docker-deploy.sh migrate
 
-# 4. 访问
-# Web管理界面: http://localhost:3001
-# API服务: http://localhost:3000
+# 5. 访问
+# Web管理界面: http://localhost:23001
+# API服务: http://localhost:23000
+```
+
+### 云环境部署
+
+```bash
+# 1. 配置环境
+cp env.docker.example .env
+
+# 2. **重要**: 编辑 .env，配置公网地址
+nano .env
+# 必须修改以下配置:
+# PUBLIC_WEBHOOK_URL=https://your-domain.com  # 你的公网域名或IP
+# STRIPE_WEBHOOK_SECRET=whsec_从Stripe_Dashboard获取
+
+# 3. 启动服务
+./docker-deploy.sh up
+
+# 4. 运行数据库迁移
+./docker-deploy.sh migrate
+
+# 5. 在 Stripe Dashboard 配置 Webhook
+# URL: https://your-domain.com/api/v1/payment/webhook
+# 参考: STRIPE_WEBHOOK_SETUP.md
 ```
 
 ## 架构
@@ -72,6 +100,8 @@ Chat Electron应用
 
 `.env`文件的关键配置：
 
+### 基础配置
+
 ```env
 # 数据库密码（请修改）
 POSTGRES_PASSWORD=your_secure_password
@@ -83,17 +113,45 @@ JWT_SECRET=your_secret_key
 ANTHROPIC_API_KEY=your_api_key
 
 # 端口配置
-BACKEND_PORT=3000
-FRONTEND_PORT=3001
+BACKEND_PORT=23000
+FRONTEND_PORT=23001
+```
 
+### CORS配置
+
+```env
 # CORS配置（允许Chat应用访问）
 # 本地开发：localhost origins + file:// (Chat Electron)
-# 生产环境：添加服务器IP/域名
-ALLOWED_ORIGINS=http://localhost:3001,http://localhost:5173,file://,tauri://localhost
+ALLOWED_ORIGINS=http://localhost:23001,http://localhost:5173,file://,tauri://localhost
 
-# 生产示例（添加你的服务器地址）：
-# ALLOWED_ORIGINS=http://your-server:3001,http://your-server:3000,file://,tauri://localhost
+# 生产环境：添加服务器IP/域名
+# ALLOWED_ORIGINS=https://your-domain.com,file://,tauri://localhost
 ```
+
+### Stripe Webhook 配置（重要）
+
+```env
+# Stripe 密钥
+STRIPE_SECRET_KEY=sk_test_xxxxx  # 生产环境使用 sk_live_xxxxx
+STRIPE_PUBLISHABLE_KEY=pk_test_xxxxx
+
+# Webhook Secret（从 Stripe Dashboard 获取）
+STRIPE_WEBHOOK_SECRET=whsec_xxxxx
+
+# 公网访问地址（云环境必须配置）
+# 本地开发:
+PUBLIC_WEBHOOK_URL=http://localhost:23000
+
+# 云环境（使用域名 - 推荐）:
+# PUBLIC_WEBHOOK_URL=https://hub.yourdomain.com
+
+# 云环境（使用 IP + 端口）:
+# PUBLIC_WEBHOOK_URL=http://your-server-ip:23000
+```
+
+**Stripe Dashboard 配置**:
+- Webhook URL: `${PUBLIC_WEBHOOK_URL}/api/v1/payment/webhook`
+- 详细配置步骤请查看: `STRIPE_WEBHOOK_SETUP.md`
 
 ## 服务说明
 
@@ -172,26 +230,52 @@ docker-compose exec postgres psql -U postgres -d newmindhub_auth
 
 ## 生产部署建议
 
-1. **修改密码**
-   - 更改`POSTGRES_PASSWORD`
-   - 使用强`JWT_SECRET`（至少32字符）
+1. **修改密码和密钥**
+   - 更改`POSTGRES_PASSWORD`为强密码
+   - 使用强`JWT_SECRET`（至少32字符随机字符串）
+   - 生产环境使用 `STRIPE_SECRET_KEY` 以 `sk_live_` 开头
 
-2. **配置防火墙**
-   - 仅开放3000和3001端口
-   - 或使用反向代理（如Nginx）
+2. **配置公网访问**
+   - 设置 `PUBLIC_WEBHOOK_URL` 为你的域名或公网IP
+   - 示例: `PUBLIC_WEBHOOK_URL=https://hub.yourdomain.com`
 
-3. **HTTPS配置**
+3. **配置 Stripe Webhook**
+   - 在 Stripe Dashboard 添加 webhook endpoint
+   - URL: `https://your-domain.com/api/v1/payment/webhook`
+   - 获取并配置真实的 `STRIPE_WEBHOOK_SECRET`
+   - **详细步骤**: 查看 `STRIPE_WEBHOOK_SETUP.md`
+
+4. **配置防火墙**
+   ```bash
+   # 如果直接暴露端口
+   sudo ufw allow 23000/tcp
+   sudo ufw allow 23001/tcp
+   
+   # 推荐：使用 Nginx，只开放 80/443
+   sudo ufw allow 80/tcp
+   sudo ufw allow 443/tcp
+   ```
+
+5. **HTTPS配置（强烈推荐）**
    - 使用Nginx反向代理
-   - 配置SSL证书
+   - 配置SSL证书（Let's Encrypt）
+   - 参考 `STRIPE_WEBHOOK_SETUP.md` 中的 Nginx 配置
 
-4. **备份数据库**
+6. **备份数据库**
    ```bash
    docker-compose exec postgres pg_dump -U postgres newmindhub_auth > backup.sql
    ```
 
-5. **监控日志**
+7. **监控日志**
    ```bash
+   # 实时查看所有日志
+   ./docker-deploy.sh logs
+   
+   # 查看错误日志
    ./docker-deploy.sh logs backend | grep -i error
+   
+   # 查看 Stripe webhook 日志
+   ./docker-deploy.sh logs backend | grep -i webhook
    ```
 
 ## 更新应用

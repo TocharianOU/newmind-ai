@@ -40,6 +40,15 @@ services:
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3001,http://localhost:5173}
       CUSTOM_LMSTUDIO_URL: ${CUSTOM_LMSTUDIO_URL:-}
       INVITE_CODES: ${INVITE_CODES:-}
+      # Stripe Configuration
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_CURRENCY: ${STRIPE_CURRENCY:-usd}
+      STRIPE_SETTLEMENT_CURRENCY: ${STRIPE_SETTLEMENT_CURRENCY:-eur}
+      # Frontend URL for Stripe redirects
+      HUB_FRONTEND_URL: ${HUB_FRONTEND_URL:-http://localhost:23001}
+      # Download URLs (optional)
       DOWNLOAD_URL_WINDOWS_X64: ${DOWNLOAD_URL_WINDOWS_X64:-}
       DOWNLOAD_URL_MACOS_INTEL: ${DOWNLOAD_URL_MACOS_INTEL:-}
       DOWNLOAD_URL_MACOS_APPLE_SILICON: ${DOWNLOAD_URL_MACOS_APPLE_SILICON:-}
@@ -82,23 +91,23 @@ services:
     networks:
       - newmindhub-network
 
-  # Documentation
-  docs:
-    build:
-      context: /home/newmind-ai/newmindchat-docs
-      dockerfile: Dockerfile
-    container_name: newmindhub-docs
-    restart: unless-stopped
-    ports:
-      - "${DOCS_PORT:-23002}:8002"
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8002/"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 5s
-    networks:
-      - newmindhub-network
+  # Documentation (可选，如果没有 docs 目录可注释掉)
+  # docs:
+  #   build:
+  #     context: ../newmindchat-docs
+  #     dockerfile: Dockerfile
+  #   container_name: newmindhub-docs
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${DOCS_PORT:-23002}:8002"
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8002/"]
+  #     interval: 30s
+  #     timeout: 3s
+  #     retries: 3
+  #     start_period: 5s
+  #   networks:
+  #     - newmindhub-network
 
 volumes:
   postgres_data:

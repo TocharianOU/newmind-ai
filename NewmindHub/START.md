@@ -4,11 +4,17 @@
 
 ## 启动方式
 
-NewmindHub 支持三种启动方式：
+NewmindHub 支持多种启动方式：
 
 1. **本地开发模式**：适合开发和调试
 2. **生产模式**：本地生产环境运行
-3. **Docker 模式**：容器化部署
+3. **Docker 模式**：容器化部署（本地或云端）
+
+## 📚 快速导航
+
+- **云环境快速部署**: 查看 [QUICK_START_CLOUD.md](QUICK_START_CLOUD.md) - 5分钟云端部署
+- **Docker 完整指南**: 查看 [DOCKER.md](DOCKER.md) - Docker 部署详细说明
+- **Stripe Webhook 配置**: 查看 [STRIPE_WEBHOOK_SETUP.md](STRIPE_WEBHOOK_SETUP.md) - 支付回调配置
 
 ## 方式 1：本地开发模式
 
