@@ -4,6 +4,7 @@
   "productName": "NewmindChat",
   "copyright": "Copyright © 2025 Newmind Technologies",
   "asar": true,
+  "npmRebuild": false,
   "artifactName": "${productName}-electron-${version}-${os}-${arch}.${ext}",
   "protocols": {
     "name": "dive",
@@ -78,6 +79,7 @@
     ]
   },
   "win": {
+    "icon": "public/icon.png",
     "target": [
       {
         "target": "nsis",
