@@ -183,3 +183,51 @@ class ResourceUsage(Base):
         back_populates="resource_usage",
         passive_deletes=True,
     )
+
+
+class LongTermMemory(Base):
+    """Long-term memory model for storing entities.
+
+    Attributes:
+        id: Memory ID.
+        user_id: User ID or fingerprint.
+        entity_type: Type of entity (person, project, concept, etc.).
+        entity_name: Name of the entity.
+        content: Description or context about the entity.
+        metadata: Additional metadata as JSON.
+        relevance: Relevance score (0-1).
+        source_chat_id: Optional source chat ID.
+        created_at: Creation timestamp.
+        updated_at: Last update timestamp.
+    """
+
+    __tablename__ = "long_term_memories"
+    __table_args__ = (
+        Index("idx_ltm_user_id", "user_id", postgresql_using="hash"),
+        Index("idx_ltm_entity_type", "entity_type"),
+        Index("idx_ltm_entity_name", "entity_name"),
+        Index("idx_ltm_user_type", "user_id", "entity_type"),
+    )
+
+    id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer(), "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
+    user_id: Mapped[str] = mapped_column(CHAR(32))
+    entity_type: Mapped[str] = mapped_column(Text())
+    entity_name: Mapped[str] = mapped_column(Text())
+    content: Mapped[str] = mapped_column(Text())
+    entity_metadata: Mapped[dict] = mapped_column(
+        "metadata",  # Column name in database
+        PGJSONB().with_variant(SQLiteJSON(), "sqlite"),
+        default={},
+    )
+    relevance: Mapped[float] = mapped_column(Float(), default=1.0)
+    source_chat_id: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True).with_variant(Text(), "sqlite"),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True).with_variant(Text(), "sqlite"),
+    )

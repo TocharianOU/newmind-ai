@@ -286,6 +286,29 @@ class ChatProcessor:
             if app.model_config_manager.full_config
             else False
         )
+        
+        # Initialize memory components if available
+        self._memory_retriever = None
+        self._entity_extractor = None
+        self._simple_extractor = None
+        if app.long_term_memory_store:
+            from dive_mcp_host.host.agents.memory_retriever import MemoryRetriever
+            from dive_mcp_host.host.agents.entity_extractor import EntityExtractor
+            from dive_mcp_host.host.agents.simple_entity_extractor import SimpleEntityExtractor
+            
+            self._memory_retriever = MemoryRetriever(app.long_term_memory_store)
+            
+            # Initialize simple extractor (always available)
+            self._simple_extractor = SimpleEntityExtractor()
+            logger.info("Simple entity extractor initialized")
+            
+            try:
+                # Try to create LLM-based entity extractor with model
+                self._entity_extractor = EntityExtractor(self.dive_host.model)
+                logger.info("LLM entity extractor initialized")
+            except Exception as e:
+                logger.warning(f"Failed to initialize LLM entity extractor: {e}")
+                self._entity_extractor = None
 
     async def handle_chat(  # noqa: C901, PLR0912, PLR0915
         self,
@@ -535,8 +558,41 @@ class ChatProcessor:
                 messages.append(query_input)
 
         dive_user: DiveUser = self.request_state.dive_user
+        
+        # ===== Memory Retrieval: Inject relevant memories into context =====
+        memory_context = ""
+        if self._memory_retriever and messages:
+            try:
+                # Check if we should retrieve memories
+                current_query = messages[-1].content if messages else None
+                should_retrieve = await self._memory_retriever.should_retrieve_memory(
+                    messages=messages,
+                    current_query=str(current_query) if current_query else None,
+                )
+                
+                if should_retrieve:
+                    # Retrieve relevant memories
+                    relevant_memories = await self._memory_retriever.retrieve_relevant_memories(
+                        user_id=dive_user.get("user_id") or "default",
+                        messages=messages,
+                        current_query=str(current_query) if current_query else None,
+                        max_memories=5,
+                    )
+                    
+                    if relevant_memories:
+                        memory_context = self._memory_retriever.format_memories_for_context(
+                            relevant_memories,
+                            max_length=1000,
+                        )
+                        logger.info(f"Injected {len(relevant_memories)} memories into context")
+            except Exception as e:
+                logger.error(f"Memory retrieval failed: {e}")
 
         def _prompt_cb(_: Any) -> list[BaseMessage]:
+            # Inject memory context into messages if available
+            if memory_context:
+                # Add memory context as a system message before user messages
+                return [SystemMessage(content=memory_context), *messages]
             return messages
 
         prompt: str | Callable[..., list[BaseMessage]] | None = None
@@ -545,11 +601,27 @@ class ChatProcessor:
         elif self.disable_dive_system_prompt and (
             custom_prompt := self.app.prompt_config_manager.get_prompt(PromptKey.CUSTOM)
         ):
-            prompt = custom_prompt
+            # Prepend memory context to custom prompt if available
+            if memory_context:
+                original_prompt = custom_prompt
+                prompt = lambda state: [
+                    SystemMessage(content=memory_context),
+                    *([SystemMessage(content=original_prompt)] if isinstance(original_prompt, str) else []),
+                ]
+            else:
+                prompt = custom_prompt
         elif system_prompt := self.app.prompt_config_manager.get_prompt(
             PromptKey.SYSTEM
         ):
-            prompt = system_prompt
+            # Prepend memory context to system prompt if available
+            if memory_context:
+                prompt = f"{memory_context}\n\n{system_prompt}"
+            else:
+                prompt = system_prompt
+        else:
+            # Use memory context as prompt if available and no other prompt
+            if memory_context:
+                prompt = memory_context
 
         chat = self.dive_host.chat(
             chat_id=chat_id,
@@ -569,7 +641,27 @@ class ChatProcessor:
                 stream_mode=["messages", "values", "updates", "custom"],
                 is_resend=is_resend,
             )
-            return await self._handle_response(response_generator)
+            result = await self._handle_response(response_generator)
+            
+            # ===== Entity Extraction: Extract entities after conversation =====
+            if (self._entity_extractor or self._simple_extractor) and self.app.long_term_memory_store:
+                logger.info("🧠 Scheduling entity extraction task...")
+                # Schedule entity extraction asynchronously (don't block response)
+                asyncio.create_task(
+                    self._extract_and_save_entities(
+                        messages=messages,
+                        ai_message=result[1],
+                        user_id=dive_user.get("user_id") or "default",
+                        chat_id=chat_id,
+                    )
+                )
+            else:
+                if not self._entity_extractor and not self._simple_extractor:
+                    logger.debug("No entity extractors available")
+                if not self.app.long_term_memory_store:
+                    logger.debug("Long-term memory store not available")
+            
+            return result
 
         raise RuntimeError("Unreachable")
 
@@ -809,6 +901,144 @@ class ChatProcessor:
                 raise ChatError("message not found")
 
             return await self._process_history_message(message)
+
+    async def _extract_and_save_entities(
+        self,
+        messages: list[BaseMessage],
+        ai_message: AIMessage,
+        user_id: str,
+        chat_id: str | None,
+    ) -> None:
+        """Extract entities from conversation and save to long-term memory.
+        
+        This runs asynchronously after the conversation completes.
+        """
+        try:
+            logger.info(f"🧠 Starting entity extraction for user {user_id}, chat {chat_id}")
+            
+            # Combine user messages and AI response for extraction
+            all_messages = [*messages, ai_message]
+            logger.info(f"🧠 Total messages to analyze: {len(all_messages)}")
+            
+            # Check if there are enough substantial messages to extract from
+            if not self._entity_extractor:
+                logger.warning("🧠 Entity extractor not initialized")
+                return
+            
+            should_extract = await self._entity_extractor.should_extract_entities(
+                all_messages,
+                threshold=1,  # Lower threshold: at least 1 substantial message
+            )
+            
+            logger.info(f"🧠 Should extract entities: {should_extract}")
+            
+            if not should_extract:
+                logger.debug("🧠 Skipping entity extraction - not enough substantial messages")
+                return
+            
+            # Extract entities using LLM (if available)
+            entities = []
+            if self._entity_extractor:
+                logger.info("🧠 Calling LLM entity extractor...")
+                try:
+                    entities = await self._entity_extractor.extract_entities_from_messages(
+                        all_messages,
+                        chat_id=chat_id,
+                    )
+                    logger.info(f"🧠 LLM extractor found {len(entities)} entities")
+                except Exception as e:
+                    logger.warning(f"🧠 LLM extraction failed: {e}")
+            
+            # Also use simple extractor as supplement
+            if self._simple_extractor:
+                logger.info("🧠 Calling simple pattern extractor...")
+                try:
+                    simple_entities = await self._simple_extractor.extract_entities_from_messages(
+                        all_messages,
+                        chat_id=chat_id,
+                    )
+                    logger.info(f"🧠 Simple extractor found {len(simple_entities)} entities")
+                    
+                    # Merge entities (avoid duplicates)
+                    existing_keys = {(e.entity_type, e.name.lower()) for e in entities}
+                    for entity in simple_entities:
+                        key = (entity.entity_type, entity.name.lower())
+                        if key not in existing_keys:
+                            entities.append(entity)
+                            existing_keys.add(key)
+                except Exception as e:
+                    logger.warning(f"🧠 Simple extraction failed: {e}")
+            
+            logger.info(f"🧠 Total extracted: {len(entities)} entities")
+            
+            if not entities:
+                logger.debug("🧠 No entities extracted from conversation")
+                return
+            
+            # Save entities to long-term memory
+            memory_store = self.app.long_term_memory_store
+            if not memory_store:
+                logger.warning("🧠 Memory store not available")
+                return
+            
+            # Get a new database session for this async task
+            async with self.app._db_sessionmaker() as db_session:
+                memory_store._db_session = db_session
+                
+                saved_count = 0
+                for entity in entities:
+                    try:
+                        logger.debug(f"🧠 Processing entity: {entity.name} (type: {entity.entity_type})")
+                        logger.debug(f"🧠 Entity metadata: {entity.metadata}")
+                        
+                        # Check if entity already exists
+                        existing = await memory_store.get_entity(
+                            user_id=user_id,
+                            entity_type=entity.entity_type,
+                            entity_name=entity.name,
+                        )
+                        
+                        if existing:
+                            logger.debug(f"🧠 Found existing entity: {entity.name}")
+                            # Update existing entity with new information
+                            updates = {
+                                "content": f"{existing.content}\n\nUpdate: {entity.content}",
+                                "relevance": max(existing.relevance, entity.relevance),
+                            }
+                            # Merge metadata (safely handle any non-serializable types)
+                            try:
+                                merged_metadata = {**existing.metadata, **entity.metadata}
+                                updates["metadata"] = merged_metadata
+                            except Exception as merge_err:
+                                logger.warning(f"🧠 Metadata merge failed: {merge_err}, using new metadata")
+                                updates["metadata"] = entity.metadata
+                            
+                            await memory_store.update_entity(
+                                user_id=user_id,
+                                entity_type=entity.entity_type,
+                                entity_name=entity.name,
+                                updates=updates,
+                            )
+                            logger.debug(f"✅ Updated existing entity: {entity.name}")
+                        else:
+                            logger.debug(f"🧠 Saving new entity: {entity.name}")
+                            # Save new entity
+                            await memory_store.save_entity(
+                                user_id=user_id,
+                                entity=entity,
+                            )
+                            logger.debug(f"✅ Saved new entity: {entity.name}")
+                        
+                        saved_count += 1
+                    except Exception as e:
+                        logger.error(f"❌ Failed to save entity {entity.name}: {e}")
+                        import traceback
+                        logger.error(f"Traceback: {traceback.format_exc()}")
+                
+                logger.info(f"Saved/updated {saved_count} entities to long-term memory")
+            
+        except Exception as e:
+            logger.error(f"Entity extraction and saving failed: {e}")
 
 
 class LogStreamHandler:

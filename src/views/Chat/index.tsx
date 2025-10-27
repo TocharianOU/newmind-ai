@@ -11,6 +11,7 @@ import { currentChatIdAtom, isChatStreamingAtom, lastMessageAtom } from "../../a
 import { safeBase64Encode } from "../../util"
 import { updateOAPUsageAtom } from "../../atoms/oapState"
 import { loadHistoriesAtom } from "../../atoms/historyState"
+import MemoryPanel from "../../components/MemoryPanel"
 
 interface ToolCall {
   name: string
@@ -60,6 +61,7 @@ const ChatWindow = () => {
   const toolKeyRef = useRef(0)
   const updateOAPUsage = useSetAtom(updateOAPUsageAtom)
   const loadHistories = useSetAtom(loadHistoriesAtom)
+  const [showMemoryPanel, setShowMemoryPanel] = useState(false)
 
   const loadChat = useCallback(async (id: string) => {
     try {
@@ -528,10 +530,35 @@ const ChatWindow = () => {
     lastChatId.current = chatId
   }, [updateStreamingCode, chatId])
 
+  // Close modal with ESC key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && showMemoryPanel) {
+        setShowMemoryPanel(false)
+      }
+    }
+    
+    document.addEventListener("keydown", handleEscape)
+    return () => document.removeEventListener("keydown", handleEscape)
+  }, [showMemoryPanel])
+
   return (
     <div className="chat-page">
       <div className="chat-container">
         <div className="chat-window">
+          <div className="chat-header">
+            <button
+              className="memory-toggle-btn"
+              onClick={() => setShowMemoryPanel(!showMemoryPanel)}
+              title={t("memory.togglePanel")}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+              {t("memory.title")}
+            </button>
+          </div>
           <ChatMessages
             messages={messages}
             isLoading={isChatStreaming}
@@ -546,6 +573,25 @@ const ChatWindow = () => {
           />
         </div>
       </div>
+      {showMemoryPanel && (
+        <div className="memory-modal-overlay" onClick={() => setShowMemoryPanel(false)}>
+          <div className="memory-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="memory-modal-header">
+              <h2>{t("memory.title")}</h2>
+              <button
+                className="memory-modal-close"
+                onClick={() => setShowMemoryPanel(false)}
+                title={t("common.close")}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="memory-modal-content">
+              <MemoryPanel />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
