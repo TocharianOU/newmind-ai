@@ -318,6 +318,140 @@
   font-size: 0.95rem;
 }
 
+/* Dark mode support */
+[data-theme="dark"] .subscription-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .subscription-card h3 {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .subscription-price .currency,
+[data-theme="dark"] .subscription-price .amount {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .subscription-price .period {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .subscription-features li {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .subscription-card.enterprise {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.1) 100%);
+  border-color: #fbbf24;
+}
+
+[data-theme="dark"] .subscription-card.enterprise h3 {
+  color: #fef3c7;
+}
+
+[data-theme="dark"] .subscription-card.enterprise .subscription-price .currency,
+[data-theme="dark"] .subscription-card.enterprise .subscription-price .amount {
+  color: #fef3c7;
+}
+
+[data-theme="dark"] .subscription-card.enterprise .subscription-features li {
+  color: #fef3c7;
+}
+
+/* Dark mode - Token Packages */
+[data-theme="dark"] .package-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .package-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 12px 24px rgba(102, 126, 234, 0.3);
+}
+
+[data-theme="dark"] .package-card.popular {
+  border-color: #667eea;
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+[data-theme="dark"] .package-card h3 {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .package-price .currency,
+[data-theme="dark"] .package-price .amount {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .package-rate {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .package-description {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .package-tokens span {
+  color: #94a3b8;
+}
+
+/* Dark mode - Headers & Subtitles */
+[data-theme="dark"] .billing-header .subtitle {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .section-subtitle {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .token-packages h2,
+[data-theme="dark"] .subscription-upgrade h2,
+[data-theme="dark"] .payment-history h2 {
+  color: #f1f5f9;
+}
+
+/* Dark mode - Subscription Buttons */
+[data-theme="dark"] .subscribe-button.secondary {
+  background: #1e293b;
+  color: #818cf8;
+  border-color: #667eea;
+}
+
+[data-theme="dark"] .subscribe-button.secondary:hover:not(:disabled) {
+  background: #334155;
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+/* Dark mode - Payment History */
+[data-theme="dark"] .history-table-container {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .history-table thead {
+  background: #0f172a;
+}
+
+[data-theme="dark"] .history-table th {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .history-table td {
+  border-top-color: #334155;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .no-history {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .type-badge {
+  background: #334155;
+  color: #e2e8f0;
+}
+
 .subscription-actions {
   display: flex;
   gap: 0.75rem;
