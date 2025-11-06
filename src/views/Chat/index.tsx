@@ -261,10 +261,11 @@ const ChatWindow = () => {
       await fetch(`/api/chat/${currentChatId.current}/abort`, {
         method: "POST",
       })
+      setIsChatStreaming(false)
     } catch (error) {
       console.error("Failed abort:", error)
     }
-  }, [isChatStreaming, currentChatId.current, scrollToBottom])
+  }, [isChatStreaming, setIsChatStreaming])
 
   const onRetry = useCallback(async (messageId: string) => {
     if (isChatStreaming || !currentChatId.current)

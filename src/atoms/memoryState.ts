@@ -147,7 +147,8 @@ export const createMemoryAtom = atom(
       
       if (data.success) {
         // Reload memories after creation
-        await set(loadMemoriesAtom, get(selectedMemoryTypeAtom) === "all" ? undefined : get(selectedMemoryTypeAtom))
+        const selectedType = get(selectedMemoryTypeAtom)
+        await set(loadMemoriesAtom, selectedType === "all" ? undefined : selectedType as EntityType)
         return true
       }
       
@@ -176,7 +177,8 @@ export const updateMemoryAtom = atom(
       
       if (data.success) {
         // Reload memories after update
-        await set(loadMemoriesAtom, get(selectedMemoryTypeAtom) === "all" ? undefined : get(selectedMemoryTypeAtom))
+        const selectedType = get(selectedMemoryTypeAtom)
+        await set(loadMemoriesAtom, selectedType === "all" ? undefined : selectedType as EntityType)
         return true
       }
       
@@ -201,7 +203,8 @@ export const deleteMemoryAtom = atom(
       
       if (data.success) {
         // Reload memories after deletion
-        await set(loadMemoriesAtom, get(selectedMemoryTypeAtom) === "all" ? undefined : get(selectedMemoryTypeAtom))
+        const selectedType = get(selectedMemoryTypeAtom)
+        await set(loadMemoriesAtom, selectedType === "all" ? undefined : selectedType as EntityType)
         return true
       }
       

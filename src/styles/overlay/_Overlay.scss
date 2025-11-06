@@ -3,11 +3,13 @@
 .overlay {
   background-color: var(--bg-op-dark-ultrastrong);
   z-index: $z-overlay !important;
+  position: fixed;
   left: $sidebar-width;
   top: 0;
   width: calc(100vw - $sidebar-width);
   height: 100vh;
   transition: width $transition-normal ease, left $transition-normal ease;
+  pointer-events: none;
 
   &.full-width {
     left: 0;
@@ -17,6 +19,7 @@
   > div {
     width: 100%;
     height: 100%;
+    pointer-events: auto;
   }
 
   @media (max-width: $breakpoint-m) {

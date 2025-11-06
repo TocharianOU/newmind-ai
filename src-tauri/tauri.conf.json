@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "NewmindChat",
+  "productName": "NewChat",
   "version": "0.0.1",
   "identifier": "com.newmind.chat",
   "build": {
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "NewmindChat",
+        "title": "NewChat",
         "label": "main",
         "width": 1280,
         "height": 720,

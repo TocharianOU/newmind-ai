@@ -1,13 +1,15 @@
 import { atom } from "jotai"
 
-export const sidebarVisibleAtom = atom(false)
-const originalSidebarWidthAtom = atom(false)
+// 默认在桌面端显示侧边栏
+export const sidebarVisibleAtom = atom(typeof window !== 'undefined' && window.innerWidth >= 960)
+const originalSidebarWidthAtom = atom(typeof window !== 'undefined' && window.innerWidth >= 960)
 
 export const toggleSidebarAtom = atom(
   null,
   (get, set) => {
-    set(sidebarVisibleAtom, !get(sidebarVisibleAtom))
-    set(originalSidebarWidthAtom, get(sidebarVisibleAtom))
+    const newState = !get(sidebarVisibleAtom)
+    set(sidebarVisibleAtom, newState)
+    set(originalSidebarWidthAtom, newState)
   }
 )
 
@@ -24,7 +26,7 @@ export const handleWindowResizeAtom = atom(
   (get, set) => {
     if (window.innerWidth < 960) {
       set(sidebarVisibleAtom, false)
-    } else if (window.innerWidth > 960 && get(originalSidebarWidthAtom)) {
+    } else if (window.innerWidth >= 960 && get(originalSidebarWidthAtom)) {
       set(sidebarVisibleAtom, true)
     }
   }

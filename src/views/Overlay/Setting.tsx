@@ -14,6 +14,7 @@ import { version } from "../../../package.json"
 import { settingTabAtom } from "../../atoms/globalState"
 import { ENV_CONFIG } from "../../config/env"
 import { oapGetToken } from "../../ipc/oap"
+import { sidebarVisibleAtom, toggleSidebarAtom } from "../../atoms/sidebarState"
 
 const tabs = ["Tools", "Model", "Account", "System"] as const
 export type Tab = (typeof tabs)[number]
@@ -25,6 +26,8 @@ const Setting = ({ _tab }: { _tab: Tab }) => {
   const oapUser = useAtomValue(oapUserAtom)
   const oapLevel = useAtomValue(OAPLevelAtom)
   const setSettingTab = useSetAtom(settingTabAtom)
+  const toggleSidebar = useSetAtom(toggleSidebarAtom)
+  const isSidebarVisible = useAtomValue(sidebarVisibleAtom)
 
   useEffect(() => {
     setSettingTab(_tab)
@@ -59,7 +62,25 @@ const Setting = ({ _tab }: { _tab: Tab }) => {
   return (
     <PopupWindow overlay>
       <div className="setting-container">
-        <div className="setting-sidebar">
+        {/* 添加顶部控制栏 */}
+        <div className="setting-header">
+          <button 
+            className={`sidebar-toggle-btn ${isSidebarVisible ? "close-sidebar-btn" : ""}`}
+            onClick={toggleSidebar}
+            title={isSidebarVisible ? t("header.closeSidebar") : t("header.openSidebar")}
+          >
+            <svg className="open-sidebar-btn-icon" width="24" height="24" viewBox="0 0 24 24">
+              <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+            </svg>
+            <svg className="close-sidebar-btn-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 30 30" fill="none">
+              <path d="M8 22L8 7.27273" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M25 15.75C25.4142 15.75 25.75 15.4142 25.75 15C25.75 14.5858 25.4142 14.25 25 14.25V15V15.75ZM11.4697 14.4697C11.1768 14.7626 11.1768 15.2374 11.4697 15.5303L16.2426 20.3033C16.5355 20.5962 17.0104 20.5962 17.3033 20.3033C17.5962 20.0104 17.5962 19.5355 17.3033 19.2426L13.0607 15L17.3033 10.7574C17.5962 10.4645 17.5962 9.98959 17.3033 9.6967C17.0104 9.40381 16.5355 9.40381 16.2426 9.6967L11.4697 14.4697ZM25 15V14.25L12 14.25V15V15.75L25 15.75V15Z" fill="currentColor"/>
+            </svg>
+          </button>
+          <h1 style={{ fontSize: "1em", margin: 0 }}>{t("header.title")}</h1>
+        </div>
+        <div className="setting-body">
+          <div className="setting-sidebar">
           <div className="setting-sidebar-category">
             <div className="setting-sidebar-category-left">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 22 22" fill="none">
@@ -118,6 +139,7 @@ const Setting = ({ _tab }: { _tab: Tab }) => {
                 return null
             }
           })()}
+        </div>
         </div>
       </div>
     </PopupWindow>

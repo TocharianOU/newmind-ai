@@ -22,6 +22,7 @@ const Layout = () => {
       <div className="app-content">
         {!isConfigNotInitialized && <HistorySidebar />}
         <div className="outlet-container">
+          {/* Header 始终显示，包括侧边栏切换按钮 */}
           {!isConfigNotInitialized && <Header showHelpButton={overlays.length === 0} showModelSelect={overlays.length === 0} />}
           <Outlet />
         </div>

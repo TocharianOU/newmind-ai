@@ -130,7 +130,8 @@ const HistorySidebar = ({ onNewChat }: Props) => {
 
   const openOverlay = useCallback((overlay: OverlayType) => {
     _openOverlay(overlay)
-  }, [_openOverlay, setVisible])
+    // 不要隐藏侧边栏，让设置页面可以和侧边栏共存
+  }, [_openOverlay])
 
   useEffect(() => {
     if (isVisible) {
@@ -270,6 +271,7 @@ const HistorySidebar = ({ onNewChat }: Props) => {
   const handleTools = () => {
     setCurrentChatId("")
     openOverlay({ page: "Setting", tab: settingTab })
+    // 在小屏幕上才隐藏侧边栏，桌面保持显示
     if (window.innerWidth < 960) {
       setVisible(false)
     }

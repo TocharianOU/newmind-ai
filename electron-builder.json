@@ -1,11 +1,11 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
   "appId": "com.newmind.chat",
-  "productName": "NewmindChat",
+  "productName": "NewChat",
   "copyright": "Copyright © 2025 Newmind Technologies",
   "asar": true,
   "npmRebuild": false,
-  "artifactName": "${productName}-electron-${version}-${os}-${arch}.${ext}",
+  "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
   "protocols": {
     "name": "dive",
     "schemes": [
@@ -43,7 +43,7 @@
         "arch": ["arm64", "x64"]
       }
     ],
-    "hardenedRuntime": false,
+    "hardenedRuntime": true,
     "gatekeeperAssess": false,
     "darkModeSupport": true,
     "extendInfo": {
@@ -196,7 +196,7 @@
     }
   ],
   "dmg": {
-    "title": "NewmindChat ${version}",
+    "title": "NewChat ${version}",
     "background": null,
     "window": {
       "width": 540,
