@@ -30,6 +30,7 @@ import { registerVLGetTools } from "./src/vl_get_tools.js";
 import { registerVLDeleteTools } from "./src/vl_delete_tools.js";
 import { registerVLCreateTools } from "./src/vl_create_tools.js";
 import { registerVLUpdateTools } from "./src/vl_update_tools.js";
+import { checkTokenLimit } from "./src/token-limiter.js";
 
 
 // Create Kibana client
@@ -195,6 +196,9 @@ export async function createKibanaMcpServer(options: ServerCreationOptions): Pro
   const kibanaClient = createKibanaClient(validatedConfig);
   const defaultSpace = validatedConfig.defaultSpace || 'default';
 
+  // Get token limit configuration
+  const maxTokenCall = parseInt(process.env.MAX_TOKEN_CALL || "8000", 10);
+
   const server = new McpServer({
     name,
     version,
@@ -291,11 +295,11 @@ export async function createKibanaMcpServer(options: ServerCreationOptions): Pro
 
   // Register all tool modules
   const registrations = [
-    registerBaseTools(serverBase, kibanaClient, defaultSpace),
+    registerBaseTools(serverBase, kibanaClient, defaultSpace, maxTokenCall, checkTokenLimit),
     registerPrompts(serverBase, defaultSpace),
     registerResources(serverBase, kibanaClient, defaultSpace),
-    registerVlTools(serverBase, kibanaClient, defaultSpace),
-    registerVLGetTools(serverBase, kibanaClient),
+    registerVlTools(serverBase, kibanaClient, defaultSpace, maxTokenCall, checkTokenLimit),
+    registerVLGetTools(serverBase, kibanaClient, maxTokenCall, checkTokenLimit),
     registerVLDeleteTools(serverBase, kibanaClient),
     registerVLCreateTools(serverBase, kibanaClient),
     registerVLUpdateTools(serverBase, kibanaClient)
@@ -375,7 +379,7 @@ async function main() {
             // Create server for this transport
             const server = await createKibanaMcpServer({
               name: serverName,
-              version: "0.4.1",
+              version: "1.0.1",
               config,
               description: serverDescription
             });
@@ -458,7 +462,7 @@ async function main() {
       
       const server = await createKibanaMcpServer({
         name: serverName,
-        version: "0.4.1",
+        version: "1.0.1",
         config,
         description: serverDescription
       });

@@ -10,6 +10,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client, estypes, ClientOptions } from "@elastic/elasticsearch";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import fs from "fs";
+import { checkTokenLimit } from "./src/token-limiter.js";
 
 // Configuration schema with auth options
 const ConfigSchema = z
@@ -210,17 +211,26 @@ export async function createElasticsearchMcpServer(
     return esClient;
   };
 
+  // Get token limit configuration
+  const maxTokenCall = parseInt(process.env.MAX_TOKEN_CALL || "8000", 10);
+
   const server = new McpServer({
     name: "elasticsearch-mcp-server-js",
-    version: "0.2.0",
+    version: "1.0.1",
   });
 
   // Tool 1: List indices
   server.tool(
     "list_indices",
     "List all available Elasticsearch indices",
-    {},
-    async () => {
+    {
+      break_token_rule: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe("Set to true to bypass token limits in critical situations"),
+    },
+    async ({ break_token_rule }) => {
       try {
         const client = getClient();
         const response = await client.cat.indices({ format: "json" });
@@ -232,7 +242,7 @@ export async function createElasticsearchMcpServer(
           docsCount: index.docsCount,
         }));
 
-        return {
+        const result = {
           content: [
             {
               type: "text" as const,
@@ -244,6 +254,22 @@ export async function createElasticsearchMcpServer(
             },
           ],
         };
+
+        // Check token limit
+        const tokenCheck = checkTokenLimit(result, maxTokenCall, break_token_rule);
+        if (!tokenCheck.allowed) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: tokenCheck.error!,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        return result;
       } catch (error) {
         console.error(
           `Failed to list indices: ${
@@ -274,15 +300,20 @@ export async function createElasticsearchMcpServer(
         .trim()
         .min(1, "Index name is required")
         .describe("Name of the Elasticsearch index to get mappings for"),
+      break_token_rule: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe("Set to true to bypass token limits in critical situations"),
     },
-    async ({ index }) => {
+    async ({ index, break_token_rule }) => {
       try {
         const client = getClient();
         const mappingResponse = await client.indices.getMapping({
           index,
         });
 
-        return {
+        const result = {
           content: [
             {
               type: "text" as const,
@@ -298,6 +329,22 @@ export async function createElasticsearchMcpServer(
             },
           ],
         };
+
+        // Check token limit
+        const tokenCheck = checkTokenLimit(result, maxTokenCall, break_token_rule);
+        if (!tokenCheck.allowed) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: tokenCheck.error!,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        return result;
       } catch (error) {
         console.error(
           `Failed to get mappings: ${
@@ -347,8 +394,14 @@ export async function createElasticsearchMcpServer(
         .describe(
           "Complete Elasticsearch query DSL object that can include query, size, from, sort, etc."
         ),
+
+      break_token_rule: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe("Set to true to bypass token limits in critical situations. Use sparingly to avoid context overflow."),
     },
-    async ({ index, queryBody }) => {
+    async ({ index, queryBody, break_token_rule }) => {
       try {
         const client = getClient();
         // Get mappings to identify text fields for highlighting
@@ -431,13 +484,29 @@ export async function createElasticsearchMcpServer(
           });
         }
 
-        return {
+        const resultContent = {
           content: [
             metadataFragment,
             ...aggregationFragments,
             ...contentFragments,
           ],
         };
+
+        // Check token limit
+        const tokenCheck = checkTokenLimit(resultContent, maxTokenCall, break_token_rule);
+        if (!tokenCheck.allowed) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: tokenCheck.error || "Token limit exceeded",
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        return resultContent;
       } catch (error) {
         console.error(
           `Search failed: ${
@@ -483,9 +552,14 @@ export async function createElasticsearchMcpServer(
       headers: z
         .record(z.string())
         .optional()
-        .describe("Optional HTTP headers for the request")
+        .describe("Optional HTTP headers for the request"),
+      break_token_rule: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe("Set to true to bypass token limits in critical situations. Use sparingly to avoid context overflow."),
     },
-    async ({ method, path, params, body, headers }) => {
+    async ({ method, path, params, body, headers, break_token_rule }) => {
       try {
         const client = getClient();
         // Sanitize the path (remove leading slash if present)
@@ -509,7 +583,7 @@ export async function createElasticsearchMcpServer(
         // Execute the request
         const response = await client.transport.request(options);
 
-        return {
+        const resultContent = {
           content: [
             {
               type: "text" as const,
@@ -521,6 +595,22 @@ export async function createElasticsearchMcpServer(
             }
           ]
         };
+
+        // Check token limit
+        const tokenCheck = checkTokenLimit(resultContent, maxTokenCall, break_token_rule);
+        if (!tokenCheck.allowed) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: tokenCheck.error || "Token limit exceeded",
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        return resultContent;
       } catch (error) {
         console.error(
           `Elasticsearch API request failed: ${

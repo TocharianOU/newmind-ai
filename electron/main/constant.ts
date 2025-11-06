@@ -68,7 +68,8 @@ export const DEF_MCP_SERVER_CONFIG = {
       "env": {
         "KIBANA_URL": "",
         "KIBANA_USERNAME": "",
-        "KIBANA_PASSWORD": ""
+        "KIBANA_PASSWORD": "",
+        "MAX_TOKEN_CALL": "8000"
       }
     },
     "elasticsearch-sl": {
@@ -83,7 +84,8 @@ export const DEF_MCP_SERVER_CONFIG = {
         "ES_USERNAME": "",
         "ES_PASSWORD": "",
         "ES_CA_CERT": "",
-        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0",
+        "MAX_TOKEN_CALL": "8000"
       }
     }
   }

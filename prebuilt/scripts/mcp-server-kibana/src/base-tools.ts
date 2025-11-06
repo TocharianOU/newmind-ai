@@ -128,26 +128,46 @@ function resolveRef(obj: any, doc: any, seen = new Set()): any {
   return result;
 }
 
-export function registerBaseTools(server: ServerBase, kibanaClient: KibanaClient, defaultSpace: string) {
+export function registerBaseTools(
+  server: ServerBase, 
+  kibanaClient: KibanaClient, 
+  defaultSpace: string,
+  maxTokenCall?: number,
+  checkTokenFn?: any
+) {
   // Tool: Get Kibana server status
   server.tool(
     "get_status",
     `Get Kibana server status with multi-space support`,
     z.object({
-      space: z.string().optional().describe("Target Kibana space (optional, defaults to configured space)")
+      space: z.string().optional().describe("Target Kibana space (optional, defaults to configured space)"),
+      break_token_rule: z.boolean().optional().default(false).describe("Set to true to bypass token limits in critical situations")
     }),
-    async ({ space }): Promise<ToolResponse> => {
+    async ({ space, break_token_rule }): Promise<ToolResponse> => {
       try {
         const targetSpace = space || defaultSpace;
         const response = await kibanaClient.get('/api/status', { space });
-        return {
+        const result: ToolResponse = {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `[Space: ${targetSpace}] Kibana server status: ${JSON.stringify(response, null, 2)}`
             }
           ]
         };
+
+        // Check token limit if function is provided
+        if (checkTokenFn && maxTokenCall) {
+          const tokenCheck = checkTokenFn(result, maxTokenCall, break_token_rule);
+          if (!tokenCheck.allowed) {
+            return {
+              content: [{ type: "text", text: tokenCheck.error! }],
+              isError: true
+            };
+          }
+        }
+
+        return result;
       } catch (error) {
         console.error(`Failed to get server status: ${error}`);
         return {
@@ -172,9 +192,10 @@ export function registerBaseTools(server: ServerBase, kibanaClient: KibanaClient
       path: z.string(),
       body: z.any().optional(),
       params: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
-      space: z.string().optional().describe("Target Kibana space (optional, defaults to configured space)")
+      space: z.string().optional().describe("Target Kibana space (optional, defaults to configured space)"),
+      break_token_rule: z.boolean().optional().default(false).describe("Set to true to bypass token limits in critical situations")
     }),
-    async ({ method, path, body, params, space }): Promise<ToolResponse> => {
+    async ({ method, path, body, params, space, break_token_rule }): Promise<ToolResponse> => {
       try {
         const targetSpace = space || defaultSpace;
         let url = path;
@@ -203,14 +224,27 @@ export function registerBaseTools(server: ServerBase, kibanaClient: KibanaClient
             throw new Error(`Unsupported HTTP method: ${method}`);
         }
 
-        return {
+        const result: ToolResponse = {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `[Space: ${targetSpace}] API response: ${JSON.stringify(response, null, 2)}`
             }
           ]
         };
+
+        // Check token limit if function is provided
+        if (checkTokenFn && maxTokenCall) {
+          const tokenCheck = checkTokenFn(result, maxTokenCall, break_token_rule);
+          if (!tokenCheck.allowed) {
+            return {
+              content: [{ type: "text", text: tokenCheck.error! }],
+              isError: true
+            };
+          }
+        }
+
+        return result;
       } catch (error) {
         console.error(`API request failed: ${error}`);
         return {
