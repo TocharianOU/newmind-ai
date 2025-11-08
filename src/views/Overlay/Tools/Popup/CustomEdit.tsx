@@ -158,23 +158,14 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
           [toolName]: newConfig.mcpServers[toolName]
         }
       }
-      if(newConfig.mcpServers[toolName].transport !== "streamable") {
-        newCustomList.push({
-          name: toolName,
-          mcpServers: encodeMcpServers(newConfig.mcpServers[toolName]),
-          jsonString: JSON.stringify(newJson, null, 2),
-          isError: { isError: false, text: "" },
-          isRangeError: { isError: false, text: "", fieldKey: "", value: 0 }
-        })
-      } else {
-        newOtherList.push({
-          name: toolName,
-          mcpServers: encodeMcpServers(newConfig.mcpServers[toolName]),
-          jsonString: JSON.stringify(newJson, null, 2),
-          isError: { isError: false, text: "" },
-          isRangeError: { isError: false, text: "", fieldKey: "", value: 0 }
-        })
-      }
+      // All transports (stdio, sse, streamable, websocket) go to customList
+      newCustomList.push({
+        name: toolName,
+        mcpServers: encodeMcpServers(newConfig.mcpServers[toolName]),
+        jsonString: JSON.stringify(newJson, null, 2),
+        isError: { isError: false, text: "" },
+        isRangeError: { isError: false, text: "", fieldKey: "", value: 0 }
+      })
     })
     handleError(tmpCustom, newCustomList)
     const index = newCustomList.findIndex(mcp => mcp.name === _toolName)
@@ -891,16 +882,18 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
               onChange={(e) => handleCustomChange("name", e.target.value)}
             />
           </div>
-          {/* Command */}
-          <div className="field-item">
-            <label>Command</label>
-            <input
-              placeholder={t("tools.commandPlaceholder")}
-              type="text"
-              value={currentMcpServers.command || ""}
-              onChange={(e) => handleCustomChange("command", e.target.value)}
-            />
-          </div>
+          {/* Command - only show for stdio transport */}
+          {(!currentMcpServers.transport || currentMcpServers.transport === "stdio") && (
+            <div className="field-item">
+              <label>Command</label>
+              <input
+                placeholder={t("tools.commandPlaceholder")}
+                type="text"
+                value={currentMcpServers?.command || ""}
+                onChange={(e) => handleCustomChange("command", e.target.value)}
+              />
+            </div>
+          )}
           {/* Transport */}
           <div className="field-item">
             <label>Transport</label>
@@ -921,19 +914,22 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
               onSelect={(value) => handleCustomChange("transport", value)}
             />
           </div>
-          {/* URL - for HTTP/SSE/Streamable transports */}
-          <div className="field-item">
-            <label>URL</label>
-            <input
-              placeholder={t("tools.urlPlaceholder")}
-              type="text"
-              value={currentMcpServers.url || ""}
-              onChange={(e) => handleCustomChange("url", e.target.value)}
-            />
-          </div>
-          {/* Args */}
-          <div className="field-item">
-            <label>
+          {/* URL - only for sse/streamable/websocket transports */}
+          {(currentMcpServers.transport === "sse" || currentMcpServers.transport === "streamable" || currentMcpServers.transport === "websocket") && (
+            <div className="field-item">
+              <label>URL</label>
+              <input
+                placeholder={t("tools.urlPlaceholder")}
+                type="text"
+                value={currentMcpServers?.url || ""}
+                onChange={(e) => handleCustomChange("url", e.target.value)}
+              />
+            </div>
+          )}
+          {/* Args - only show for stdio transport */}
+          {(!currentMcpServers.transport || currentMcpServers.transport === "stdio") && (
+            <div className="field-item">
+              <label>
               ARGS
               <button onClick={() => handleCustomChange("args", [...(currentMcpServers.args || []), ""])}>
                 + {t("tools.addArg")}
@@ -964,6 +960,7 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
               ))}
             </div>
           </div>
+          )}
           {/* env */}
           <div className="field-item">
             <label>
@@ -1042,16 +1039,6 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
                   </div>
               ))}
             </div>
-          </div>
-          {/* Url */}
-          <div className="field-item">
-            <label>URL</label>
-            <input
-              placeholder={t("tools.urlPlaceholder")}
-              type="text"
-              value={currentMcpServers.url || ""}
-              onChange={(e) => handleCustomChange("url", e.target.value)}
-            />
           </div>
           {/* Initial Timeout (s) */}
           <div className={`field-item ${isValidRange(currentMcpServers, "initialTimeout")?.isError ? "error" : ""}`}>
