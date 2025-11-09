@@ -54,8 +54,8 @@
   padding-top: 0;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border-weak);
-  border-radius: 12px;
+  border: 2px solid var(--border-weak);
+  border-radius: 16px;
   position: relative;
   z-index: 1;
   background: var(--bg-weak);
@@ -63,6 +63,17 @@
   max-width: $chat-width;
   margin: 0 auto;
   width: 100%;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+
+  &:focus-within {
+    border-color: var(--border-pri-blue);
+    box-shadow: 
+      0 0 0 3px rgba(59, 130, 246, 0.1),
+      0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
 
   .drag-overlay {
     width: 100%;
@@ -183,10 +194,19 @@
         height: 38px;
         line-height: 1;
         padding: 4px 7px;
-        border-radius: 8px;
+        border-radius: 10px;
         font-size: 1em;
         cursor: pointer;
         border: none;
+        transition: all 0.2s ease;
+
+        &:hover {
+          transform: scale(1.05);
+        }
+
+        &:active {
+          transform: scale(0.98);
+        }
       }
     }
   }

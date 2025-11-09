@@ -2,12 +2,14 @@
 
 .custom-button {
   background-color: var(--bg);
-  box-shadow: 0 3px 7px var(--shadow-btn-white);
-  transition: background-color $transition-normal ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: all $transition-fast ease;
   display: flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
+  border-radius: 10px;
+  font-weight: 500;
 
   &:hover,
   &:focus {
@@ -17,6 +19,12 @@
 
   &:hover {
     background-color: var(--bg-btn-hover-white);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 
   .loading-spinner {
@@ -61,51 +69,59 @@
   &.white {
     background-color: var(--bg);
     border: 1px solid var(--border-weak);
-    box-shadow: 0 3px 7px var(--shadow-btn-white);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
     color: var(--text);
 
     &:hover {
       background-color: var(--bg-btn-hover-white);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
     }
   }
 
   &.gray {
     background-color: var(--bg-op-dark-extremeweak);
-    box-shadow: 0 3px 7px var(--shadow);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
     color: var(--text);
 
     &:hover {
       background-color: var(--bg-op-dark-weak);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
     }
   }
 
   &.success-green {
-    background: var(--bg-success);
-    box-shadow: 0 3px 7px var(--shadow-btn-green);
+    background: linear-gradient(135deg, var(--bg-success) 0%, var(--bg-hover-success) 100%);
+    box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3);
     color: var(--text-light);
+    border: none;
 
     &:hover {
-      background-color: var(--bg-hover-success);
+      background: linear-gradient(135deg, var(--bg-hover-success) 0%, var(--bg-active-success) 100%);
+      box-shadow: 0 6px 16px rgba(82, 196, 26, 0.4);
     }
   }
 
   &.green {
-    background-color: var(--bg-pri-green);
-    box-shadow: 0 3px 7px var(--shadow-btn-green);
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     color: var(--text-light);
+    border: none;
 
     &:hover {
-      background-color: var(--bg-btn-hover-green);
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
     }
   }
 
   &.blue {
-    background-color: var(--bg-pri-blue);
-    box-shadow: 0 3px 7px var(--shadow-btn-blue);
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     color: var(--text-light);
+    border: none;
 
     &:hover {
-      background-color: var(--bg-hover-blue);
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
     }
   }
 

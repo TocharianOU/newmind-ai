@@ -39,8 +39,9 @@
     bottom: 0;
     background-color: var(--bg-op-dark-mediumweak);
     border: 1px solid var(--border-inverted-op-mediumweak);
-    -webkit-transition: .4s;
-    transition: .4s;
+    -webkit-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 
     &:before {
       content: "";
@@ -51,8 +52,9 @@
       background-color: #ffffff;
       border-radius: 50%;
       top: 1px;
-      -webkit-transition: .4s;
-      transition: .4s;
+      -webkit-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
   }
 
