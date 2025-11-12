@@ -58,3 +58,5 @@ prebuilt/scripts/mcp-server-*/.git/
 prebuilt/scripts/mcp-server-*/dist/
 prebuilt/scripts/mcp-server-*/yarn.lock
 prebuilt/scripts/mcp-server-*/package-lock.json
+
+temp/
