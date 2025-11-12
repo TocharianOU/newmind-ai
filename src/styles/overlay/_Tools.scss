@@ -179,6 +179,7 @@
       margin-bottom: 8px;
       color: var(--text-weak);
     }
+
     .field-model-description {
       margin-bottom: -1rem;
     }
@@ -213,7 +214,7 @@
     font-size: 14px;
   }
 
-  > form > .error-message {
+  >form>.error-message {
     cursor: pointer;
     word-break: break-all;
   }
@@ -365,7 +366,8 @@
         align-items: center;
         gap: 12px;
 
-        img, svg {
+        img,
+        svg {
           width: 24px;
           height: 24px;
         }
@@ -506,7 +508,8 @@
           align-items: center;
           gap: 12px;
 
-          img, svg {
+          img,
+          svg {
             width: 24px;
             height: 24px;
           }
@@ -593,7 +596,8 @@
         display: block;
         padding: 0;
         max-height: 420px;
-        overflow-y: auto;;
+        overflow-y: auto;
+        ;
 
         @include scrollbar;
 
@@ -921,7 +925,7 @@
 
     .tool-edit-list {
       width: 250px;
-      height: calc( 100% + 73px );
+      height: calc(100% + 73px);
       z-index: 1;
       overflow-y: auto;
       display: flex;
@@ -1130,6 +1134,7 @@
             }
 
             &.error {
+
               input,
               .select-button {
                 border: 2px solid var(--border-error);
@@ -1217,7 +1222,7 @@
           min-width: 820px;
         }
 
-        > [class^="cm-theme-"] {
+        >[class^="cm-theme-"] {
           display: flex;
           flex: 1;
 
@@ -1291,8 +1296,13 @@
           }
 
           @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+              transform: rotate(0deg);
+            }
+
+            100% {
+              transform: rotate(360deg);
+            }
           }
 
           .tool-edit-json-editor-log-title-icon svg {
@@ -1353,11 +1363,25 @@
           }
 
           @keyframes horizontalDots {
-            0% { clip-path: inset(0 100% 0 0); }
-            25% { clip-path: inset(0 75% 0 0); }
-            50% { clip-path: inset(0 50% 0 0); }
-            75% { clip-path: inset(0 25% 0 0); }
-            100% { clip-path: inset(0 0 0 0); }
+            0% {
+              clip-path: inset(0 100% 0 0);
+            }
+
+            25% {
+              clip-path: inset(0 75% 0 0);
+            }
+
+            50% {
+              clip-path: inset(0 50% 0 0);
+            }
+
+            75% {
+              clip-path: inset(0 25% 0 0);
+            }
+
+            100% {
+              clip-path: inset(0 0 0 0);
+            }
           }
         }
       }
@@ -1610,7 +1634,7 @@
     flex: 1 1 0;
     min-height: 0;
 
-    > .default-loader {
+    >.default-loader {
       margin: auto;
 
       svg {
@@ -1906,6 +1930,7 @@
     from {
       opacity: 0;
     }
+
     to {
       opacity: 1;
     }
@@ -1949,7 +1974,15 @@
 
   @include scrollbar;
 
-  h1, h2, h3, h4, h5, h6, strong, p, ul {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  strong,
+  p,
+  ul {
     margin: 0;
   }
 
@@ -1957,7 +1990,8 @@
     font-size: 1.8em;
   }
 
-  h1, ul {
+  h1,
+  ul {
     line-height: 1;
   }
 
@@ -1975,8 +2009,9 @@
     pre {
       @include scrollbar;
     }
+
     code {
-      background: none!important;
+      background: none !important;
 
       span {
         border: none;
@@ -2012,11 +2047,13 @@
     border-collapse: collapse;
     margin-bottom: 10px;
 
-    th, td {
+    th,
+    td {
       border: 1px solid var(--border-weak);
       padding: 4px 8px;
 
-      code, tt {
+      code,
+      tt {
         padding: .2em .4em;
         margin: 0;
         font-size: 85%;
@@ -2045,6 +2082,7 @@
   .popup-confirm-content {
     padding: 16px 50px;
   }
+
   .oap-high-cost-content {
     width: 100%;
     display: flex;
@@ -2101,7 +2139,7 @@
             }
           }
 
-          li + li {
+          li+li {
             margin-top: 5px;
           }
 
