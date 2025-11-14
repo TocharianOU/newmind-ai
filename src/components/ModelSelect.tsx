@@ -13,13 +13,13 @@ import { modelSettingsAtom } from "../atoms/modelState"
 import { getGroupTerm, getModelTerm, getTermFromRawModelConfig, GroupTerm, intoRawModelConfig, matchOpenaiCompatible, ModelTerm, queryGroup, queryModel } from "../helper/model"
 import isEqual from "lodash/isEqual"
 
-const DEFAULT_MODEL = {group: {}, model: {}}
+const DEFAULT_MODEL = { group: {}, model: {} }
 
 const ModelSelect = () => {
   const { t } = useTranslation()
   const config = useAtomValue(configAtom)
   const saveAllConfig = useSetAtom(writeRawConfigAtom)
-  const [model, setModel] = useState<{group: GroupTerm, model: ModelTerm}>(DEFAULT_MODEL)
+  const [model, setModel] = useState<{ group: GroupTerm, model: ModelTerm }>(DEFAULT_MODEL)
   const openOverlay = useSetAtom(openOverlayAtom)
   const showToast = useSetAtom(showToastAtom)
   const systemTheme = useAtomValue(systemThemeAtom)
@@ -54,16 +54,16 @@ const ModelSelect = () => {
           .map((model) => ({
             provider: group.modelProvider,
             name: `${getModelNamePrefix(group)}/${model.model}`,
-            value: {group: getGroupTerm(group), model: getModelTerm(model)},
+            value: { group: getGroupTerm(group), model: getModelTerm(model) },
           })
-      ))
+          ))
   }, [settings])
 
   useEffect(() => {
     setModel(getTermFromRawModelConfig(config) ?? DEFAULT_MODEL)
   }, [config])
 
-  const handleModelChange = async (value: {group: GroupTerm, model: ModelTerm}) => {
+  const handleModelChange = async (value: { group: GroupTerm, model: ModelTerm }) => {
     const _model = model
     setModel(value)
     try {
@@ -90,7 +90,7 @@ const ModelSelect = () => {
     }
   }
 
-  const equalCustomizer = useCallback((a: {group: GroupTerm, model: ModelTerm}, b: {group: GroupTerm, model: ModelTerm}) => {
+  const equalCustomizer = useCallback((a: { group: GroupTerm, model: ModelTerm }, b: { group: GroupTerm, model: ModelTerm }) => {
     if (b.group.modelProvider !== "openai_compatible" && b.group.baseURL) {
       const matchProvider = matchOpenaiCompatible(b.group.baseURL)
       if (matchProvider !== "openai_compatible") {
@@ -111,18 +111,18 @@ const ModelSelect = () => {
         options={modelList.map((model, i) => ({
           value: model.value,
           label: (
-              <div className="model-select-label" key={i}>
-                <img
-                  src={PROVIDER_ICONS[model.provider]}
-                  alt={model.provider}
-                  className={`model-select-label-icon ${isProviderIconNoFilter(model.provider, userTheme, systemTheme) ? "no-filter" : ""}`}
-                />
-                <span className="model-select-label-text">
-                  {model.name}
-                </span>
-              </div>
-            )
-          })
+            <div className="model-select-label" key={i}>
+              <img
+                src={PROVIDER_ICONS[model.provider]}
+                alt={model.provider}
+                className={`model-select-label-icon ${isProviderIconNoFilter(model.provider, userTheme, systemTheme) ? "no-filter" : ""}`}
+              />
+              <span className="model-select-label-text">
+                {model.name}
+              </span>
+            </div>
+          )
+        })
         )}
         placeholder={modelList.length === 0 ? t("models.noModelAlertOption") : t("models.selectModelPlaceHolder")}
         value={model!}
