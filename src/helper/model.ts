@@ -148,6 +148,7 @@ export function getModelProviderFromModelConfig(rawConfig: ModelConfig): ModelPr
 }
 
 export function matchOpenaiCompatible(baseURL: string): ModelProvider {
+  // 精确匹配默认地址
   switch (baseURL) {
     case defaultInterface.openrouter["baseURL"].default:
       return "openrouter"
@@ -161,9 +162,40 @@ export function matchOpenaiCompatible(baseURL: string): ModelProvider {
       return "nvdia"
     case defaultInterface.perplexity["baseURL"].default:
       return "perplexity"
-    default:
-      return "openai_compatible"
   }
+
+  // 模糊匹配常见模式（支持自定义地址）
+  // LM Studio: 端口 1234，路径包含 /v1
+  if (baseURL.includes(":1234") && baseURL.includes("/v1")) {
+    return "lmstudio"
+  }
+
+  // OpenRouter
+  if (baseURL.includes("openrouter.ai")) {
+    return "openrouter"
+  }
+
+  // Groq
+  if (baseURL.includes("api.groq.com")) {
+    return "groq"
+  }
+
+  // Grok (X.AI)
+  if (baseURL.includes("api.x.ai")) {
+    return "grok"
+  }
+
+  // NVIDIA
+  if (baseURL.includes("api.nvidia.com")) {
+    return "nvdia"
+  }
+
+  // Perplexity
+  if (baseURL.includes("api.perplexity.ai")) {
+    return "perplexity"
+  }
+
+  return "openai_compatible"
 }
 
 export function groupRawModelConfig(map: ModelConfigMap): ModelConfig[][] {
@@ -336,79 +368,79 @@ function keyMask(key: string): string {
 
 export function getGroupDisplayDetail(group: LLMGroup): string[] {
   switch (group.modelProvider) {
-  case "bedrock":
-    return [
-      `KeyId: ${keyMask(group.extra.credentials.accessKeyId)}`,
-      `SecretKey: ${keyMask(group.extra.credentials.secretAccessKey)}`,
-      `Region: ${group.extra.region}`
-    ]
-  case "ollama":
-    return [group.baseURL || ""]
-  default:
-    if (group.apiKey && group.baseURL) {
-      return [`Key: ${keyMask(group.apiKey)}`, group.baseURL]
-    }
+    case "bedrock":
+      return [
+        `KeyId: ${keyMask(group.extra.credentials.accessKeyId)}`,
+        `SecretKey: ${keyMask(group.extra.credentials.secretAccessKey)}`,
+        `Region: ${group.extra.region}`
+      ]
+    case "ollama":
+      return [group.baseURL || ""]
+    default:
+      if (group.apiKey && group.baseURL) {
+        return [`Key: ${keyMask(group.apiKey)}`, group.baseURL]
+      }
 
-    if (group.apiKey) {
-      return [`Key: ${keyMask(group.apiKey)}`]
-    }
+      if (group.apiKey) {
+        return [`Key: ${keyMask(group.apiKey)}`]
+      }
 
-    return [group.baseURL || ""]
+      return [group.baseURL || ""]
   }
 }
 
 export function getGroupDisplayKeyInMenu(group: LLMGroup): string {
   switch (group.modelProvider) {
-  case "bedrock":
-    return keyMask(group.extra.credentials.accessKeyId)
-  case "ollama":
-  case "lmstudio":
-    return group.modelProvider
-  default:
-    return keyMask(group.apiKey || "")
+    case "bedrock":
+      return keyMask(group.extra.credentials.accessKeyId)
+    case "ollama":
+    case "lmstudio":
+      return group.modelProvider
+    default:
+      return keyMask(group.apiKey || "")
   }
 }
 
 export function getGroupTerm(group: LLMGroup): GroupTerm {
   switch (group.modelProvider) {
-  case "bedrock":
-    return {
-      modelProvider: "bedrock",
-      extra: {
-        credentials: {
-          accessKeyId: group.extra.credentials.accessKeyId
+    case "bedrock":
+      return {
+        modelProvider: "bedrock",
+        extra: {
+          credentials: {
+            accessKeyId: group.extra.credentials.accessKeyId
+          }
         }
       }
-    }
-  case "ollama":
-    return {
-      modelProvider: "ollama",
-      ...(group.baseURL && { baseURL: group.baseURL } || {})
-    }
-  case "lmstudio":
-    return {
-      modelProvider: "lmstudio",
-      apiKey: "lmstudio",
-      baseURL: group.baseURL
-    }
-  default:
-    if (group.apiKey && group.baseURL) {
+    case "ollama":
       return {
-        modelProvider: group.modelProvider,
-        apiKey: group.apiKey,
+        modelProvider: "ollama",
+        ...(group.baseURL && { baseURL: group.baseURL } || {})
+      }
+    case "lmstudio":
+      return {
+        modelProvider: "lmstudio",
+        apiKey: "lmstudio",
         baseURL: group.baseURL
       }
-    } else if (group.apiKey) {
+    default:
+      if (group.apiKey && group.baseURL) {
+        return {
+          modelProvider: group.modelProvider,
+          apiKey: group.apiKey,
+          baseURL: group.baseURL
+        }
+      } else if (group.apiKey) {
+        return {
+          modelProvider: group.modelProvider,
+          apiKey: group.apiKey
+        }
+      }
+
       return {
         modelProvider: group.modelProvider,
-        apiKey: group.apiKey
+        baseURL: group.baseURL
       }
-    }
-
-    return {
-      modelProvider: group.modelProvider,
-      baseURL: group.baseURL
-    }
   }
 }
 
@@ -445,18 +477,18 @@ export function fieldsToLLMGroup(provider: ModelProvider, obj: Record<string, an
 
   const { apiKey, baseURL, model: _, ...other } = obj
   switch (provider) {
-  case "bedrock":
-    mutGroup.extra = { credentials: other }
-    break
-  default:
-    if (apiKey) {
-      mutGroup.apiKey = apiKey
-    }
-    if (baseURL) {
-      mutGroup.baseURL = baseURL
-    }
+    case "bedrock":
+      mutGroup.extra = { credentials: other }
+      break
+    default:
+      if (apiKey) {
+        mutGroup.apiKey = apiKey
+      }
+      if (baseURL) {
+        mutGroup.baseURL = baseURL
+      }
 
-    mutGroup.extra = { ...other }
+      mutGroup.extra = { ...other }
   }
 
   return mutGroup
