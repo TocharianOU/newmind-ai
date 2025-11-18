@@ -237,12 +237,8 @@ class LLMAnthropicConfig(LLMConfig):
     def update_max_tokens(self) -> Self:
         """Update default headers for large tokens."""
         if self.max_tokens is None:
-            if self.model.startswith("claude-3-7"):
-                self.max_tokens = 128000
-            elif self.model.startswith("claude-3-5"):
-                self.max_tokens = 8129
-            else:
-                self.max_tokens = 4096
+            # All models default to 32000 tokens (safe for 128k/256k context models)
+            self.max_tokens = 32000
         if self.max_tokens > 64000:  # noqa: PLR2004
             if self.default_headers is None:
                 self.default_headers = {}
@@ -273,9 +269,11 @@ class LLMOapConfig(LLMConfig):
     @model_validator(mode="after")
     def update_max_tokens(self) -> Self:
         """Update default headers for large tokens."""
-        if self.model == "claude-3-7-sonnet-20250219":
-            if self.max_tokens is None:
-                self.max_tokens = 128000
+        # All OAP models default to 32000 tokens (safe for newmind models with 128k/256k context)
+        if self.max_tokens is None:
+            self.max_tokens = 32000
+        # Enable extended output headers for large token configurations
+        if self.max_tokens > 64000:  # noqa: PLR2004
             if self.default_headers is None:
                 self.default_headers = {}
             if "anthropic-beta" not in self.default_headers:

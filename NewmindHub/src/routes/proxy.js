@@ -216,7 +216,7 @@ router.post('/messages', authenticateToken, async (req, res) => {
     
     // Ensure required Anthropic parameters
     if (!proxyRequest.max_tokens) {
-      proxyRequest.max_tokens = 4096;
+      proxyRequest.max_tokens = 32000;
     }
     
     // Build Anthropic API headers
@@ -458,7 +458,7 @@ router.post('/chat/completions', authenticateToken, async (req, res) => {
       const anthropicRequest = {
         model: realModelName,  // Use real Claude model name
         messages: req.body.messages,
-        max_tokens: req.body.max_tokens || 4096,
+        max_tokens: req.body.max_tokens || 32000,
         stream: req.body.stream || false
       };
       

@@ -479,11 +479,16 @@ const SpecialParameters = ({
   if (modelName.includes("o3-mini") && provider === "openai") {
     return <ReasoningLevelParameter parameters={parameters} setParameters={setParameters} />
   }
-  if (modelName.includes("claude-3-7") && (provider === "anthropic" || provider === "bedrock")) {
+  // Claude 4.x, 4.5, and 3.7+ models support extended thinking tokens
+  if ((modelName.includes("claude-4") || 
+       modelName.includes("claude-sonnet-4") || 
+       modelName.includes("claude-opus-4") ||
+       modelName.includes("claude-3-7")) && 
+      (provider === "anthropic" || provider === "bedrock")) {
     return (
       <TokenBudgetParameter
         min={1024}
-        max={4096}
+        max={32000}
         parameters={parameters}
         setParameters={setParameters}
       />
