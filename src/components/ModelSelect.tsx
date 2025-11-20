@@ -91,18 +91,35 @@ const ModelSelect = () => {
   }
 
   const equalCustomizer = useCallback((a: { group: GroupTerm, model: ModelTerm }, b: { group: GroupTerm, model: ModelTerm }) => {
-    if (b.group.modelProvider !== "openai_compatible" && b.group.baseURL) {
-      const matchProvider = matchOpenaiCompatible(b.group.baseURL)
+    // 创建副本避免修改原对象
+    const aNormalized = { ...a, group: { ...a.group } }
+    const bNormalized = { ...b, group: { ...b.group } }
+    
+    // 标准化 a 的 provider
+    if (aNormalized.group.modelProvider !== "openai_compatible" && aNormalized.group.baseURL) {
+      const matchProvider = matchOpenaiCompatible(aNormalized.group.baseURL)
       if (matchProvider !== "openai_compatible") {
-        b.group.modelProvider = matchProvider
+        aNormalized.group.modelProvider = matchProvider
       }
     }
 
-    if (b.group.modelProvider === "openai" && b.group.baseURL) {
-      b.group.modelProvider = "openai_compatible"
+    if (aNormalized.group.modelProvider === "openai" && aNormalized.group.baseURL) {
+      aNormalized.group.modelProvider = "openai_compatible"
+    }
+    
+    // 标准化 b 的 provider
+    if (bNormalized.group.modelProvider !== "openai_compatible" && bNormalized.group.baseURL) {
+      const matchProvider = matchOpenaiCompatible(bNormalized.group.baseURL)
+      if (matchProvider !== "openai_compatible") {
+        bNormalized.group.modelProvider = matchProvider
+      }
     }
 
-    return isEqual(a, b)
+    if (bNormalized.group.modelProvider === "openai" && bNormalized.group.baseURL) {
+      bNormalized.group.modelProvider = "openai_compatible"
+    }
+
+    return isEqual(aNormalized, bNormalized)
   }, [])
 
   return (

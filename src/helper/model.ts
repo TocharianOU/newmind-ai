@@ -423,6 +423,13 @@ export function getGroupTerm(group: LLMGroup): GroupTerm {
         apiKey: "lmstudio",
         baseURL: group.baseURL
       }
+    case "openai_compatible":
+      // 确保 openai_compatible 总是包含 baseURL
+      return {
+        modelProvider: "openai_compatible",
+        baseURL: group.baseURL,
+        ...(group.apiKey && { apiKey: group.apiKey } || {})
+      }
     default:
       if (group.apiKey && group.baseURL) {
         return {
@@ -435,11 +442,15 @@ export function getGroupTerm(group: LLMGroup): GroupTerm {
           modelProvider: group.modelProvider,
           apiKey: group.apiKey
         }
+      } else if (group.baseURL) {
+        return {
+          modelProvider: group.modelProvider,
+          baseURL: group.baseURL
+        }
       }
 
       return {
-        modelProvider: group.modelProvider,
-        baseURL: group.baseURL
+        modelProvider: group.modelProvider
       }
   }
 }
