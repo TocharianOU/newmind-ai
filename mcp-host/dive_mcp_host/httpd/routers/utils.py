@@ -456,6 +456,29 @@ class ChatProcessor:
                             resource_usage=resource_usage,
                         ),
                     )
+                    # Save tool_call messages separately for history display
+                    if message.tool_calls:
+                        for tool_call in message.tool_calls:
+                            # Handle both dict and object formats
+                            if isinstance(tool_call, dict):
+                                tool_call_id = tool_call.get("id", str(uuid4()))
+                                tool_call_content = json.dumps(tool_call)
+                            else:
+                                # ToolCall object from langchain
+                                tool_call_id = getattr(tool_call, "id", str(uuid4()))
+                                tool_call_content = json.dumps({
+                                    "name": getattr(tool_call, "name", ""),
+                                    "args": getattr(tool_call, "args", {}),
+                                    "id": tool_call_id,
+                                })
+                            await db.create_message(
+                                NewMessage(
+                                    chatId=chat_id,
+                                    role=Role.TOOL_CALL,
+                                    messageId=tool_call_id,
+                                    content=tool_call_content,
+                                ),
+                            )
                 elif isinstance(message, ToolMessage):
                     if isinstance(message.content, list):
                         content = json.dumps(message.content)
