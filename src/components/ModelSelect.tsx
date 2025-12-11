@@ -94,29 +94,58 @@ const ModelSelect = () => {
     // 创建副本避免修改原对象
     const aNormalized = { ...a, group: { ...a.group } }
     const bNormalized = { ...b, group: { ...b.group } }
-    
+
+    // 定义 openai 兼容的 provider 列表
+    const openaiCompatibleProviders = [
+      "openai_compatible",
+      "lmstudio",
+      "openrouter",
+      "groq",
+      "grok",
+      "nvdia",
+      "perplexity",
+      "openai"
+    ]
+
     // 标准化 a 的 provider
-    if (aNormalized.group.modelProvider !== "openai_compatible" && aNormalized.group.baseURL) {
+    if (aNormalized.group.modelProvider === "openai" && aNormalized.group.baseURL) {
+      aNormalized.group.modelProvider = "openai_compatible"
+    } else if (aNormalized.group.modelProvider !== "openai_compatible" && aNormalized.group.baseURL) {
       const matchProvider = matchOpenaiCompatible(aNormalized.group.baseURL)
       if (matchProvider !== "openai_compatible") {
         aNormalized.group.modelProvider = matchProvider
       }
     }
 
-    if (aNormalized.group.modelProvider === "openai" && aNormalized.group.baseURL) {
-      aNormalized.group.modelProvider = "openai_compatible"
-    }
-    
     // 标准化 b 的 provider
-    if (bNormalized.group.modelProvider !== "openai_compatible" && bNormalized.group.baseURL) {
+    if (bNormalized.group.modelProvider === "openai" && bNormalized.group.baseURL) {
+      bNormalized.group.modelProvider = "openai_compatible"
+    } else if (bNormalized.group.modelProvider !== "openai_compatible" && bNormalized.group.baseURL) {
       const matchProvider = matchOpenaiCompatible(bNormalized.group.baseURL)
       if (matchProvider !== "openai_compatible") {
         bNormalized.group.modelProvider = matchProvider
       }
     }
 
-    if (bNormalized.group.modelProvider === "openai" && bNormalized.group.baseURL) {
-      bNormalized.group.modelProvider = "openai_compatible"
+    // 如果两个都是 openai 兼容的 provider，且 baseURL 相同，则统一标准化后再比较
+    // 忽略 apiKey 的差异（因为 lmstudio 等 provider 的 apiKey 可能是固定的）
+    const aIsOpenaiCompatible = openaiCompatibleProviders.includes(aNormalized.group.modelProvider || "")
+    const bIsOpenaiCompatible = openaiCompatibleProviders.includes(bNormalized.group.modelProvider || "")
+
+    if (aIsOpenaiCompatible && bIsOpenaiCompatible &&
+      aNormalized.group.baseURL && bNormalized.group.baseURL &&
+      aNormalized.group.baseURL === bNormalized.group.baseURL) {
+      // 统一标准化：都使用 baseURL 匹配的结果
+      const matchedProvider = matchOpenaiCompatible(aNormalized.group.baseURL)
+      aNormalized.group.modelProvider = matchedProvider
+      bNormalized.group.modelProvider = matchedProvider
+      // 移除 apiKey 字段进行比较（因为不同 provider 的 apiKey 可能不同）
+      const { apiKey: aApiKey, ...aGroupWithoutApiKey } = aNormalized.group
+      const { apiKey: bApiKey, ...bGroupWithoutApiKey } = bNormalized.group
+      return isEqual(
+        { group: aGroupWithoutApiKey, model: aNormalized.model },
+        { group: bGroupWithoutApiKey, model: bNormalized.model }
+      )
     }
 
     return isEqual(aNormalized, bNormalized)
