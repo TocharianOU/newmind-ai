@@ -20,6 +20,7 @@ import Zoom from "../../components/Zoom"
 import { convertLocalFileSrc } from "../../ipc/util"
 import Button from "../../components/Button"
 import { useLocation } from "react-router-dom"
+import { isElectron } from "../../ipc/env"
 
 declare global {
   namespace JSX {
@@ -37,6 +38,21 @@ declare global {
       }
       "thread-query-error": {
         children: any
+      }
+      "document_card": {
+        title?: string
+        page?: string
+        total_pages?: string
+        preview_url?: string
+        minio_bucket?: string
+        minio_prefix?: string
+        minio_base_url?: string
+        file_type?: string
+        file_size?: string
+        project_name?: string
+        drawing_number?: string
+        checksum?: string
+        original_file_url?: string
       }
     }
   }
@@ -152,6 +168,89 @@ const Message = ({ messageId, text, isSent, files, isError, isLoading, onRetry, 
     )
   }, [editedText])
 
+  // 在外部浏览器中打开URL
+  const openExternalUrl = (url: string) => {
+    if (isElectron) {
+      // Electron 环境：使用 IPC 在外部浏览器打开
+      if (window.ipcRenderer && window.ipcRenderer.invoke) {
+        window.ipcRenderer.invoke('open-external-url', url)
+      } else {
+        // 降级方案
+        window.open(url, '_blank')
+      }
+    } else {
+      // Tauri 环境：直接打开
+      window.open(url, '_blank')
+    }
+  }
+
+  // 解析 document_card 标签
+  const parseDocumentCards = (text: string) => {
+    const parts: (string | JSX.Element)[] = []
+    const regex = /<document_card\s+([^>]+)\/>/g
+    let lastIndex = 0
+    let match
+
+    while ((match = regex.exec(text)) !== null) {
+      // 添加标签前的文本
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index))
+      }
+
+      // 解析属性
+      const attrs = match[1]
+      const attrRegex = /(\w+)="([^"]*)"/g
+      const props: Record<string, string> = {}
+      let attrMatch
+      while ((attrMatch = attrRegex.exec(attrs)) !== null) {
+        props[attrMatch[1]] = attrMatch[2]
+      }
+
+      // 生成文档卡片组件
+      // PNG 页面地址：直接使用 preview_url
+      const pngUrl = props.preview_url || ''
+      // 完整文档地址：使用 original_file_url 或构建路径
+      const originalDocUrl = props.original_file_url || `${props.minio_base_url}/${props.minio_bucket}/${props.minio_prefix}/${props.title}`
+
+      parts.push(
+        <div key={match.index} className="document-card-compact">
+          {props.preview_url && (
+            <img 
+              src={props.preview_url} 
+              alt={`Page ${props.page || '1'}`}
+              className="document-preview-img"
+            />
+          )}
+          <div className="document-actions-compact">
+            <button 
+              className="doc-btn-compact doc-download-page"
+              onClick={() => openExternalUrl(pngUrl)}
+              title="下载此页面 PNG 图片"
+            >
+              📄 下载页面
+            </button>
+            <button 
+              className="doc-btn-compact doc-download-full"
+              onClick={() => openExternalUrl(originalDocUrl)}
+              title="下载完整文档"
+            >
+              📥 下载文档
+            </button>
+          </div>
+        </div>
+      )
+
+      lastIndex = regex.lastIndex
+    }
+
+    // 添加剩余文本
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex))
+    }
+
+    return parts.length > 0 ? parts : [text]
+  }
+
   const formattedText = useMemo(() => {
     const _text = isSent ? content : text
     if (isSent) {
@@ -164,8 +263,15 @@ const Message = ({ messageId, text, isSent, files, isError, isLoading, onRetry, 
       ))
     }
 
+    // 先解析 document_card 标签
+    const parts = parseDocumentCards(_text)
+    
+    return parts.map((part, index) => {
+      if (typeof part === 'string') {
+        // 对字符串部分使用 ReactMarkdown 渲染
     return (
       <ReactMarkdown
+            key={index}
         remarkPlugins={[[remarkMath, {
           singleDollarTextMath: false,
           inlineMathDouble: false
@@ -252,7 +358,7 @@ const Message = ({ messageId, text, isSent, files, isError, isLoading, onRetry, 
               imageSrc = convertLocalFileSrc(path)
             }
 
-            return <Zoom allowCopy allowDownload><img src={imageSrc} className={className} /></Zoom>
+            return <img src={imageSrc} className={className} />
           },
           audio({className, src, controls}) {
             let audioSrc = src
@@ -347,7 +453,7 @@ const Message = ({ messageId, text, isSent, files, isError, isLoading, onRetry, 
         }}
       >
         {
-        _text
+        part
           .replaceAll("file://", "https://localfile")
           .replaceAll("</think>\n\n", "\n\n</think>\n\n")
           // prompt tool call from host
@@ -356,6 +462,11 @@ const Message = ({ messageId, text, isSent, files, isError, isLoading, onRetry, 
         }
       </ReactMarkdown>
     )
+      } else {
+        // 直接返回 JSX 元素（document_card）
+        return part
+      }
+    })
   }, [content, text, isSent, isLoading, openToolPanels])
 
   if (isEditing) {
@@ -369,6 +480,7 @@ const Message = ({ messageId, text, isSent, files, isError, isLoading, onRetry, 
   }
 
   return (
+    <>
     <div className="message-container">
       <div className={`message ${isSent ? "sent" : "received"} ${isError ? "error" : ""}`}>
         {formattedText}
@@ -445,6 +557,7 @@ const Message = ({ messageId, text, isSent, files, isError, isLoading, onRetry, 
         )}
       </div>
     </div>
+    </>
   )
 }
 

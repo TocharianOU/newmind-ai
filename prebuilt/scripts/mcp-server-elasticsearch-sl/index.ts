@@ -444,8 +444,34 @@ export async function createElasticsearchMcpServer(
         const contentFragments = result.hits.hits.map((hit) => {
           const highlightedFields = hit.highlight || {};
           const sourceData = hit._source || {};
+          const metadata = (sourceData as any)?.metadata || {};
 
           let content = "";
+
+          // Check if this is a document with MinIO metadata
+          const hasDocumentMetadata = metadata.page_image_url && metadata.minio_base_url;
+          
+          if (hasDocumentMetadata) {
+            // Add document metadata card at the beginning
+            const docCard = `<document_card 
+  title="${metadata.document_name || metadata.filename || 'Document'}" 
+  page="${metadata.page || metadata.page_number || 1}" 
+  total_pages="${metadata.total_pages || 1}"
+  preview_url="${metadata.page_image_url || ''}"
+  minio_bucket="${metadata.minio_bucket || ''}"
+  minio_prefix="${metadata.minio_prefix || ''}"
+  minio_base_url="${metadata.minio_base_url || ''}"
+  file_type="${metadata.file_type || 'unknown'}"
+  file_size="${metadata.file_size || 0}"
+  project_name="${metadata.project_name || ''}"
+  drawing_number="${metadata.drawing_number || ''}"
+  checksum="${metadata.checksum || ''}"
+  original_file_url="${metadata.original_file_url || ''}"
+/>
+
+`;
+            content += docCard;
+          }
 
           for (const [field, highlights] of Object.entries(highlightedFields)) {
             if (highlights && highlights.length > 0) {

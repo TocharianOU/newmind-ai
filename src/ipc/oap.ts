@@ -167,3 +167,31 @@ export function oapLoginWithToken(token: string): Promise<{ success: boolean }> 
 
     return invoke("oap_login_with_token", { token })
 }
+
+/**
+ * 获取OAuth配置
+ * @returns OAuth配置信息（包含启用状态、品牌文案、可用提供商列表）
+ */
+export function oapGetOAuthConfig(): Promise<ApiResponse<{
+    oauthEnabled: boolean;
+    brandText: string;
+    providers: Array<{ name: string; displayName: string }>;
+}>> {
+    if (isElectron) {
+        return window.ipcRenderer.oapGetOAuthConfig()
+    }
+
+    return invoke("oap_get_oauth_config")
+}
+
+/**
+ * 启动OAuth登录流程
+ * @param provider OAuth提供商名称 (google, microsoft, github, gitlab)
+ */
+export function oapLoginWithOAuth(provider: string): Promise<{ success: boolean }> {
+    if (isElectron) {
+        return window.ipcRenderer.oapLoginWithOAuth(provider)
+    }
+
+    return invoke("oap_login_with_oauth", { provider })
+}

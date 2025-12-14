@@ -11,10 +11,15 @@ model User {
   id            String   @id @default(uuid())
   email         String   @unique
   username      String
-  password      String
+  password      String?  // 改为可选（OAuth用户无密码）
   picture       String?  @db.VarChar(500)
   team          String?
   tokenBalance  Int      @default(0)  // 用户 Token 余额
+  
+  // OAuth字段
+  oauthProvider String?  // google, microsoft, github, gitlab
+  oauthId       String?  // OAuth提供商的用户ID
+  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -30,6 +35,7 @@ model User {
   messages      Message[]
 
   @@index([email])
+  @@index([oauthProvider, oauthId])
 }
 
 model Subscription {

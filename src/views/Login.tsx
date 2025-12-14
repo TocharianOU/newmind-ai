@@ -4,9 +4,20 @@ import "@/styles/pages/_Login.scss"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useNavigate } from "react-router-dom"
 import { isLoggedInOAPAtom, oapUserAtom } from "../atoms/oapState"
-import { openOapLoginPage, oapGetMe, oapLogin, oapLoginWithToken } from "../ipc/oap"
+import { openOapLoginPage, oapGetMe, oapLogin, oapLoginWithToken, oapGetOAuthConfig, oapLoginWithOAuth } from "../ipc/oap"
 import Button from "../components/Button"
 import EmbeddedLogin from "../components/EmbeddedLogin"
+
+interface OAuthProvider {
+  name: string;
+  displayName: string;
+}
+
+interface OAuthConfig {
+  oauthEnabled: boolean;
+  brandText: string;
+  providers: OAuthProvider[];
+}
 
 const Login = () => {
   const navigate = useNavigate()
@@ -14,12 +25,30 @@ const Login = () => {
   const isLoggedInOAP = useAtomValue(isLoggedInOAPAtom)
   const setOapUser = useSetAtom(oapUserAtom)
   const [showEmbeddedLogin, setShowEmbeddedLogin] = useState(false)
+  const [oauthConfig, setOAuthConfig] = useState<OAuthConfig | null>(null)
 
   useEffect(() => {
     if (isLoggedInOAP) {
       setIsInitialized(true)
     }
   }, [isLoggedInOAP])
+
+  // 获取OAuth配置
+  useEffect(() => {
+    const fetchOAuthConfig = async () => {
+      try {
+        const response = await oapGetOAuthConfig()
+        if (response.success && response.data) {
+          setOAuthConfig(response.data)
+          console.log('OAuth config loaded:', response.data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch OAuth config:', error)
+      }
+    }
+    
+    fetchOAuthConfig()
+  }, [])
 
   const setIsInitialized = (value: boolean) => {
     localStorage.setItem("isInitialized", value ? "true" : "false")
@@ -57,6 +86,15 @@ const Login = () => {
     setShowEmbeddedLogin(true)
   }
 
+  const handleOAuthLogin = async (provider: string) => {
+    console.log(`Starting OAuth login with ${provider}`)
+    try {
+      await oapLoginWithOAuth(provider)
+    } catch (error) {
+      console.error(`OAuth login failed for ${provider}:`, error)
+    }
+  }
+
   return (
     <>
       <div className="login-page-container">
@@ -89,6 +127,13 @@ const Login = () => {
           <div className="option-gap"></div>
 
           <div className="option-card">
+            {/* 品牌文案 */}
+            {oauthConfig?.brandText && (
+              <div className="oauth-brand-badge">
+                {oauthConfig.brandText}
+              </div>
+            )}
+            
             <h2 className="option-title">{t("login.title2")}</h2>
             <p className="option-description">
               {t("login.description2")}
@@ -106,6 +151,26 @@ const Login = () => {
                 padding="n"
                 onClick={handleLoginClick}
               >{t("login.button3")}</Button>
+              
+              {/* OAuth登录选项（动态显示） */}
+              {oauthConfig?.oauthEnabled && oauthConfig.providers.length > 0 && (
+                <>
+                  <div className="oauth-divider">
+                    <span>{t("login.orUse") || "或使用"}</span>
+                  </div>
+                  {oauthConfig.providers.map((provider) => (
+                    <Button
+                      key={provider.name}
+                      color="gray"
+                      size="full"
+                      padding="n"
+                      onClick={() => handleOAuthLogin(provider.name)}
+                    >
+                      {provider.displayName} {t("common.login") || "登录"}
+                    </Button>
+                  ))}
+                </>
+              )}
             </div>
           </div>
         </div>

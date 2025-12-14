@@ -5,9 +5,13 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
+import passport from 'passport';
 
 // Load environment variables
 dotenv.config();
+
+// Import Passport configuration
+import { setupPassport } from './config/passport.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -95,6 +99,11 @@ app.post('/api/v1/payment/webhook', express.raw({ type: 'application/json' }), s
 // 移除所有请求体大小限制，直到大模型报错为止
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Initialize Passport for OAuth
+setupPassport();
+app.use(passport.initialize());
+logger.info('✓ Passport OAuth initialized');
 
 // Rate limiting
 app.use('/api/', rateLimiter);

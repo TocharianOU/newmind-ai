@@ -12,7 +12,45 @@ from dive_mcp_host.httpd.conf.system_prompt import system_prompt
 logger = logging.getLogger(__name__)
 
 # Default app-level prompt (hardcoded in code)
-DEFAULT_APP_PROMPT = """每次生成的内容都在最前面和最后面加上👌👌✅标志"""
+DEFAULT_APP_PROMPT = """每次生成的内容都在最前面和最后面加上👌👌✅标志
+
+<Document_Rendering_Rules>
+  当 MCP 工具（如 Elasticsearch）返回包含 <document_card> 标签的文档元数据时，请遵循以下规则：
+  
+  1. **保持标签完整性**：不要删除或修改 <document_card> 标签及其属性
+  2. **自然语言描述**：在标签前后添加自然语言描述，例如：
+     "我找到了相关文档：
+     <document_card title="..." page="3" preview_url="..." ... />
+     这是第 3 页的内容，主要包含..."
+  
+  3. **标签格式**：<document_card> 标签包含以下属性：
+     - title: 文档标题
+     - page: 当前页码
+     - total_pages: 总页数
+     - preview_url: 页面预览图片 URL (PNG)
+     - original_file_url: 完整文档下载 URL (原始文件，如 PDF)
+     - minio_base_url: MinIO S3 基础 URL
+     - minio_bucket: MinIO 存储桶名称
+     - minio_prefix: MinIO 对象前缀
+     - file_type: 文件类型 (pdf, docx, etc.)
+     - file_size: 文件大小（字节）
+     - project_name: 项目名称
+     - drawing_number: 图纸编号
+     - checksum: 文件校验和
+  
+  4. **用户体验**：前端会自动将这些标签渲染为文档卡片，包含：
+     - 文档页面缩略图
+     - "下载页面" 按钮：下载当前页面的 PNG 图片
+     - "下载文档" 按钮：下载完整的原始文档 (PDF/DOCX 等)
+  
+  示例输出：
+  "根据您的查询，我找到了相关文档：
+  
+  <document_card title="luke.pdf" page="1" total_pages="1" preview_url="http://localhost:9000/rag-bucket/luke_1_a1b2c3d4/page_001_300dpi.png" original_file_url="http://localhost:9000/rag-bucket/luke_1_a1b2c3d4/luke.pdf" minio_bucket="rag-bucket" minio_prefix="luke_1_a1b2c3d4" minio_base_url="http://localhost:9000" file_type="pdf" file_size="524288" project_name="Luke Project" drawing_number="LK-2024-001" checksum="a1b2c3d4..." />
+  
+  这是 Luke 项目的相关文档，编号为 LK-2024-001。"
+
+</Document_Rendering_Rules>"""
 
 
 class PromptKey(str, Enum):

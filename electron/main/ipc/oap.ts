@@ -53,4 +53,38 @@ export function ipcOapHandler(_win: BrowserWindow) {
     setOAPTokenToHost(token)
     return { success: true }
   })
+
+  // OAuth Configuration - 获取可用的OAuth提供商
+  ipcMain.handle("oap:getOAuthConfig", async () => {
+    try {
+      const response = await fetch(`${OAP_ROOT_URL}/api/auth/config`)
+      const data = await response.json()
+      console.log("OAuth config fetched:", data.data)
+      return data
+    } catch (error) {
+      console.error("Failed to fetch OAuth config:", error)
+      return {
+        success: false,
+        data: {
+          oauthEnabled: false,
+          brandText: "",
+          providers: []
+        },
+        error: "Failed to fetch OAuth configuration"
+      }
+    }
+  })
+
+  // OAuth Login - 启动OAuth登录流程
+  ipcMain.handle("oap:loginWithOAuth", async (_, provider: string) => {
+    try {
+      const url = `${OAP_ROOT_URL}/api/auth/${provider}?client=dive&platform=${process.platform}&hostname=${os.hostname()}`
+      console.log(`Starting OAuth login with ${provider}:`, url)
+      await shell.openExternal(url)
+      return { success: true }
+    } catch (error) {
+      console.error(`Failed to start OAuth login with ${provider}:`, error)
+      return { success: false, error: "Failed to open OAuth login" }
+    }
+  })
 }
