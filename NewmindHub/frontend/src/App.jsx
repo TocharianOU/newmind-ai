@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import Billing from './pages/Billing';
 import PaymentSuccess from './pages/PaymentSuccess';
+import AdminStats from './pages/AdminStats';
 import './App.css';
 
 // Protected Route Component
@@ -117,6 +118,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <PaymentSuccess />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/stats"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <AdminStats />
+            </Layout>
           </ProtectedRoute>
         }
       />
