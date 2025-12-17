@@ -275,6 +275,27 @@
       background: rgba(66, 133, 244, 0.04);
     }
   }
+
+  .azure-button {
+    &:hover:not(:disabled) {
+      border-color: #0078D4;
+      background: rgba(0, 120, 212, 0.04);
+    }
+  }
+
+  .aws-button {
+    &:hover:not(:disabled) {
+      border-color: #FF9900;
+      background: rgba(255, 153, 0, 0.04);
+    }
+  }
+
+  .wechatwork-button {
+    &:hover:not(:disabled) {
+      border-color: #1AAD19;
+      background: rgba(26, 173, 25, 0.04);
+    }
+  }
 }
 
 @keyframes fadeIn {
@@ -381,6 +402,21 @@
       &.google-button:hover:not(:disabled) {
         border-color: #4285F4;
         background: rgba(66, 133, 244, 0.1);
+      }
+
+      &.azure-button:hover:not(:disabled) {
+        border-color: #0078D4;
+        background: rgba(0, 120, 212, 0.1);
+      }
+
+      &.aws-button:hover:not(:disabled) {
+        border-color: #FF9900;
+        background: rgba(255, 153, 0, 0.1);
+      }
+
+      &.wechatwork-button:hover:not(:disabled) {
+        border-color: #1AAD19;
+        background: rgba(26, 173, 25, 0.1);
       }
     }
   }

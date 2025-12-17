@@ -137,4 +137,25 @@
       background: rgba(66, 133, 244, 0.05);
     }
   }
+
+  .azure-button {
+    &:hover {
+      border-color: #0078D4;
+      background: rgba(0, 120, 212, 0.05);
+    }
+  }
+
+  .aws-button {
+    &:hover {
+      border-color: #FF9900;
+      background: rgba(255, 153, 0, 0.05);
+    }
+  }
+
+  .wechatwork-button {
+    &:hover {
+      border-color: #1AAD19;
+      background: rgba(26, 173, 25, 0.05);
+    }
+  }
 }

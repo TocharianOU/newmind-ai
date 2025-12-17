@@ -6,6 +6,7 @@
 import registry from './registry.js';
 import { createGoogleProvider } from './providers/google.js';
 import { createAzureProvider, createAWSProvider } from './providers/generic-oidc.js';
+import { createWeChatWorkProvider } from './providers/wechatwork.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -40,6 +41,16 @@ export function initializeSSOProviders() {
     }
   } catch (error) {
     logger.warn('Failed to initialize AWS SSO provider:', error.message);
+  }
+
+  // WeChatWork (企业微信) provider
+  try {
+    const wechatWorkProvider = createWeChatWorkProvider();
+    if (wechatWorkProvider) {
+      registry.register('wechatwork', wechatWorkProvider);
+    }
+  } catch (error) {
+    logger.warn('Failed to initialize WeChatWork SSO provider:', error.message);
   }
 
   const enabledProviders = registry.getEnabled();

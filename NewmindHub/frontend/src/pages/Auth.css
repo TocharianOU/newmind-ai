@@ -333,6 +333,10 @@
   border-color: #FF9900;
 }
 
+.wechatwork-button:hover:not(:disabled) {
+  border-color: #1AAD19;
+}
+
 /* Responsive Design */
 @media (max-width: 480px) {
   .auth-container {
