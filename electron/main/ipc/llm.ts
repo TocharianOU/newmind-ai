@@ -8,21 +8,31 @@ import {
   ListFoundationModelsCommand,
 } from "@aws-sdk/client-bedrock"
 
+// Timeout helper function - 30 seconds default
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number = 30000): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`Request timeout after ${timeoutMs}ms. Please check your network connection.`)), timeoutMs)
+    )
+  ])
+}
+
 export function ipcLlmHandler(_win: BrowserWindow) {
   ipcMain.handle("llm:openaiModelList", async (_, apiKey: string) => {
     try {
       const client = new OpenAI({ apiKey })
-      const models = await client.models.list()
+      const models = await withTimeout(client.models.list())
       return { results: models.data.map((model) => model.id), error: null }
     } catch (error) {
       return { results: [], error: (error as Error).message }
     }
   })
-  
+
   ipcMain.handle("llm:azureOpenaiModelList", async (_, apiKey: string, azureEndpoint: string, azureDeployment: string, apiVersion: string) => {
     try {
       const client = new AzureOpenAI({ apiKey, endpoint: azureEndpoint, deployment: azureDeployment, apiVersion })
-      const models = await client.models.list()
+      const models = await withTimeout(client.models.list())
       return { results: models.data?.map((model) => model.id) ?? [], error: null }
     } catch (error) {
       return { results: [], error: (error as Error).message }
@@ -32,7 +42,7 @@ export function ipcLlmHandler(_win: BrowserWindow) {
   ipcMain.handle("llm:anthropicModelList", async (_, apiKey: string, baseURL: string) => {
     try {
       const client = new Anthropic({ apiKey, baseURL })
-      const models = await client.models.list()
+      const models = await withTimeout(client.models.list())
       return { results: models.data.map((model: any) => model.id), error: null }
     } catch (error) {
       return { results: [], error: (error as Error).message }
@@ -42,7 +52,7 @@ export function ipcLlmHandler(_win: BrowserWindow) {
   ipcMain.handle("llm:ollamaModelList", async (_, baseURL: string) => {
     try {
       const ollama = new Ollama({ host: baseURL })
-      const list = await ollama.list()
+      const list = await withTimeout(ollama.list())
       return { results: list.models.map((model) => model.name), error: null }
     } catch (error) {
       return { results: [], error: (error as Error).message }
@@ -52,16 +62,16 @@ export function ipcLlmHandler(_win: BrowserWindow) {
   ipcMain.handle("llm:openaiCompatibleModelList", async (_, apiKey: string, baseURL: string) => {
     try {
       console.log(`[DEBUG] OpenAI Compatible Model List - baseURL: ${baseURL}, apiKey: ${apiKey ? apiKey.substring(0, 10) + '...' : 'undefined'}`)
-      
+
       const client = new OpenAI({ apiKey, baseURL })
-      const list = await client.models.list()
-      
+      const list = await withTimeout(client.models.list())
+
       console.log(`[DEBUG] OpenAI Compatible API Response:`, {
         dataLength: list.data?.length || 0,
         firstModel: list.data?.[0]?.id || 'none',
         fullResponse: JSON.stringify(list, null, 2)
       })
-      
+
       // Extract model names and metadata
       const modelsWithMetadata = list.data.map((model) => {
         // Check if model has metadata indicating real provider
@@ -78,11 +88,11 @@ export function ipcLlmHandler(_win: BrowserWindow) {
         }
         return { id: model.id }
       })
-      
-      return { 
-        results: list.data.map((model) => model.id), 
+
+      return {
+        results: list.data.map((model) => model.id),
         metadata: modelsWithMetadata,
-        error: null 
+        error: null
       }
     } catch (error) {
       console.error(`[DEBUG] OpenAI Compatible API Error:`, error)
@@ -93,7 +103,7 @@ export function ipcLlmHandler(_win: BrowserWindow) {
   ipcMain.handle("llm:googleGenaiModelList", async (_, apiKey: string) => {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
-      const response = await fetch(url)
+      const response = await withTimeout(fetch(url))
       const data = await response.json() as { models: { name: string }[] }
       return { results: data.models.map((model) => model.name), error: null }
     } catch (error) {
@@ -104,7 +114,7 @@ export function ipcLlmHandler(_win: BrowserWindow) {
   ipcMain.handle("llm:mistralaiModelList", async (_, apiKey: string) => {
     try {
       const client = new Mistral({ apiKey })
-      const models = await client.models.list()
+      const models = await withTimeout(client.models.list())
       return { results: models.data?.map((model) => model.id) ?? [], error: null }
     } catch (error) {
       return { results: [], error: (error as Error).message }
@@ -133,7 +143,7 @@ export function ipcLlmHandler(_win: BrowserWindow) {
         }
       })
       const command = new ListFoundationModelsCommand({})
-      const response = await client.send(command)
+      const response = await withTimeout(client.send(command))
       const models = response.modelSummaries
       return { results: models?.map((model: any) => `${modelPrefix}${model.modelId}`) ?? [], error: null }
     } catch (error) {

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import CryptoJS from 'crypto-js';
 import api from '../config/api';
 
 const AuthContext = createContext(null);
@@ -23,23 +24,31 @@ export const AuthProvider = ({ children }) => {
     // First check for token in URL parameters (from Dive app)
     const urlParams = new URLSearchParams(window.location.search);
     const urlToken = urlParams.get('token');
-    
+
     if (urlToken) {
       console.log('🔗 Token found in URL, attempting auto-login...');
       try {
         // Store the token from URL
         localStorage.setItem('authToken', urlToken);
-        
+
         // Verify the token by calling /api/v1/user/me
         const response = await api.get('/api/v1/user/me');
         if (response.data.status === 'success') {
           setUser(response.data.data);
           console.log('🔗 Auto-login successful');
-          
+
           // Clean up URL by removing token parameter
-          const newUrl = window.location.pathname;
-          window.history.replaceState({}, document.title, newUrl);
-          
+          // BUT preserve appRedirect parameter for Login.jsx to handle deep link
+          const appRedirect = urlParams.get('appRedirect');
+          if (appRedirect) {
+            const newUrl = `${window.location.pathname}?appRedirect=${appRedirect}`;
+            window.history.replaceState({}, document.title, newUrl);
+            console.log('🔗 Preserved appRedirect parameter for deep link handling');
+          } else {
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+          }
+
           setLoading(false);
           return;
         }
@@ -51,7 +60,7 @@ export const AuthProvider = ({ children }) => {
         window.history.replaceState({}, document.title, newUrl);
       }
     }
-    
+
     // Fallback to normal auth check
     const token = localStorage.getItem('authToken');
     if (!token) {
@@ -73,7 +82,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (email, password) => {
-    const response = await api.post('/api/auth/login', { email, password });
+    // Encrypt password before sending
+    const encryptionKey = 'newmind';
+    const encryptedPassword = CryptoJS.AES.encrypt(password, encryptionKey).toString();
+
+    const response = await api.post('/api/auth/login', {
+      email,
+      password: encryptedPassword,
+      encrypted: true // Flag to indicate password is encrypted
+    });
     if (response.data.success) {
       localStorage.setItem('authToken', response.data.data.accessToken);
       setUser(response.data.data.user);
@@ -83,17 +100,22 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (email, username, password, inviteCode = null) => {
+    // Encrypt password before sending
+    const encryptionKey = 'newmind';
+    const encryptedPassword = CryptoJS.AES.encrypt(password, encryptionKey).toString();
+
     const requestData = {
       email,
       username,
-      password
+      password: encryptedPassword,
+      encrypted: true // Flag to indicate password is encrypted
     };
-    
+
     // Only include inviteCode if provided
     if (inviteCode) {
       requestData.inviteCode = inviteCode;
     }
-    
+
     const response = await api.post('/api/auth/register', requestData);
     if (response.data.status === 'success') {
       localStorage.setItem('authToken', response.data.data.token);

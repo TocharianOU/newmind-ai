@@ -49,7 +49,7 @@ export default function MemoryPanel() {
   const showToast = useSetAtom(showToastAtom)
   const isLoading = useAtomValue(memoriesLoadingAtom)
   const stats = useAtomValue(memoryStatsAtom)
-  
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null)
 
@@ -86,12 +86,7 @@ export default function MemoryPanel() {
         type: "success",
       })
       setSelectedMemory(null)
-      // Reload memories and stats after deletion
-      if (selectedType === "all") {
-        await loadMemories()
-      } else {
-        await loadMemories(selectedType)
-      }
+      // Reload stats after deletion (deleteMemory already reloads memories list)
       await loadStats()
     } else {
       showToast({
@@ -109,13 +104,8 @@ export default function MemoryPanel() {
         type: "success",
       })
       setShowDeleteConfirm(false)
-      // Reload memories and stats after clearing all
-      if (selectedType === "all") {
-        await loadMemories()
-      } else {
-        await loadMemories(selectedType)
-      }
-      await loadStats()
+      // No need to reload - deleteAllMemories already updates local state
+      // This prevents race condition where server deletion might not be complete yet
     } else {
       showToast({
         message: t("memory.deleteAllFailed"),

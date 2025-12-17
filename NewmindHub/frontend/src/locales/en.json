@@ -33,7 +33,8 @@
     "account": "Account",
     "security": "Security",
     "notifications": "Notifications",
-    "documentation": "Documentation"
+    "documentation": "Documentation",
+    "adminStats": "Admin Stats"
   },
   "auth": {
     "login": "Login",

@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import Billing from './pages/Billing';
 import PaymentSuccess from './pages/PaymentSuccess';
+import AdminStats from './pages/AdminStats';
 import './App.css';
 
 // Protected Route Component
@@ -45,7 +46,12 @@ const PublicRoute = ({ children }) => {
     );
   }
 
-  if (user) {
+  // Check if this is an app redirect (e.g., from NewmindChat)
+  // If so, don't auto-redirect to dashboard - let the Login page handle deep linking
+  const urlParams = new URLSearchParams(window.location.search);
+  const appRedirect = urlParams.get('appRedirect');
+
+  if (user && appRedirect !== 'dive') {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -112,6 +118,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <PaymentSuccess />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/stats"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <AdminStats />
+            </Layout>
           </ProtectedRoute>
         }
       />
