@@ -43,12 +43,12 @@ const Register = () => {
 
     // Validation
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError('两次输入的密码不一致');
       return;
     }
 
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError('密码长度至少为 6 位');
       return;
     }
 
@@ -63,7 +63,7 @@ const Register = () => {
       );
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Registration failed. Please try again.');
+      setError(err.message || '注册失败，请重试。');
     } finally {
       setLoading(false);
     }
@@ -81,14 +81,14 @@ const Register = () => {
       <div className="auth-card">
         <div className="auth-header">
           <h1>NewMind Hub</h1>
-          <p>Create your account</p>
+          <p>创建您的账户</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
           {error && <div className="auth-error">{error}</div>}
 
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">邮箱</label>
             <input
               type="email"
               id="email"
@@ -102,7 +102,7 @@ const Register = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="username">Username</label>
+            <label htmlFor="username">用户名</label>
             <input
               type="text"
               id="username"
@@ -110,13 +110,13 @@ const Register = () => {
               value={formData.username}
               onChange={handleChange}
               required
-              placeholder="Your name"
+              placeholder="请输入用户名"
               autoComplete="name"
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">密码</label>
             <input
               type="password"
               id="password"
@@ -131,7 +131,7 @@ const Register = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
+            <label htmlFor="confirmPassword">确认密码</label>
             <input
               type="password"
               id="confirmPassword"
@@ -146,7 +146,7 @@ const Register = () => {
 
           {inviteCodeRequired && (
             <div className="form-group">
-              <label htmlFor="inviteCode">Invite Code</label>
+              <label htmlFor="inviteCode">邀请码</label>
               <input
                 type="text"
                 id="inviteCode"
@@ -154,7 +154,7 @@ const Register = () => {
                 value={formData.inviteCode}
                 onChange={handleChange}
                 required
-                placeholder="Enter your invite code"
+                placeholder="请输入邀请码"
                 autoComplete="off"
               />
             </div>
@@ -165,14 +165,14 @@ const Register = () => {
             className="auth-button"
             disabled={loading || configLoading}
           >
-            {loading ? 'Creating account...' : 'Sign up'}
+            {loading ? '注册中...' : '注册'}
           </button>
         </form>
 
         <div className="auth-footer">
           <p>
-            Already have an account?{' '}
-            <Link to="/login">Sign in</Link>
+            已有账户？{' '}
+            <Link to="/login">立即登录</Link>
           </p>
         </div>
       </div>

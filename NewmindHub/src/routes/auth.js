@@ -1,6 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import CryptoJS from 'crypto-js';
 import { prisma } from '../config/database.js';
 import { createResponse } from '../config/constants.js';
 import logger from '../utils/logger.js';
@@ -33,13 +34,34 @@ router.get('/download-config', (req, res) => {
 // Register new user
 router.post('/register', async (req, res) => {
   try {
-    const { email, username, password, inviteCode } = req.body;
+    let { email, username, password, inviteCode, encrypted } = req.body;
 
     // Validate input
     if (!email || !username || !password) {
       return res.status(400).json(
         createResponse(null, 'Email, username and password are required')
       );
+    }
+
+    // Decrypt password if it's encrypted
+    if (encrypted) {
+      try {
+        const encryptionKey = 'newmind';
+        const bytes = CryptoJS.AES.decrypt(password, encryptionKey);
+        password = bytes.toString(CryptoJS.enc.Utf8);
+
+        if (!password) {
+          logger.error(`Password decryption failed: empty result for ${email}`);
+          return res.status(400).json(
+            createResponse(null, 'Failed to decrypt password')
+          );
+        }
+      } catch (decryptError) {
+        logger.error('Password decryption error:', decryptError);
+        return res.status(400).json(
+          createResponse(null, 'Invalid encrypted password')
+        );
+      }
     }
 
     // Check invite code
@@ -118,13 +140,34 @@ router.post('/register', async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password, encrypted } = req.body;
 
     // Validate input
     if (!email || !password) {
       return res.status(400).json(
         createResponse(null, 'Email and password are required')
       );
+    }
+
+    // Decrypt password if it's encrypted
+    if (encrypted) {
+      try {
+        const encryptionKey = 'newmind';
+        const bytes = CryptoJS.AES.decrypt(password, encryptionKey);
+        password = bytes.toString(CryptoJS.enc.Utf8);
+
+        if (!password) {
+          logger.error(`Password decryption failed: empty result for ${email}`);
+          return res.status(400).json(
+            createResponse(null, 'Failed to decrypt password')
+          );
+        }
+      } catch (decryptError) {
+        logger.error('Password decryption error:', decryptError);
+        return res.status(400).json(
+          createResponse(null, 'Invalid encrypted password')
+        );
+      }
     }
 
     // Find user
