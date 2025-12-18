@@ -5,17 +5,21 @@
 
 import { SSOProvider } from '../types.js';
 import logger from '../../utils/logger.js';
+import { ProxyAgent } from 'undici';
 
 // 创建支持代理和超时的 fetch 配置
+// Node.js 原生 fetch 不会自动读取代理环境变量，需要手动配置
 function createFetchOptions() {
   const options = {
     // 增加超时时间到 30 秒
     signal: AbortSignal.timeout(30000)
   };
 
-  if (process.env.HTTP_PROXY || process.env.HTTPS_PROXY) {
-    const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
+  // 配置代理（如果有）
+  const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
+  if (proxyUrl) {
     logger.info(`Using proxy for OIDC API requests: ${proxyUrl}`);
+    options.dispatcher = new ProxyAgent(proxyUrl);
   }
 
   return options;
@@ -24,19 +28,19 @@ function createFetchOptions() {
 export class GenericOIDCProvider extends SSOProvider {
   constructor(name, config) {
     super(name, config);
-    
+
     if (!config.issuer) {
       throw new Error(`OIDC issuer is required for provider: ${name}`);
     }
-    
+
     this.issuer = config.issuer;
     this.scopes = config.scopes || ['openid', 'email', 'profile'];
-    
+
     // OIDC discovery endpoints (will be discovered from .well-known)
     this.authEndpoint = null;
     this.tokenEndpoint = null;
     this.userInfoEndpoint = null;
-    
+
     // Auto-discover endpoints on initialization
     this.discoveryPromise = this._discoverEndpoints();
   }
@@ -49,18 +53,18 @@ export class GenericOIDCProvider extends SSOProvider {
     try {
       const discoveryUrl = `${this.issuer}/.well-known/openid-configuration`;
       logger.info(`Discovering OIDC endpoints for ${this.name}: ${discoveryUrl}`);
-      
+
       const fetchOptions = createFetchOptions();
       const response = await fetch(discoveryUrl, fetchOptions);
       if (!response.ok) {
         throw new Error(`Failed to discover OIDC endpoints: ${response.status}`);
       }
-      
+
       const config = await response.json();
       this.authEndpoint = config.authorization_endpoint;
       this.tokenEndpoint = config.token_endpoint;
       this.userInfoEndpoint = config.userinfo_endpoint;
-      
+
       logger.info(`OIDC endpoints discovered for ${this.name}`);
     } catch (error) {
       logger.error(`OIDC discovery failed for ${this.name}:`, error);
@@ -85,7 +89,7 @@ export class GenericOIDCProvider extends SSOProvider {
    */
   async getAuthorizationUrl(state) {
     await this._ensureDiscovered();
-    
+
     const params = new URLSearchParams({
       client_id: this.config.clientId,
       redirect_uri: this.getCallbackUrl(),
@@ -107,11 +111,11 @@ export class GenericOIDCProvider extends SSOProvider {
   async handleCallback(code) {
     try {
       await this._ensureDiscovered();
-      
+
       // Step 1: Exchange code for access token
       logger.info(`Exchanging ${this.name} authorization code for access token`);
       logger.info(`Token endpoint: ${this.tokenEndpoint}`);
-      
+
       const fetchOptions = createFetchOptions();
       const tokenResponse = await fetch(this.tokenEndpoint, {
         method: 'POST',
@@ -187,8 +191,8 @@ export function createAzureProvider() {
     clientSecret: process.env.SSO_AZURE_CLIENT_SECRET,
     callbackBaseUrl: process.env.SSO_CALLBACK_BASE_URL || 'http://localhost:23000',
     issuer: `https://login.microsoftonline.com/${tenantId}/v2.0`,
-    scopes: process.env.SSO_AZURE_SCOPES 
-      ? process.env.SSO_AZURE_SCOPES.split(',') 
+    scopes: process.env.SSO_AZURE_SCOPES
+      ? process.env.SSO_AZURE_SCOPES.split(',')
       : ['openid', 'email', 'profile']
   };
 
@@ -209,8 +213,8 @@ export function createAWSProvider() {
     clientSecret: process.env.SSO_AWS_CLIENT_SECRET,
     callbackBaseUrl: process.env.SSO_CALLBACK_BASE_URL || 'http://localhost:23000',
     issuer: process.env.SSO_AWS_ISSUER, // e.g., https://cognito-idp.us-east-1.amazonaws.com/us-east-1_xxxxx
-    scopes: process.env.SSO_AWS_SCOPES 
-      ? process.env.SSO_AWS_SCOPES.split(',') 
+    scopes: process.env.SSO_AWS_SCOPES
+      ? process.env.SSO_AWS_SCOPES.split(',')
       : ['openid', 'email', 'profile']
   };
 

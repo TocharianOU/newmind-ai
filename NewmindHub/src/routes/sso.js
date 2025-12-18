@@ -49,7 +49,7 @@ router.get('/:provider/start', async (req, res) => {
 
     // Generate CSRF state token
     const state = crypto.randomBytes(32).toString('hex');
-    
+
     // Store state with metadata
     stateStore.set(state, {
       timestamp: Date.now(),
@@ -61,7 +61,7 @@ router.get('/:provider/start', async (req, res) => {
     const authUrl = await Promise.resolve(ssoProvider.getAuthorizationUrl(state));
 
     logger.info(`Redirecting to ${provider} authorization URL`);
-    
+
     // Redirect user to SSO provider
     res.redirect(authUrl);
   } catch (error) {
@@ -85,7 +85,7 @@ router.get('/:provider/callback', async (req, res) => {
     if (error) {
       logger.error(`SSO callback error: ${error} - ${error_description}`);
       return res.redirect(
-        `${process.env.HUB_FRONTEND_URL || 'http://localhost:23001'}/login?error=${encodeURIComponent(error_description || error)}`
+        `${process.env.HUB_FRONTEND_URL || 'http://localhost:5174'}/login?error=${encodeURIComponent(error_description || error)}`
       );
     }
 
@@ -141,7 +141,7 @@ router.get('/:provider/callback', async (req, res) => {
     logger.info(`SSO login successful for user: ${user.email}`);
 
     // Determine redirect URL
-    const hubFrontendUrl = process.env.HUB_FRONTEND_URL || 'http://localhost:23001';
+    const hubFrontendUrl = process.env.HUB_FRONTEND_URL || 'http://localhost:5174';
     let redirectUrl = `${hubFrontendUrl}/login?token=${accessToken}`;
 
     // Add appRedirect parameter if specified (for NewmindChat)
@@ -154,7 +154,7 @@ router.get('/:provider/callback', async (req, res) => {
 
   } catch (error) {
     logger.error('SSO callback error:', error);
-    const hubFrontendUrl = process.env.HUB_FRONTEND_URL || 'http://localhost:23001';
+    const hubFrontendUrl = process.env.HUB_FRONTEND_URL || 'http://localhost:5174';
     res.redirect(
       `${hubFrontendUrl}/login?error=${encodeURIComponent('SSO login failed. Please try again.')}`
     );
@@ -244,7 +244,7 @@ async function findOrCreateSSOUser(provider, userInfo) {
 
   // Create new user with SSO identity
   logger.info(`Creating new SSO user: ${userInfo.email || userInfo.displayName}`);
-  
+
   const newUser = await prisma.user.create({
     data: {
       email: userInfo.email || `${provider}_${userInfo.providerUserId}@sso.local`,

@@ -62,3 +62,5 @@ prebuilt/scripts/mcp-server-*/package-lock.json
 temp/
 
 .cursor
+
+NewmindHub/ssl

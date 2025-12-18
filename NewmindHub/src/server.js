@@ -4,6 +4,9 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
+import { createServer as createHttpsServer } from 'https';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { WebSocketServer } from 'ws';
 
 // Load environment variables
@@ -32,10 +35,35 @@ import { initializeSSOProviders } from './sso/index.js';
 
 // Create Express app
 const app = express();
-const server = createServer(app);
+
+// Create HTTP or HTTPS server based on configuration
+let server;
+const enableHttps = process.env.ENABLE_HTTPS === 'true';
+
+if (enableHttps) {
+  try {
+    const certFile = resolve(process.env.SSL_CERT_FILE || 'ssl/cert.pem');
+    const keyFile = resolve(process.env.SSL_KEY_FILE || 'ssl/key.pem');
+
+    const httpsOptions = {
+      cert: readFileSync(certFile),
+      key: readFileSync(keyFile)
+    };
+
+    server = createHttpsServer(httpsOptions, app);
+    logger.info('🔒 HTTPS server enabled');
+    logger.info(`📜 SSL Certificate: ${certFile}`);
+    logger.info(`🔑 SSL Key: ${keyFile}`);
+  } catch (error) {
+    logger.error('Failed to load SSL certificates, falling back to HTTP:', error.message);
+    server = createServer(app);
+  }
+} else {
+  server = createServer(app);
+}
 
 // WebSocket server for /api/v1/socket
-const wss = new WebSocketServer({ 
+const wss = new WebSocketServer({
   server,
   path: '/api/v1/socket'
 });
@@ -89,7 +117,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Range'], // 添加 Range 支持断点续传
   exposedHeaders: ['Content-Length', 'Content-Range', 'Accept-Ranges'] // 暴露下载相关头
 }));
-app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) }}));
+app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
 
 // ⚠️ CRITICAL: Stripe webhook 必须在 express.json() 之前挂载，需要原始请求体
 app.post('/api/v1/payment/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
@@ -103,7 +131,7 @@ app.use('/api/', rateLimiter);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
+  res.json({
     status: 'ok',
     service: 'NewmindHub',
     timestamp: new Date().toISOString()
@@ -125,43 +153,43 @@ app.use('/api/v1/payment', paymentRoutes);
 // WebSocket handling
 wss.on('connection', (ws, req) => {
   logger.info('WebSocket client connected');
-  
+
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
       logger.info('WebSocket message received:', data);
-      
+
       // Handle different message types
-      switch(data.type) {
+      switch (data.type) {
         case 'ping':
           ws.send(JSON.stringify({ type: 'pong' }));
           break;
         case 'subscribe':
           // Handle subscription logic
-          ws.send(JSON.stringify({ 
+          ws.send(JSON.stringify({
             type: 'subscribed',
-            channel: data.channel 
+            channel: data.channel
           }));
           break;
         default:
-          ws.send(JSON.stringify({ 
+          ws.send(JSON.stringify({
             type: 'error',
-            message: 'Unknown message type' 
+            message: 'Unknown message type'
           }));
       }
     } catch (error) {
       logger.error('WebSocket message error:', error);
-      ws.send(JSON.stringify({ 
+      ws.send(JSON.stringify({
         type: 'error',
-        message: 'Invalid message format' 
+        message: 'Invalid message format'
       }));
     }
   });
-  
+
   ws.on('close', () => {
     logger.info('WebSocket client disconnected');
   });
-  
+
   ws.on('error', (error) => {
     logger.error('WebSocket error:', error);
   });
@@ -184,11 +212,14 @@ initializeSSOProviders();
 
 // Start server
 const PORT = process.env.PORT || 3000;
+const protocol = enableHttps ? 'https' : 'http';
+
 server.listen(PORT, () => {
-  logger.info(`🚀 NewmindHub server running on port ${PORT}`);
+  logger.info(`🚀 NewmindHub server running on ${protocol}://localhost:${PORT}`);
   logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
+  logger.info(`🔒 HTTPS: ${enableHttps ? 'Enabled' : 'Disabled'}`);
   logger.info(`🌐 CORS origins: ${allowedOrigins.join(',')}`);
-  
+
   // 启动订阅过期检查定时任务
   startSubscriptionExpirationCheck();
 });
