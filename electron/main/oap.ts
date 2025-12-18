@@ -5,6 +5,12 @@ import { oapStore as store } from "./store"
 import EventEmitter from "node:events"
 import { OAP_ROOT_URL } from "../../shared/oap"
 import WebSocket from "ws"
+import https from "node:https"
+
+// 🔧 Create HTTPS agent that ignores certificate errors for localhost development
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false // Disable SSL certificate verification for self-signed certs
+})
 
 export type WebsocketMessageType =
   "user.account.subscription.update" |
@@ -57,6 +63,8 @@ class OAPClient {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        // 🔧 Disable SSL certificate verification for self-signed certs
+        rejectUnauthorized: false
       })
 
       this.socket.on("message", (message) => {
@@ -121,19 +129,73 @@ class OAPClient {
       throw new Error("not logged in")
     }
 
-    return fetch(`${OAP_ROOT_URL}${url}`, {
+    const fullUrl = `${OAP_ROOT_URL}${url}`
+
+    // 🔧 For HTTPS URLs, use custom fetch implementation with certificate validation disabled
+    if (OAP_ROOT_URL.startsWith('https://')) {
+      return this._fetchWithHttpsAgent<T>(fullUrl, token, options)
+    }
+
+    // For HTTP URLs, use standard fetch
+    return fetch(fullUrl, {
       ...options,
       headers: {
         ...options.headers,
         Authorization: `Bearer ${token}`,
       },
-    }).then((res) => res.text() as Promise<T>)
-    .then(text => {
-      try {
-        return JSON.parse(text as string) as T
-      } catch (_error) {
-        return text as T
+    })
+      .then((res) => res.text() as Promise<T>)
+      .then(text => {
+        try {
+          return JSON.parse(text as string) as T
+        } catch (_error) {
+          return text as T
+        }
+      })
+  }
+
+  // 🔧 Custom fetch implementation using https module to bypass certificate validation
+  private _fetchWithHttpsAgent<T>(url: string, token: string, options: RequestInit = {}): Promise<T> {
+    return new Promise((resolve, reject) => {
+      const urlObj = new URL(url)
+      const isPost = options.method?.toUpperCase() === 'POST'
+      const body = options.body
+
+      const requestOptions = {
+        hostname: urlObj.hostname,
+        port: urlObj.port,
+        path: urlObj.pathname + urlObj.search,
+        method: options.method || 'GET',
+        headers: {
+          ...options.headers,
+          Authorization: `Bearer ${token}`,
+        },
+        rejectUnauthorized: false, // 🔧 Disable certificate validation
       }
+
+      const req = https.request(requestOptions, (res) => {
+        let data = ''
+        res.on('data', (chunk) => {
+          data += chunk
+        })
+        res.on('end', () => {
+          try {
+            resolve(JSON.parse(data) as T)
+          } catch (_error) {
+            resolve(data as T)
+          }
+        })
+      })
+
+      req.on('error', (error) => {
+        reject(error)
+      })
+
+      if (isPost && body) {
+        req.write(body)
+      }
+
+      req.end()
     })
   }
 

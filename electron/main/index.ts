@@ -21,6 +21,11 @@ Object.assign(console, log.functions)
 
 electronDl()
 
+
+app.commandLine.appendSwitch('ignore-certificate-errors')
+console.log('🔓 Certificate validation disabled for development')
+
+
 // Disable GPU Acceleration for Windows 7
 if (os.release().startsWith("6.1"))
   app.disableHardwareAcceleration()
