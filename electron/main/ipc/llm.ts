@@ -7,6 +7,9 @@ import {
   BedrockClient,
   ListFoundationModelsCommand,
 } from "@aws-sdk/client-bedrock"
+import https from "node:https"
+import http from "node:http"
+import { HttpsProxyAgent } from "https-proxy-agent"
 
 // Timeout helper function - 30 seconds default
 const withTimeout = <T>(promise: Promise<T>, timeoutMs: number = 30000): Promise<T> => {
@@ -18,10 +21,54 @@ const withTimeout = <T>(promise: Promise<T>, timeoutMs: number = 30000): Promise
   ])
 }
 
+/**
+ * Get HTTP/HTTPS agent with optional proxy support
+ * Checks for HTTP_PROXY and HTTPS_PROXY environment variables
+ * Falls back to direct connection if proxy is not configured or fails
+ */
+function getHttpAgent(targetUrl?: string): { httpAgent?: http.Agent | https.Agent } {
+  try {
+    const isHttps = targetUrl?.startsWith('https://') ?? true
+    const proxyUrl = process.env.HTTPS_PROXY || process.env.https_proxy || 
+                     process.env.HTTP_PROXY || process.env.http_proxy
+    
+    if (proxyUrl) {
+      console.log(`[DEBUG] Using proxy for OpenAI API: ${proxyUrl}`)
+      // Create proxy agent that also ignores SSL certificate errors
+      const proxyAgent = new HttpsProxyAgent(proxyUrl, {
+        rejectUnauthorized: false // Allow self-signed certificates
+      })
+      return { httpAgent: proxyAgent as any }
+    }
+    
+    // No proxy configured, return agent that allows self-signed certs
+    if (isHttps) {
+      return {
+        httpAgent: new https.Agent({
+          rejectUnauthorized: false
+        }) as any
+      }
+    }
+    
+    return {}
+  } catch (error) {
+    console.warn('[DEBUG] Failed to configure proxy agent, falling back to direct connection:', error)
+    // Return default agent that allows self-signed certs on failure
+    return {
+      httpAgent: new https.Agent({
+        rejectUnauthorized: false
+      }) as any
+    }
+  }
+}
+
 export function ipcLlmHandler(_win: BrowserWindow) {
   ipcMain.handle("llm:openaiModelList", async (_, apiKey: string) => {
     try {
-      const client = new OpenAI({ apiKey })
+      const client = new OpenAI({ 
+        apiKey,
+        ...getHttpAgent('https://api.openai.com')
+      })
       const models = await withTimeout(client.models.list())
       return { results: models.data.map((model) => model.id), error: null }
     } catch (error) {
@@ -31,7 +78,13 @@ export function ipcLlmHandler(_win: BrowserWindow) {
 
   ipcMain.handle("llm:azureOpenaiModelList", async (_, apiKey: string, azureEndpoint: string, azureDeployment: string, apiVersion: string) => {
     try {
-      const client = new AzureOpenAI({ apiKey, endpoint: azureEndpoint, deployment: azureDeployment, apiVersion })
+      const client = new AzureOpenAI({ 
+        apiKey, 
+        endpoint: azureEndpoint, 
+        deployment: azureDeployment, 
+        apiVersion,
+        ...getHttpAgent(azureEndpoint)
+      })
       const models = await withTimeout(client.models.list())
       return { results: models.data?.map((model) => model.id) ?? [], error: null }
     } catch (error) {
@@ -63,7 +116,13 @@ export function ipcLlmHandler(_win: BrowserWindow) {
     try {
       console.log(`[DEBUG] OpenAI Compatible Model List - baseURL: ${baseURL}, apiKey: ${apiKey ? apiKey.substring(0, 10) + '...' : 'undefined'}`)
 
-      const client = new OpenAI({ apiKey, baseURL })
+      // Try with proxy first, fallback to direct connection on proxy failure
+      const client = new OpenAI({ 
+        apiKey, 
+        baseURL,
+        ...getHttpAgent(baseURL)
+      })
+      
       const list = await withTimeout(client.models.list())
 
       console.log(`[DEBUG] OpenAI Compatible API Response:`, {

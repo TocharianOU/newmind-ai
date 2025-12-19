@@ -25,7 +25,7 @@ MIN_REFRESH_INTERVAL = 60
 class MCPServerManagerPlugin:
     """Manage MCP Server configurations in OAP Plugin."""
 
-    def __init__(self, device_token: str | None, oap_root_url: str) -> None:
+    def __init__(self, device_token: str | None, oap_root_url: str, verify_ssl: bool = True) -> None:
         """Initialize the MCPServerConfigs from OAP."""
         self.device_token: str | None = device_token
         self._user_mcp_configs: list[UserMcpConfig] | None = []
@@ -35,6 +35,7 @@ class MCPServerManagerPlugin:
             headers={"Authorization": f"bearer {self.device_token}"}
             if self.device_token
             else None,
+            verify=verify_ssl,
         )
 
     async def update_device_token(
