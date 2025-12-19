@@ -140,9 +140,17 @@ export class GenericOIDCProvider extends SSOProvider {
 
       const tokenData = await tokenResponse.json();
       const accessToken = tokenData.access_token;
+      const idToken = tokenData.id_token;
+
+      // 🔍 Enhanced logging for debugging
+      logger.info(`${this.name} token exchange successful. Token type: ${tokenData.token_type}, Scopes: ${tokenData.scope || 'not specified'}`);
+      logger.info(`Access token (first 20 chars): ${accessToken?.substring(0, 20)}...`);
+      if (idToken) {
+        logger.info(`ID token received (first 20 chars): ${idToken.substring(0, 20)}...`);
+      }
 
       // Step 2: Get user info
-      logger.info(`Fetching ${this.name} user info`);
+      logger.info(`Fetching ${this.name} user info from: ${this.userInfoEndpoint}`);
       const fetchOptions2 = createFetchOptions();
       const userInfoResponse = await fetch(this.userInfoEndpoint, {
         headers: {
@@ -152,7 +160,11 @@ export class GenericOIDCProvider extends SSOProvider {
       });
 
       if (!userInfoResponse.ok) {
-        throw new Error(`Failed to fetch user info: ${userInfoResponse.status}`);
+        const errorText = await userInfoResponse.text();
+        logger.error(`${this.name} userinfo request failed (${userInfoResponse.status}):`, errorText);
+        logger.error(`UserInfo endpoint: ${this.userInfoEndpoint}`);
+        logger.error(`Token scopes from response: ${tokenData.scope || 'none'}`);
+        throw new Error(`Failed to fetch user info: ${userInfoResponse.status} - ${errorText}`);
       }
 
       const userInfo = await userInfoResponse.json();
