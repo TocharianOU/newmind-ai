@@ -1,6 +1,8 @@
 import "katex/dist/katex.min.css"
 
 import React, { useEffect, useMemo, useRef, useState } from "react"
+import A2UIModal from "../../components/A2UIModal"
+import type { A2UIResponse, A2UIFormData } from "../../types/a2ui"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import remarkMath from "remark-math"
@@ -50,11 +52,13 @@ interface MessageProps {
   files?: (File | string)[]
   isError?: boolean
   isLoading?: boolean
+  a2uiData?: A2UIResponse
   onRetry: () => void
   onEdit: (editedText: string) => void
+  onA2UISubmit?: (toolName: string, formData: A2UIFormData) => void
 }
 
-const Message = ({ messageId, text, isSent, files, isError, isLoading, onRetry, onEdit }: MessageProps) => {
+const Message = ({ messageId, text, isSent, files, isError, isLoading, a2uiData, onRetry, onEdit, onA2UISubmit }: MessageProps) => {
   const { t } = useTranslation()
   const [theme] = useAtom(themeAtom)
   const updateStreamingCode = useSetAtom(codeStreamingAtom)
@@ -65,6 +69,7 @@ const Message = ({ messageId, text, isSent, files, isError, isLoading, onRetry, 
   const [editedText, setEditedText] = useState(text)
   const isChatStreaming = useAtomValue(isChatStreamingAtom)
   const [openToolPanels, setOpenToolPanels] = useState<Record<string, boolean>>({})
+  const [showA2UIModal, setShowA2UIModal] = useState(false)
   const location = useLocation()
 
   const copyToClipboard = async (text: string) => {
@@ -368,19 +373,45 @@ const Message = ({ messageId, text, isSent, files, isError, isLoading, onRetry, 
     )
   }
 
+  const handleA2UISubmit = (formData: A2UIFormData) => {
+    if (a2uiData && onA2UISubmit) {
+      onA2UISubmit(a2uiData.tool_name, formData)
+    }
+  }
+
   return (
-    <div className="message-container">
-      <div className={`message ${isSent ? "sent" : "received"} ${isError ? "error" : ""}`}>
-        {formattedText}
-        {files && files.length > 0 && <FilePreview files={typeof files === "string" ? JSON.parse(files) : files} />}
-        {isLoading && (
-          <div className="loading-dots">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-        )}
-        {!isLoading && !isChatStreaming && (
+    <>
+      <div className="message-container">
+        <div className={`message ${isSent ? "sent" : "received"} ${isError ? "error" : ""}`}>
+          {formattedText}
+          {files && files.length > 0 && <FilePreview files={typeof files === "string" ? JSON.parse(files) : files} />}
+          
+          {/* A2UI Form Button */}
+          {a2uiData && !isLoading && !isChatStreaming && (
+            <div className="a2ui-form-button-container">
+              <button
+                type="button"
+                className="a2ui-form-button"
+                onClick={() => setShowA2UIModal(true)}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M9 12H15M9 16H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                <span>填写表单</span>
+              </button>
+            </div>
+          )}
+          
+          {isLoading && (
+            <div className="loading-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          )}
+          {!isLoading && !isChatStreaming && (
           <div className="message-tools">
             <button
               type="button"
@@ -443,8 +474,18 @@ const Message = ({ messageId, text, isSent, files, isError, isLoading, onRetry, 
             }
           </div>
         )}
+        </div>
       </div>
-    </div>
+      
+      {/* A2UI Modal */}
+      {showA2UIModal && a2uiData && (
+        <A2UIModal
+          a2uiData={a2uiData}
+          onSubmit={handleA2UISubmit}
+          onClose={() => setShowA2UIModal(false)}
+        />
+      )}
+    </>
   )
 }
 

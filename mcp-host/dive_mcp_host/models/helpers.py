@@ -18,6 +18,19 @@ def _model_keys(model: type[BaseChatModel]) -> set[str]:
 @cache
 def _resolve_model_provider_keys(model_provider: str) -> set[str] | None:
     """Resolve the chat model class for the given model provider."""
+    # Map OpenAI-compatible providers to OpenAI
+    openai_compatible_providers = {
+        "openai_compatible",
+        "lmstudio",
+        "openrouter",
+        "groq",
+        "grok",
+        "nvdia",
+        "perplexity",
+    }
+    if model_provider in openai_compatible_providers:
+        model_provider = "openai"
+    
     match model_provider:
         case "openai":
             from langchain_openai import ChatOpenAI as M

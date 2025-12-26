@@ -425,6 +425,45 @@ const ChatWindow = () => {
               case "tool_result":
                 const result = data.content as ToolResult
 
+                // Check if result contains A2UI data
+                // result.result might be an array of content objects from MCP
+                let resultText = ''
+                if (typeof result.result === 'string') {
+                  resultText = result.result
+                } else if (Array.isArray(result.result)) {
+                  // Extract text from MCP content array
+                  resultText = result.result
+                    .filter((item: any) => item.type === 'text')
+                    .map((item: any) => item.text)
+                    .join('\n')
+                } else if (result.result && typeof result.result === 'object') {
+                  resultText = JSON.stringify(result.result)
+                }
+                
+                const a2uiMatch = resultText.match(/<a2ui>([\s\S]*?)<\/a2ui>/)
+                
+                if (a2uiMatch) {
+                  try {
+                    const a2uiJsonStr = a2uiMatch[1].trim()
+                    console.log('Parsing A2UI data:', a2uiJsonStr.substring(0, 100) + '...')
+                    const a2uiData = JSON.parse(a2uiJsonStr)
+                    console.log('Successfully parsed A2UI data:', a2uiData)
+                    setMessages(prev => {
+                      const newMessages = [...prev]
+                      newMessages[newMessages.length - 1].a2uiData = a2uiData
+                      // Remove the A2UI tag from display text but keep other content
+                      const cleanText = resultText.replace(/<a2ui>[\s\S]*?<\/a2ui>/g, '').trim()
+                      if (cleanText) {
+                        newMessages[newMessages.length - 1].text = currentText + '\n\n' + cleanText
+                      }
+                      return newMessages
+                    })
+                  } catch (e) {
+                    console.error('Failed to parse A2UI data:', e)
+                    console.error('A2UI JSON string:', a2uiMatch[1])
+                  }
+                }
+
                 toolCallResults.current = toolCallResults.current.replace("</tool-call>\n", "")
                 toolCallResults.current += `##Tool Result:${safeBase64Encode(JSON.stringify(result.result))}</tool-call>\n`
 
@@ -543,6 +582,68 @@ const ChatWindow = () => {
     return () => document.removeEventListener("keydown", handleEscape)
   }, [showMemoryPanel])
 
+  // Handle A2UI form submission
+  const handleA2UISubmit = useCallback(async (messageId: string, toolName: string, formData: any) => {
+    if (!chatId) return
+    
+    // Map form data to tool parameters based on tool_params_mapping
+    const message = messages.find(m => m.id === messageId)
+    if (!message?.a2uiData) return
+    
+    const { tool_params_mapping } = message.a2uiData
+    const toolParams: any = {
+      _fromForm: true  // 标记这是来自表单的提交
+    }
+    
+    // Map form fields to tool parameters
+    Object.entries(tool_params_mapping).forEach(([formField, toolParam]) => {
+      if (formData[formField] !== undefined) {
+        toolParams[toolParam] = formData[formField]
+      }
+    })
+    
+    // Create a user message showing what was submitted
+    const formSummary = Object.entries(formData)
+      .filter(([key]) => key !== '_fromForm')
+      .map(([key, value]) => `${key}: ${value}`)
+      .join(', ')
+    
+    const userMessage: Message = {
+      id: `${Date.now()}-user`,
+      text: `使用以下配置部署：${formSummary}`,
+      isSent: true,
+      timestamp: Date.now(),
+    }
+    
+    const assistantMessage: Message = {
+      id: `${Date.now()}-assistant`,
+      text: "",
+      isSent: false,
+      timestamp: Date.now(),
+    }
+    
+    setMessages(prev => [...prev, userMessage, assistantMessage])
+    setIsChatStreaming(true)
+    
+    // Call the actual tool with mapped parameters
+    try {
+      const formBody = new FormData()
+      formBody.append("chatId", chatId)
+      // 构建工具调用参数的 JSON 字符串
+      const paramsStr = Object.entries(toolParams)
+        .filter(([key]) => key !== '_fromForm')
+        .map(([key, value]) => `"${key}": ${JSON.stringify(value)}`)
+        .join(', ')
+      formBody.append("message", `请使用工具 ${toolName} 并传入以下参数：{${paramsStr}, "_fromForm": true}`)
+      
+      await handlePost(formBody, "formData", "/api/chat")
+    } catch (error) {
+      console.error("A2UI form submission error:", error)
+      showToast({ message: t("chat.sendError"), type: "error" })
+      setIsChatStreaming(false)
+    }
+  }, [chatId, messages, handlePost, showToast, t, setIsChatStreaming])
+
   return (
     <div className="chat-page">
       <div className="chat-container">
@@ -565,6 +666,7 @@ const ChatWindow = () => {
             isLoading={isChatStreaming}
             onRetry={onRetry}
             onEdit={onEdit}
+            onA2UISubmit={handleA2UISubmit}
           />
           <ChatInput
             page="chat"

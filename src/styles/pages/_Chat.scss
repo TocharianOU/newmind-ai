@@ -1026,3 +1026,39 @@
     transform: translateY(0) scale(1);
   }
 }
+
+// A2UI Form Button Styles
+.a2ui-form-button-container {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.a2ui-form-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--primary-color, #3b82f6);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: var(--primary-color-hover, #2563eb);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}

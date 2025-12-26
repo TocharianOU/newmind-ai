@@ -308,15 +308,10 @@ export function intoModelConfig(group: LLMGroup, model: BaseModel): ModelConfig 
   modelConfig.disable_streaming = disableStreaming
   modelConfig.toolsInPrompt = status === "successInPrompt"
   modelConfig.model = modelName
-  modelConfig.modelProvider = [
-    "openai_compatible",
-    "lmstudio",
-    "openrouter",
-    "groq",
-    "grok",
-    "nvdia",
-    "perplexity",
-  ].includes(group.modelProvider) ? "openai" : group.modelProvider
+  // Don't convert openai_compatible to openai - keep the original provider
+  // This is important for model verification and connection
+  // mcp-host will handle openai_compatible by using langchain's openai provider with custom baseURL
+  modelConfig.modelProvider = group.modelProvider
 
   if (apiKey) {
     modelConfig.apiKey = apiKey

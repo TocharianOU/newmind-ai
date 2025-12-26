@@ -44,20 +44,32 @@ def create_app(
     app.add_exception_handler(Exception, error_handler)
 
     service_setting = service_config_manager.current_setting
+    # Configure CORS - allow specific origin or default to localhost for development
+    cors_origins = []
     if service_setting and service_setting.cors_origin:
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=[service_setting.cors_origin],
-            allow_credentials=True,
-            allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-            allow_headers=[
-                "Origin",
-                "X-Requested-With",
-                "Content-Type",
-                "Accept",
-                "Authorization",
-            ],
-        )
+        cors_origins = [service_setting.cors_origin]
+    else:
+        # Default: allow common local development origins
+        cors_origins = [
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:5174",
+        ]
+    
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=[
+            "Origin",
+            "X-Requested-With",
+            "Content-Type",
+            "Accept",
+            "Authorization",
+        ],
+    )
     app.add_middleware(BaseHTTPMiddleware, dispatch=default_state)
     app.include_router(openai, prefix="/v1/openai")
     app.include_router(chat, prefix="/api/chat")

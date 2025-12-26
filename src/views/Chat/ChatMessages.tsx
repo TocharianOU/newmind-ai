@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react"
 import Message from "./Message"
 import { isChatStreamingAtom } from "../../atoms/chatState"
 import { useAtomValue } from "jotai"
+import type { A2UIResponse } from "../../types/a2ui"
 
 export interface Message {
   id: string
@@ -10,6 +11,7 @@ export interface Message {
   timestamp: number
   files?: File[]
   isError?: boolean
+  a2uiData?: A2UIResponse
 }
 
 interface Props {
@@ -17,9 +19,10 @@ interface Props {
   isLoading?: boolean
   onRetry: (messageId: string) => void
   onEdit: (messageId: string, newText: string) => void
+  onA2UISubmit?: (messageId: string, toolName: string, formData: any) => void
 }
 
-const ChatMessages = ({ messages, isLoading, onRetry, onEdit }: Props) => {
+const ChatMessages = ({ messages, isLoading, onRetry, onEdit, onA2UISubmit }: Props) => {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
   const mouseWheelRef = useRef(false)
@@ -133,8 +136,10 @@ const ChatMessages = ({ messages, isLoading, onRetry, onEdit }: Props) => {
             isError={message.isError}
             isLoading={!message.isSent && index === messages.length - 1 && isLoading}
             messageId={message.id}
+            a2uiData={message.a2uiData}
             onRetry={() => onRetry(message.id)}
             onEdit={(newText: string) => onEdit(message.id, newText)}
+            onA2UISubmit={onA2UISubmit ? (toolName, formData) => onA2UISubmit(message.id, toolName, formData) : undefined}
           />
         ))}
         <div className="chat-messages-end" ref={messagesEndRef} />

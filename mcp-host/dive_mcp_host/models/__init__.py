@@ -215,9 +215,26 @@ def load_model(
             raise ValueError(
                 f"Additional arguments are not supported for {provider} provider.",
             )
+        # Map openai_compatible and other OpenAI-compatible providers to "openai"
+        # These providers use OpenAI's API format but with custom base_url
+        openai_compatible_providers = [
+            "openai_compatible",
+            "lmstudio",
+            "openrouter",
+            "groq",
+            "grok",
+            "nvdia",
+            "perplexity",
+        ]
+        actual_provider = "openai" if provider in openai_compatible_providers else provider
+        
+        logger.debug(
+            f"Loading model with provider: {provider} (mapped to: {actual_provider})"
+        )
+        
         model = init_chat_model(
             model=model_name,
-            model_provider=provider,
-            **clean_model_kwargs(provider, kwargs),
+            model_provider=actual_provider,
+            **clean_model_kwargs(actual_provider, kwargs),
         )
     return model

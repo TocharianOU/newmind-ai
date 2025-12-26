@@ -124,6 +124,14 @@ class ToolResultContent(BaseModel):
     result: Any
 
 
+class A2UIContent(BaseModel):
+    """A2UI form content."""
+
+    schema: dict  # A2UI JSON Schema
+    tool_name: str  # Tool to call when form is submitted
+    tool_params_mapping: dict  # Mapping from form fields to tool parameters
+
+
 class ChatInfoContent(BaseModel):
     """Chat info."""
 
@@ -146,6 +154,7 @@ class StreamMessage(BaseModel):
         "tool_calls",
         "tool_call_progress",
         "tool_result",
+        "a2ui",
         "error",
         "chat_info",
         "message_info",
@@ -154,6 +163,7 @@ class StreamMessage(BaseModel):
         str
         | list[ToolCallsContent]
         | ToolResultContent
+        | A2UIContent
         | ChatInfoContent
         | MessageInfoContent
         | ToolCallProgress

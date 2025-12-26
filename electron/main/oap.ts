@@ -29,7 +29,7 @@ class OAPClient {
   public loggedIn: boolean
   private eventEmitter = new EventEmitter()
   socket: WebSocket | null = null
-  onReceiveWebSocketMessageCB: (message: WebsocketMessage) => void = () => {}
+  onReceiveWebSocketMessageCB: (message: WebsocketMessage) => void = () => { }
 
   constructor() {
     const token = getToken()
@@ -161,13 +161,29 @@ class OAPClient {
       const isPost = options.method?.toUpperCase() === 'POST'
       const body = options.body
 
+      // Convert HeadersInit to plain object for https.request
+      let headersObj: Record<string, string> = {}
+      if (options.headers) {
+        if (options.headers instanceof Headers) {
+          options.headers.forEach((value, key) => {
+            headersObj[key] = value
+          })
+        } else if (Array.isArray(options.headers)) {
+          options.headers.forEach(([key, value]) => {
+            headersObj[key] = value
+          })
+        } else {
+          headersObj = options.headers as Record<string, string>
+        }
+      }
+
       const requestOptions = {
         hostname: urlObj.hostname,
         port: urlObj.port,
         path: urlObj.pathname + urlObj.search,
         method: options.method || 'GET',
         headers: {
-          ...options.headers,
+          ...headersObj,
           Authorization: `Bearer ${token}`,
         },
         rejectUnauthorized: false, // 🔧 Disable certificate validation

@@ -137,6 +137,10 @@ Assistant: Tokyo has a population of approximately 13.96 million people, while N
 - Although the <tool_call> tag it self is in XML format, the containts inside <arguments> tag is in JSON.
 - ONLY use <tool_call>, other tool related tags are not yours to use.
 - All XML tags must have a closing tag, ex: , <tool_call><name>tool_name</name><arguments>{{}}</arguments></tool_call>.
+- If a tool tells you to use another tool, follow that instruction exactly.
+- Unless explicitly requested by the user, assume the environment is properly set up and skip environment checks.
+- Go directly to the main task without unnecessary preliminary checks.
+- **CRITICAL: When a tool returns a form (containing <a2ui>...</a2ui> tags), you MUST STOP immediately. Do NOT call any other tools. Simply inform the user that a form is ready and wait for them to fill it out in the UI.**
 
 Start using tools as best as you can.
 ---
