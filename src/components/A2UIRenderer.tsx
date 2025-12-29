@@ -109,9 +109,38 @@ const A2UIRenderer: React.FC<A2UIRendererProps> = ({ schema, onSubmit, onCancel 
     }
   }, [formData, validateForm, schema.submitButton, onSubmit])
 
-  const renderField = (field: A2UIField): React.ReactNode => {
+  // 检查字段是否应该显示在底部操作栏（自动执行相关的 checkbox）
+  const isFooterField = (field: A2UIField): boolean => {
+    if (field.type !== 'checkbox') return false
+    const label = field.label.toLowerCase()
+    const id = field.id.toLowerCase()
+    return label.includes('自动') || label.includes('auto') || id.includes('auto')
+  }
+
+  // 收集所有底部字段
+  const getFooterFields = (): A2UIField[] => {
+    const footerFields: A2UIField[] = []
+    
+    const collectFields = (field: A2UIField) => {
+      if (field.type === 'section' && field.fields) {
+        field.fields.forEach(collectFields)
+      } else if (isFooterField(field) && isFieldVisible(field)) {
+        footerFields.push(field)
+      }
+    }
+    
+    schema.fields.forEach(collectFields)
+    return footerFields
+  }
+
+  const renderField = (field: A2UIField, skipFooterFields = false): React.ReactNode => {
     // 检查字段是否应该显示（对所有类型都适用）
     if (!isFieldVisible(field)) {
+      return null
+    }
+
+    // 跳过底部字段（在表单主体中不显示）
+    if (skipFooterFields && isFooterField(field)) {
       return null
     }
 
@@ -123,7 +152,7 @@ const A2UIRenderer: React.FC<A2UIRendererProps> = ({ schema, onSubmit, onCancel 
         <div key={field.id} className="a2ui-section">
           <h3 className="a2ui-section-label">{field.label}</h3>
           <div className="a2ui-section-fields">
-            {field.fields?.map(renderField)}
+            {field.fields?.map(f => renderField(f, skipFooterFields))}
           </div>
         </div>
       )
@@ -230,6 +259,8 @@ const A2UIRenderer: React.FC<A2UIRendererProps> = ({ schema, onSubmit, onCancel 
     )
   }
 
+  const footerFields = getFooterFields()
+
   return (
     <form className="a2ui-form" onSubmit={handleSubmit}>
       <div className="a2ui-form-header">
@@ -240,23 +271,47 @@ const A2UIRenderer: React.FC<A2UIRendererProps> = ({ schema, onSubmit, onCancel 
       </div>
 
       <div className="a2ui-form-body">
-        {schema.fields.map(renderField)}
+        {schema.fields.map(f => renderField(f, true))}
       </div>
 
       <div className="a2ui-form-footer">
-        <button
-          type="button"
-          className="a2ui-button a2ui-button-cancel"
-          onClick={onCancel}
-        >
-          取消
-        </button>
-        <button
-          type="submit"
-          className="a2ui-button a2ui-button-submit"
-        >
-          {schema.submitButton?.label || '提交'}
-        </button>
+        <div className="a2ui-footer-left">
+          {footerFields.map(field => {
+            const value = formData[field.id]
+            return (
+              <label 
+                key={field.id}
+                className="a2ui-auto-execute-wrapper"
+                htmlFor={`footer-${field.id}`}
+              >
+                <input
+                  id={`footer-${field.id}`}
+                  type="checkbox"
+                  className="a2ui-auto-execute-checkbox"
+                  checked={!!value}
+                  onChange={(e) => handleFieldChange(field.id, e.target.checked)}
+                />
+                <span className="a2ui-auto-execute-label">{field.label}</span>
+              </label>
+            )
+          })}
+        </div>
+        
+        <div className="a2ui-footer-right">
+          <button
+            type="button"
+            className="a2ui-button a2ui-button-cancel"
+            onClick={onCancel}
+          >
+            取消
+          </button>
+          <button
+            type="submit"
+            className="a2ui-button a2ui-button-submit"
+          >
+            {schema.submitButton?.label || '提交'}
+          </button>
+        </div>
       </div>
     </form>
   )

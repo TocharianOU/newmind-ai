@@ -1,88 +1,83 @@
 .a2ui-form {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
   width: 100%;
-  max-width: 800px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 
 .a2ui-form-header {
-  text-align: center;
-  padding-bottom: 24px;
-  border-bottom: 2px solid var(--border-color, #e5e7eb);
-  background: linear-gradient(to bottom, rgba(59, 130, 246, 0.05), transparent);
-  border-radius: 12px 12px 0 0;
-  padding: 24px 24px 24px 24px;
+  text-align: left;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  background: var(--bg-primary, #ffffff);
   margin: -24px -24px 0 -24px;
+  padding: 20px 24px;
 }
 
 .a2ui-form-title {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0 0 12px 0;
+  font-size: 22px;
+  font-weight: 650;
+  margin: 0 0 6px 0;
   color: var(--text-primary, #111827);
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  letter-spacing: -0.02em;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
 }
 
 .a2ui-form-description {
-  font-size: 15px;
+  font-size: 13px;
   color: var(--text-secondary, #6b7280);
   margin: 0;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .a2ui-form-body {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
+  padding: 0 2px; /* Subtle padding for focus shadows */
 }
 
 .a2ui-section {
   border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 12px;
-  padding: 20px;
-  background: var(--bg-secondary, #f9fafb);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
+  border-radius: 8px;
+  padding: 16px 18px;
+  background: var(--bg-primary, #ffffff);
+  transition: border-color 0.2s ease;
 
-  &:hover {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  &:focus-within {
     border-color: var(--primary-color, #3b82f6);
   }
 }
 
 .a2ui-section-label {
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 600;
-  margin: 0 0 18px 0;
+  margin: 0 0 14px 0;
   color: var(--text-primary, #111827);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  &::before {
-    content: '';
-    width: 4px;
-    height: 20px;
-    background: linear-gradient(180deg, #3b82f6 0%, #8b5cf6 100%);
-    border-radius: 2px;
-  }
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 11px;
+  opacity: 0.8;
 }
 
 .a2ui-section-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px 18px;
+  
+  /* Force single column for sections with only one field */
+  &:has(.a2ui-field:only-child) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .a2ui-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
+  min-width: 0; /* Prevent grid overflow */
 }
 
 .a2ui-field-error {
@@ -90,134 +85,204 @@
   .a2ui-textarea,
   .a2ui-select {
     border-color: var(--error-color, #ef4444);
+    background: rgba(239, 68, 68, 0.03);
   }
 }
 
 .a2ui-label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-primary, #111827);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
+  line-height: 1.4;
 }
 
 .a2ui-required {
   color: var(--error-color, #ef4444);
+  font-size: 14px;
 }
 
 .a2ui-input,
 .a2ui-textarea,
 .a2ui-select {
-  padding: 10px 14px;
-  border: 2px solid var(--border-color, #d1d5db);
-  border-radius: 8px;
-  font-size: 14px;
+  padding: 8px 11px;
+  border: 1.5px solid var(--border-color, #d1d5db);
+  border-radius: 6px;
+  font-size: 13px;
   background: var(--bg-primary, #ffffff);
   color: var(--text-primary, #111827);
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.15s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
 
-  &:hover {
-    border-color: var(--primary-color-light, #93c5fd);
+  &:hover:not(:focus) {
+    border-color: var(--text-tertiary, #9ca3af);
   }
 
   &:focus {
     outline: none;
     border-color: var(--primary-color, #3b82f6);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
   }
 
   &::placeholder {
     color: var(--text-tertiary, #9ca3af);
+    opacity: 0.6;
   }
 }
 
 .a2ui-textarea {
   resize: vertical;
-  min-height: 80px;
+  min-height: 72px;
   font-family: inherit;
+  line-height: 1.5;
 }
 
 .a2ui-select {
   cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 32px;
 }
 
 .a2ui-checkbox-label {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 7px;
   cursor: pointer;
   user-select: none;
+  padding: 4px 0;
 }
 
 .a2ui-checkbox {
-  margin-top: 2px;
-  width: 16px;
-  height: 16px;
+  margin-top: 1px;
+  width: 15px;
+  height: 15px;
   cursor: pointer;
+  accent-color: var(--primary-color, #3b82f6);
 }
 
 .a2ui-checkbox-text {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-secondary, #6b7280);
+  line-height: 1.5;
 }
 
 .a2ui-radio-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .a2ui-radio-label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   cursor: pointer;
   user-select: none;
+  padding: 3px 0;
 }
 
 .a2ui-radio {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   cursor: pointer;
+  accent-color: var(--primary-color, #3b82f6);
 }
 
 .a2ui-radio-text {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-primary, #111827);
 }
 
 .a2ui-help-text {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-tertiary, #9ca3af);
-  margin-top: -2px;
+  line-height: 1.4;
+  margin-top: -1px;
 }
 
 .a2ui-error-text {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--error-color, #ef4444);
-  margin-top: -2px;
+  line-height: 1.4;
+  margin-top: -1px;
+  font-weight: 500;
 }
 
 .a2ui-form-footer {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding-top: 16px;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-top: 18px;
+  margin-top: 4px;
   border-top: 1px solid var(--border-color, #e5e7eb);
 }
 
+.a2ui-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.a2ui-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.a2ui-auto-execute-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--bg-secondary, #f9fafb);
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: var(--bg-primary, #ffffff);
+    border-color: var(--text-tertiary, #9ca3af);
+  }
+}
+
+.a2ui-auto-execute-checkbox {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: var(--primary-color, #3b82f6);
+  margin: 0;
+}
+
+.a2ui-auto-execute-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary, #6b7280);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
 .a2ui-button {
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 15px;
+  padding: 9px 20px;
+  border-radius: 6px;
+  font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   border: none;
   outline: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: -0.01em;
 
   &:disabled {
     opacity: 0.5;
@@ -225,48 +290,69 @@
   }
 
   &:active:not(:disabled) {
-    transform: translateY(1px);
+    transform: scale(0.98);
   }
 }
 
 .a2ui-button-cancel {
   background: var(--bg-primary, #ffffff);
   color: var(--text-primary, #111827);
-  border: 2px solid var(--border-color, #d1d5db);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1.5px solid var(--border-color, #d1d5db);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 
   &:hover:not(:disabled) {
     background: var(--bg-secondary, #f9fafb);
     border-color: var(--text-tertiary, #9ca3af);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
   }
 }
 
 .a2ui-button-submit {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: var(--primary-color, #3b82f6);
   color: white;
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
-  }
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.4);
 
   &:hover:not(:disabled) {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
-    transform: translateY(-1px);
+    background: var(--primary-color-dark, #2563eb);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.5);
+  }
+}
 
-    &::before {
-      left: 100%;
+/* Responsive Design */
+@media (max-width: 768px) {
+  .a2ui-form-header {
+    padding: 16px 20px;
+  }
+
+  .a2ui-form-title {
+    font-size: 19px;
+  }
+
+  .a2ui-section-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .a2ui-form-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .a2ui-footer-left {
+    order: 2;
+    justify-content: center;
+  }
+
+  .a2ui-footer-right {
+    order: 1;
+    width: 100%;
+    
+    button {
+      flex: 1;
     }
+  }
+
+  .a2ui-auto-execute-wrapper {
+    justify-content: center;
   }
 }
 
