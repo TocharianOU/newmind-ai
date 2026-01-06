@@ -1,0 +1,75 @@
+{
+  "name": "@henkey/postgres-mcp-server",
+  "version": "1.0.5",
+  "description": "A Model Context Protocol (MCP) server that provides comprehensive PostgreSQL database management capabilities for AI assistants",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "type": "module",
+  "bin": {
+    "postgres-mcp": "build/index.js"
+  },
+  "files": [
+    "build/",
+    "README.md",
+    "LICENSE",
+    "TOOL_SCHEMAS.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsc && node -e \"const fs = require('fs'); const path = 'build/index.js'; const stats = fs.statSync(path); fs.chmodSync(path, stats.mode | parseInt('755', 8));\"",
+    "start": "node build/index.js",
+    "dev": "tsc -w & nodemon build/index.js",
+    "lint": "eslint . --ext .ts",
+    "test": "vitest",
+    "prepublishOnly": "npm run build",
+    "postinstall": "echo 'postgres-mcp-server installed successfully! Run with: npx @henkey/postgres-mcp-server'"
+  },
+  "keywords": [
+    "postgresql",
+    "postgres",
+    "mcp",
+    "database",
+    "model-context-protocol",
+    "ai",
+    "claude",
+    "database-management",
+    "sql",
+    "ai-assistant"
+  ],
+  "author": {
+    "name": "henkey",
+    "email": "henkey@example.com",
+    "url": "https://github.com/henkey"
+  },
+  "license": "AGPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HenkDz/postgresql-mcp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/HenkDz/postgresql-mcp-server/issues"
+  },
+  "homepage": "https://github.com/HenkDz/postgresql-mcp-server#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "latest",
+    "commander": "^12.1.0",
+    "pg": "^8.16.3",
+    "pg-monitor": "^3.0.0",
+    "pg-query-stream": "^4.2.4",
+    "zod": "^3.24.4",
+    "zod-to-json-schema": "^3.24.5"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^20.11.17",
+    "@types/pg": "^8.10.2",
+    "@typescript-eslint/eslint-plugin": "^7.1.0",
+    "@typescript-eslint/parser": "^7.1.0",
+    "eslint": "^8.57.0",
+    "nodemon": "^3.0.3",
+    "typescript": "^5.3.3",
+    "vitest": "^3.2.4"
+  }
+}

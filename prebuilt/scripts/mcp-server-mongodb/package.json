@@ -1,0 +1,70 @@
+{
+  "name": "@tocharian/mcp-server-mongodb",
+  "version": "9.1.4",
+  "author": "@tocharian",
+  "description": "MongoDB MCP Server: Full Featured MCP Server for MongoDB Databases with HTTP Streamable Support",
+  "license": "MIT",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "mcp-server-mongodb": "index.js"
+  },
+  "files": [
+    "index.js",
+    "config-create.js",
+    "package.json",
+    "README.md",
+    "README_CN.md",
+    "start-http.sh",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node index.js",
+    "start:http": "MCP_TRANSPORT=http node index.js",
+    "start:gc": "node --expose-gc index.js",
+    "start:debug": "node --inspect index.js",
+    "start:verbose": "cross-env CONFIG_LOG_LEVEL=verbose node index.js",
+    "start:inspector": "npx -y @modelcontextprotocol/inspector node index",
+    "docker:hub:run": "docker run --rm -i --network=host --pull always @tocharian/mcp-server-mongodb",
+    "docker:local:build": "docker build -t mcp-server-mongodb .",
+    "docker:local:run": "docker run --rm -i --network=host mcp-server-mongodb",
+    "config:create": "node config-create.js",
+    "test": "node index.test.js",
+    "test:localhost": "cross-env CONFIG_MONGO_URI=mongodb://localhost:27017 node index.test.js",
+    "test:localhost:verbose": "cross-env DEBUG=true CONFIG_MONGO_URI=mongodb://localhost:27017 node index.test.js",
+    "test:in-memory": "cross-env CONFIG_MONGO_URI=mongodb-memory-server node index.test.js",
+    "test:in-memory:verbose": "cross-env DEBUG=true CONFIG_MONGO_URI=mongodb-memory-server node index.test.js"
+  },
+  "keywords": [
+    "ai",
+    "llm",
+    "mcp",
+    "claude",
+    "mongodb",
+    "database",
+    "model-context-protocol"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.18.2",
+    "@types/express": "^5.0.3",
+    "cross-env": "^7.0.3",
+    "express": "^5.1.0",
+    "lodash": "^4.17.21",
+    "mongodb": "^6.15.0",
+    "strip-json-comments": "^5.0.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^10.1.4"
+  },
+  "volta": {
+    "node": "22.14.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tocharian/mcp-server-mongodb.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

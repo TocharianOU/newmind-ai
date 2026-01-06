@@ -212,7 +212,7 @@ async function migratePrebuiltScripts() {
 
   // copy scripts
   const rebuiltScriptsPath = path.join(app.isPackaged ? process.resourcesPath : process.cwd(), "prebuilt/scripts")
-  if(!(await fse.pathExists(scriptsDir))) {
+  if (!(await fse.pathExists(scriptsDir))) {
     await fse.mkdir(scriptsDir, { recursive: true })
     await fse.copy(rebuiltScriptsPath, scriptsDir)
   }
@@ -222,20 +222,20 @@ async function migratePrebuiltScripts() {
   const echoTargetPath = path.join(scriptsDir, "mcp-server-echo")
   if (await fse.pathExists(echoSourcePath)) {
     console.log("Processing mcp-server-echo...")
-    
+
     const hasNodeModules = await fse.pathExists(path.join(echoSourcePath, "node_modules"))
     const hasDist = await fse.pathExists(path.join(echoSourcePath, "dist"))
-    
+
     if (!hasNodeModules || !hasDist) {
       console.warn("⚠️  Warning: mcp-server-echo is missing node_modules or dist directory")
       console.warn("Please run: npm run build:mcp-echo && npm run prepare:mcp-echo")
     }
-    
+
     let needsCopy = true
     if (await fse.pathExists(echoTargetPath)) {
       const sourcePackageJson = await fse.readJSON(path.join(echoSourcePath, "package.json")).catch(() => ({}))
       const targetPackageJson = await fse.readJSON(path.join(echoTargetPath, "package.json")).catch(() => ({}))
-      
+
       if (sourcePackageJson.version === targetPackageJson.version) {
         console.log(`mcp-server-echo v${sourcePackageJson.version} already exists, skipping copy`)
         needsCopy = false
@@ -244,16 +244,16 @@ async function migratePrebuiltScripts() {
         await fse.remove(echoTargetPath)
       }
     }
-    
+
     if (needsCopy) {
       console.log("Copying mcp-server-echo (complete with all dependencies)...")
       await fse.copy(echoSourcePath, echoTargetPath, {
         dereference: true,
         filter: (src) => {
           const relativePath = path.relative(echoSourcePath, src)
-          if (relativePath.includes('.git') || 
-              relativePath.includes('tsconfig.json') ||
-              relativePath.startsWith('src/')) {
+          if (relativePath.includes('.git') ||
+            relativePath.includes('tsconfig.json') ||
+            relativePath.startsWith('src/')) {
             return false
           }
           return true
@@ -268,22 +268,22 @@ async function migratePrebuiltScripts() {
   const kibanaTargetPath = path.join(scriptsDir, "mcp-server-kibana")
   if (await fse.pathExists(kibanaSourcePath)) {
     console.log("Processing mcp-server-kibana...")
-    
+
     // 1. 检查源目录是否有必要的文件
     const hasNodeModules = await fse.pathExists(path.join(kibanaSourcePath, "node_modules"))
     const hasDist = await fse.pathExists(path.join(kibanaSourcePath, "dist"))
-    
+
     if (!hasNodeModules || !hasDist) {
       console.warn("⚠️  Warning: mcp-server-kibana is missing node_modules or dist directory")
       console.warn("Please run: npm run build:mcp-kibana && npm run prepare:mcp-kibana")
     }
-    
+
     // 2. 只在需要时删除和复制（比较版本或时间戳）
     let needsCopy = true
     if (await fse.pathExists(kibanaTargetPath)) {
       const sourcePackageJson = await fse.readJSON(path.join(kibanaSourcePath, "package.json")).catch(() => ({}))
       const targetPackageJson = await fse.readJSON(path.join(kibanaTargetPath, "package.json")).catch(() => ({}))
-      
+
       if (sourcePackageJson.version === targetPackageJson.version) {
         console.log(`mcp-server-kibana v${sourcePackageJson.version} already exists, skipping copy`)
         needsCopy = false
@@ -292,7 +292,7 @@ async function migratePrebuiltScripts() {
         await fse.remove(kibanaTargetPath)
       }
     }
-    
+
     // 3. 完整复制，解析所有符号链接为真实文件
     if (needsCopy) {
       console.log("Copying mcp-server-kibana (complete with all dependencies)...")
@@ -301,11 +301,11 @@ async function migratePrebuiltScripts() {
         filter: (src) => {
           // 排除不必要的文件
           const relativePath = path.relative(kibanaSourcePath, src)
-          if (relativePath.includes('.git') || 
-              relativePath.includes('tsconfig.json') ||
-              relativePath.includes('jest.config.js') ||
-              relativePath.startsWith('src/') ||
-              relativePath === 'index.ts') {
+          if (relativePath.includes('.git') ||
+            relativePath.includes('tsconfig.json') ||
+            relativePath.includes('jest.config.js') ||
+            relativePath.startsWith('src/') ||
+            relativePath === 'index.ts') {
             return false
           }
           return true
@@ -320,22 +320,22 @@ async function migratePrebuiltScripts() {
   const esTargetPath = path.join(scriptsDir, "mcp-server-elasticsearch-sl")
   if (await fse.pathExists(esSourcePath)) {
     console.log("Processing mcp-server-elasticsearch-sl...")
-    
+
     // 1. 检查源目录是否有必要的文件
     const hasNodeModules = await fse.pathExists(path.join(esSourcePath, "node_modules"))
     const hasDist = await fse.pathExists(path.join(esSourcePath, "dist"))
-    
+
     if (!hasNodeModules || !hasDist) {
       console.warn("⚠️  Warning: mcp-server-elasticsearch-sl is missing node_modules or dist directory")
       console.warn("Please run: npm run build:mcp-elasticsearch && npm run prepare:mcp-elasticsearch")
     }
-    
+
     // 2. 只在需要时删除和复制（比较版本或时间戳）
     let needsCopy = true
     if (await fse.pathExists(esTargetPath)) {
       const sourcePackageJson = await fse.readJSON(path.join(esSourcePath, "package.json")).catch(() => ({}))
       const targetPackageJson = await fse.readJSON(path.join(esTargetPath, "package.json")).catch(() => ({}))
-      
+
       if (sourcePackageJson.version === targetPackageJson.version) {
         console.log(`mcp-server-elasticsearch-sl v${sourcePackageJson.version} already exists, skipping copy`)
         needsCopy = false
@@ -344,7 +344,7 @@ async function migratePrebuiltScripts() {
         await fse.remove(esTargetPath)
       }
     }
-    
+
     // 3. 完整复制，解析所有符号链接为真实文件
     if (needsCopy) {
       console.log("Copying mcp-server-elasticsearch-sl (complete with all dependencies)...")
@@ -353,18 +353,160 @@ async function migratePrebuiltScripts() {
         filter: (src) => {
           // 排除不必要的文件
           const relativePath = path.relative(esSourcePath, src)
-          if (relativePath.includes('.git') || 
-              relativePath.includes('tsconfig.json') ||
-              relativePath.startsWith('src/') ||
-              relativePath === 'index.ts' ||
-              relativePath === 'catalog-info.yaml' ||
-              relativePath === 'renovate.json') {
+          if (relativePath.includes('.git') ||
+            relativePath.includes('tsconfig.json') ||
+            relativePath.startsWith('src/') ||
+            relativePath === 'index.ts' ||
+            relativePath === 'catalog-info.yaml' ||
+            relativePath === 'renovate.json') {
             return false
           }
           return true
         }
       })
       console.log("✓ Copied mcp-server-elasticsearch-sl successfully (complete independent package)")
+    }
+  }
+
+  // copy mcp-server-mongodb if exists (完整独立复制，包含所有依赖)
+  const mongodbSourcePath = path.join(rebuiltScriptsPath, "mcp-server-mongodb")
+  const mongodbTargetPath = path.join(scriptsDir, "mcp-server-mongodb")
+  if (await fse.pathExists(mongodbSourcePath)) {
+    console.log("Processing mcp-server-mongodb...")
+
+    const hasNodeModules = await fse.pathExists(path.join(mongodbSourcePath, "node_modules"))
+    const hasIndexJs = await fse.pathExists(path.join(mongodbSourcePath, "index.js"))
+
+    if (!hasNodeModules || !hasIndexJs) {
+      console.warn("⚠️  Warning: mcp-server-mongodb is missing node_modules or index.js")
+      console.warn("Please ensure mcp-server-mongodb is properly set up")
+    }
+
+    let needsCopy = true
+    if (await fse.pathExists(mongodbTargetPath)) {
+      const sourcePackageJson = await fse.readJSON(path.join(mongodbSourcePath, "package.json")).catch(() => ({}))
+      const targetPackageJson = await fse.readJSON(path.join(mongodbTargetPath, "package.json")).catch(() => ({}))
+
+      if (sourcePackageJson.version === targetPackageJson.version) {
+        console.log(`mcp-server-mongodb v${sourcePackageJson.version} already exists, skipping copy`)
+        needsCopy = false
+      } else {
+        console.log(`Updating mcp-server-mongodb from v${targetPackageJson.version} to v${sourcePackageJson.version}`)
+        await fse.remove(mongodbTargetPath)
+      }
+    }
+
+    if (needsCopy) {
+      console.log("Copying mcp-server-mongodb (complete with all dependencies)...")
+      await fse.copy(mongodbSourcePath, mongodbTargetPath, {
+        dereference: true,
+        filter: (src) => {
+          const relativePath = path.relative(mongodbSourcePath, src)
+          if (relativePath.includes('.git') ||
+            relativePath.includes('tsconfig.json') ||
+            relativePath.startsWith('test')) {
+            return false
+          }
+          return true
+        }
+      })
+      console.log("✓ Copied mcp-server-mongodb successfully (complete independent package)")
+    }
+  }
+
+  // copy mcp-server-mysql if exists (完整独立复制，包含所有依赖)
+  const mysqlSourcePath = path.join(rebuiltScriptsPath, "mcp-server-mysql")
+  const mysqlTargetPath = path.join(scriptsDir, "mcp-server-mysql")
+  if (await fse.pathExists(mysqlSourcePath)) {
+    console.log("Processing mcp-server-mysql...")
+
+    const hasNodeModules = await fse.pathExists(path.join(mysqlSourcePath, "node_modules"))
+    const hasDist = await fse.pathExists(path.join(mysqlSourcePath, "dist"))
+
+    if (!hasNodeModules || !hasDist) {
+      console.warn("⚠️  Warning: mcp-server-mysql is missing node_modules or dist directory")
+      console.warn("Please ensure mcp-server-mysql is properly built")
+    }
+
+    let needsCopy = true
+    if (await fse.pathExists(mysqlTargetPath)) {
+      const sourcePackageJson = await fse.readJSON(path.join(mysqlSourcePath, "package.json")).catch(() => ({}))
+      const targetPackageJson = await fse.readJSON(path.join(mysqlTargetPath, "package.json")).catch(() => ({}))
+
+      if (sourcePackageJson.version === targetPackageJson.version) {
+        console.log(`mcp-server-mysql v${sourcePackageJson.version} already exists, skipping copy`)
+        needsCopy = false
+      } else {
+        console.log(`Updating mcp-server-mysql from v${targetPackageJson.version} to v${sourcePackageJson.version}`)
+        await fse.remove(mysqlTargetPath)
+      }
+    }
+
+    if (needsCopy) {
+      console.log("Copying mcp-server-mysql (complete with all dependencies)...")
+      await fse.copy(mysqlSourcePath, mysqlTargetPath, {
+        dereference: true,
+        filter: (src) => {
+          const relativePath = path.relative(mysqlSourcePath, src)
+          if (relativePath.includes('.git') ||
+            relativePath.includes('tsconfig.json') ||
+            relativePath.startsWith('src/') ||
+            relativePath.startsWith('tests/') ||
+            relativePath === 'index.ts' ||
+            relativePath === 'evals.ts') {
+            return false
+          }
+          return true
+        }
+      })
+      console.log("✓ Copied mcp-server-mysql successfully (complete independent package)")
+    }
+  }
+
+  // copy mcp-server-pgsql if exists (完整独立复制，包含所有依赖)
+  const pgsqlSourcePath = path.join(rebuiltScriptsPath, "mcp-server-pgsql")
+  const pgsqlTargetPath = path.join(scriptsDir, "mcp-server-pgsql")
+  if (await fse.pathExists(pgsqlSourcePath)) {
+    console.log("Processing mcp-server-pgsql...")
+
+    const hasNodeModules = await fse.pathExists(path.join(pgsqlSourcePath, "node_modules"))
+    const hasBuild = await fse.pathExists(path.join(pgsqlSourcePath, "build"))
+
+    if (!hasNodeModules || !hasBuild) {
+      console.warn("⚠️  Warning: mcp-server-pgsql is missing node_modules or build directory")
+      console.warn("Please ensure mcp-server-pgsql is properly built")
+    }
+
+    let needsCopy = true
+    if (await fse.pathExists(pgsqlTargetPath)) {
+      const sourcePackageJson = await fse.readJSON(path.join(pgsqlSourcePath, "package.json")).catch(() => ({}))
+      const targetPackageJson = await fse.readJSON(path.join(pgsqlTargetPath, "package.json")).catch(() => ({}))
+
+      if (sourcePackageJson.version === targetPackageJson.version) {
+        console.log(`mcp-server-pgsql v${sourcePackageJson.version} already exists, skipping copy`)
+        needsCopy = false
+      } else {
+        console.log(`Updating mcp-server-pgsql from v${targetPackageJson.version} to v${sourcePackageJson.version}`)
+        await fse.remove(pgsqlTargetPath)
+      }
+    }
+
+    if (needsCopy) {
+      console.log("Copying mcp-server-pgsql (complete with all dependencies)...")
+      await fse.copy(pgsqlSourcePath, pgsqlTargetPath, {
+        dereference: true,
+        filter: (src) => {
+          const relativePath = path.relative(pgsqlSourcePath, src)
+          if (relativePath.includes('.git') ||
+            relativePath.includes('tsconfig.json') ||
+            relativePath.startsWith('src/') ||
+            relativePath.startsWith('docs/')) {
+            return false
+          }
+          return true
+        }
+      })
+      console.log("✓ Copied mcp-server-pgsql successfully (complete independent package)")
     }
   }
 }

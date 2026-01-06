@@ -1,0 +1,9 @@
+node_modules/
+build/
+*.log
+.env*
+.cursor/mcp.json
+REFACTOR_PROGRESS.md
+TOOLS.md
+CONSOLIDATION_PROGRESS.md
+CONSOLIDATION_PROGRESS.md

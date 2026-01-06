@@ -8,9 +8,19 @@
 
 ## 可用服务器
 
+### 测试服务器
 - [Echo 服务器](echo.md)：测试（默认启用）
+
+### Elastic Stack
 - [Kibana](kibana.md)：数据可视化
 - [Elasticsearch](elasticsearch.md)：搜索和分析
+
+### 数据库服务器
+- [MongoDB](mongodb.md)：MongoDB 数据库管理
+- [MySQL](mysql.md)：MySQL 数据库管理
+- [PostgreSQL](postgresql.md)：PostgreSQL 数据库管理
+
+### 其他
 - [自定义服务器](custom.md)：您自己的实现
 
 ## 配置

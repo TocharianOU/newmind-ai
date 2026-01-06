@@ -1,0 +1,39 @@
+# Source code (only publish built files)
+src/
+tsconfig.json
+
+# Development files
+.git/
+.cursor/
+.vscode/
+*.log
+.env*
+.editorconfig
+
+# Documentation (development only)
+docs/
+examples/
+REFACTOR_PROGRESS.md
+TOOLS.md
+CONSOLIDATION_PROGRESS.md
+
+# Build tools
+Dockerfile
+smithery.yaml
+
+# Test files
+**/*.test.ts
+**/*.test.js
+test/
+tests/
+
+# Development dependencies
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Misc
+*.tsbuildinfo
+.DS_Store
+Thumbs.db 

@@ -87,6 +87,51 @@ export const DEF_MCP_SERVER_CONFIG = {
         "NODE_TLS_REJECT_UNAUTHORIZED": "0",
         "MAX_TOKEN_CALL": "8000"
       }
+    },
+    "mongodb": {
+      "enabled": false,
+      "command": "node",
+      "args": [
+        path.join(scriptsDir, "mcp-server-mongodb", "index.js")
+      ],
+      "env": {
+        "MONGODB_HOST": "localhost",
+        "MONGODB_PORT": "27017",
+        "MONGODB_USER": "",
+        "MONGODB_PASS": "",
+        "MONGODB_DB": ""
+      }
+    },
+    "mysql": {
+      "enabled": false,
+      "command": "node",
+      "args": [
+        path.join(scriptsDir, "mcp-server-mysql", "dist", "index.js")
+      ],
+      "env": {
+        "MYSQL_HOST": "127.0.0.1",
+        "MYSQL_PORT": "3306",
+        "MYSQL_USER": "root",
+        "MYSQL_PASS": "",
+        "MYSQL_DB": "",
+        "ALLOW_INSERT_OPERATION": "false",
+        "ALLOW_UPDATE_OPERATION": "false",
+        "ALLOW_DELETE_OPERATION": "false"
+      }
+    },
+    "pgsql": {
+      "enabled": false,
+      "command": "node",
+      "args": [
+        path.join(scriptsDir, "mcp-server-pgsql", "build", "index.js")
+      ],
+      "env": {
+        "POSTGRES_HOST": "localhost",
+        "POSTGRES_PORT": "5432",
+        "POSTGRES_USER": "postgres",
+        "POSTGRES_PASS": "",
+        "POSTGRES_DB": "postgres"
+      }
     }
   }
 }

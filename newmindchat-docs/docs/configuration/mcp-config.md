@@ -72,13 +72,73 @@ MCP 配置文件位于：
 
 ```json
 {
-  "elasticsearch": {
+  "elasticsearch-sl": {
     "enabled": false,
     "command": "node",
-    "args": ["~/.newmind/scripts/mcp-server-elasticsearch/dist/index.js"],
+    "args": ["~/.newmind/scripts/mcp-server-elasticsearch-sl/dist/index.js"],
     "env": {
       "ES_URL": "https://your-elasticsearch.com:9200",
       "ES_API_KEY": "your-api-key"
+    }
+  }
+}
+```
+
+### MongoDB 服务器
+
+```json
+{
+  "mongodb": {
+    "enabled": false,
+    "command": "node",
+    "args": ["~/.newmind/scripts/mcp-server-mongodb/index.js"],
+    "env": {
+      "MONGODB_HOST": "localhost",
+      "MONGODB_PORT": "27017",
+      "MONGODB_USER": "your-username",
+      "MONGODB_PASS": "your-password",
+      "MONGODB_DB": "your-database"
+    }
+  }
+}
+```
+
+### MySQL 服务器
+
+```json
+{
+  "mysql": {
+    "enabled": false,
+    "command": "node",
+    "args": ["~/.newmind/scripts/mcp-server-mysql/dist/index.js"],
+    "env": {
+      "MYSQL_HOST": "127.0.0.1",
+      "MYSQL_PORT": "3306",
+      "MYSQL_USER": "root",
+      "MYSQL_PASS": "your-password",
+      "MYSQL_DB": "your-database",
+      "ALLOW_INSERT_OPERATION": "false",
+      "ALLOW_UPDATE_OPERATION": "false",
+      "ALLOW_DELETE_OPERATION": "false"
+    }
+  }
+}
+```
+
+### PostgreSQL 服务器
+
+```json
+{
+  "pgsql": {
+    "enabled": false,
+    "command": "node",
+    "args": ["~/.newmind/scripts/mcp-server-pgsql/build/index.js"],
+    "env": {
+      "POSTGRES_HOST": "localhost",
+      "POSTGRES_PORT": "5432",
+      "POSTGRES_USER": "postgres",
+      "POSTGRES_PASS": "your-password",
+      "POSTGRES_DB": "your-database"
     }
   }
 }
