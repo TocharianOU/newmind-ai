@@ -9,12 +9,12 @@ const Home = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t, language, changeLanguage } = useLanguage();
-  // Hardcoded default download URLs to avoid env/API differences
+  // Default download URLs - empty until fetched from backend API
   const DEFAULT_DOWNLOAD_URLS = {
     windows: { x64: '' },
     macos: {
-      intel: 'http://xiaopenges.tocharian.eu/download/NewmindChat-electron-1.0.0-mac-x64.dmg',
-      appleSilicon: 'http://xiaopenges.tocharian.eu/download/NewmindChat-electron-1.0.0-mac-arm64.dmg'
+      intel: '',
+      appleSilicon: ''
     },
     linux: { x64: '', arm64: '' }
   };

@@ -11,8 +11,8 @@ router.get('/me', authenticateToken, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      include: { 
-        subscription: true 
+      include: {
+        subscription: true
       }
     });
 
@@ -55,7 +55,7 @@ router.get('/usage', authenticateToken, async (req, res) => {
     });
 
     const planName = user?.subscription?.planName || 'BASE';
-    
+
     // Calculate usage for current month
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
@@ -157,7 +157,7 @@ router.get('/settings', authenticateToken, async (req, res) => {
 router.put('/settings', authenticateToken, async (req, res) => {
   try {
     const { username, picture, team } = req.body;
-    
+
     const updateData = {};
     if (username !== undefined) updateData.username = username;
     if (picture !== undefined) updateData.picture = picture;
@@ -230,7 +230,7 @@ router.get('/preferences', authenticateToken, async (req, res) => {
 router.put('/preferences', authenticateToken, async (req, res) => {
   try {
     const { theme, language, notifications, emailNotifications } = req.body;
-    
+
     const updateData = {};
     if (theme !== undefined) updateData.theme = theme;
     if (language !== undefined) updateData.language = language;
@@ -262,11 +262,11 @@ router.put('/preferences', authenticateToken, async (req, res) => {
 router.get('/stats', authenticateToken, async (req, res) => {
   try {
     const { range = '30d' } = req.query;
-    
+
     // Calculate date range
     const now = new Date();
     let startDate = new Date();
-    
+
     switch (range) {
       case '7d':
         startDate.setDate(now.getDate() - 7);
@@ -359,6 +359,344 @@ router.get('/stats', authenticateToken, async (req, res) => {
   } catch (error) {
     logger.error('Error fetching user stats:', error);
     res.status(500).json(createResponse(null, 'Failed to fetch user stats'));
+  }
+});
+
+// GET /api/v1/user/admin/users - Get all users list (enterprise only)
+router.get('/admin/users', authenticateToken, async (req, res) => {
+  try {
+    // Authorization check - only enterprise@test.com can access
+    if (req.user.email !== 'enterprise@test.com') {
+      logger.warn(`Unauthorized admin users access attempt by ${req.user.email}`);
+      return res.status(403).json(createResponse(null, 'Access denied. Admin privileges required.'));
+    }
+
+    // Get all users with their subscription info
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        picture: true,
+        team: true,
+        createdAt: true,
+        subscription: {
+          select: {
+            planName: true,
+            startDate: true,
+            endDate: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    // Get usage count for each user in the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const usersWithUsage = await Promise.all(users.map(async (user) => {
+      const usageCount = await prisma.usageRecord.count({
+        where: {
+          userId: user.id,
+          createdAt: {
+            gte: thirtyDaysAgo
+          }
+        }
+      });
+
+      const totalTokens = await prisma.usageRecord.aggregate({
+        where: {
+          userId: user.id,
+          createdAt: {
+            gte: thirtyDaysAgo
+          }
+        },
+        _sum: {
+          inputTokens: true,
+          outputTokens: true
+        }
+      });
+
+      return {
+        ...user,
+        usage30d: {
+          calls: usageCount,
+          totalTokens: (totalTokens._sum.inputTokens || 0) + (totalTokens._sum.outputTokens || 0)
+        }
+      };
+    }));
+
+    logger.info(`Admin users list accessed by ${req.user.email}`);
+    res.json(createResponse(usersWithUsage));
+  } catch (error) {
+    logger.error('Error fetching admin users:', error);
+    res.status(500).json(createResponse(null, 'Failed to fetch users'));
+  }
+});
+
+// GET /api/v1/user/admin/users/:userId/stats - Get specific user statistics (enterprise only)
+router.get('/admin/users/:userId/stats', authenticateToken, async (req, res) => {
+  try {
+    // Authorization check - only enterprise@test.com can access
+    if (req.user.email !== 'enterprise@test.com') {
+      logger.warn(`Unauthorized admin user stats access attempt by ${req.user.email}`);
+      return res.status(403).json(createResponse(null, 'Access denied. Admin privileges required.'));
+    }
+
+    const { userId } = req.params;
+    const { range = '30d' } = req.query;
+
+    // Check if user exists
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        picture: true,
+        team: true,
+        createdAt: true,
+        subscription: {
+          select: {
+            planName: true,
+            startDate: true,
+            endDate: true
+          }
+        }
+      }
+    });
+
+    if (!targetUser) {
+      return res.status(404).json(createResponse(null, 'User not found'));
+    }
+
+    // Calculate date range
+    const now = new Date();
+    let startDate = new Date();
+
+    switch (range) {
+      case '7d':
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case '30d':
+        startDate.setDate(now.getDate() - 30);
+        break;
+      case '90d':
+        startDate.setDate(now.getDate() - 90);
+        break;
+      case 'all':
+        startDate = new Date(0);
+        break;
+      default:
+        startDate.setDate(now.getDate() - 30);
+    }
+
+    // Get usage records for the specific user
+    const usageRecords = await prisma.usageRecord.findMany({
+      where: {
+        userId: userId,
+        createdAt: {
+          gte: startDate
+        }
+      },
+      select: {
+        modelName: true,
+        inputTokens: true,
+        outputTokens: true,
+        createdAt: true
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    });
+
+    // Calculate statistics
+    const totalCalls = usageRecords.length;
+    const totalTokens = usageRecords.reduce((acc, record) => {
+      return acc + record.inputTokens + record.outputTokens;
+    }, 0);
+    const totalInputTokens = usageRecords.reduce((acc, record) => acc + record.inputTokens, 0);
+    const totalOutputTokens = usageRecords.reduce((acc, record) => acc + record.outputTokens, 0);
+
+    // Group by model
+    const modelStats = {};
+    usageRecords.forEach(record => {
+      if (!modelStats[record.modelName]) {
+        modelStats[record.modelName] = {
+          calls: 0,
+          inputTokens: 0,
+          outputTokens: 0,
+          totalTokens: 0
+        };
+      }
+      modelStats[record.modelName].calls++;
+      modelStats[record.modelName].inputTokens += record.inputTokens;
+      modelStats[record.modelName].outputTokens += record.outputTokens;
+      modelStats[record.modelName].totalTokens += record.inputTokens + record.outputTokens;
+    });
+
+    // Group by date for chart data
+    const dailyUsage = {};
+    usageRecords.forEach(record => {
+      const date = record.createdAt.toISOString().split('T')[0];
+      if (!dailyUsage[date]) {
+        dailyUsage[date] = {
+          date,
+          calls: 0,
+          tokens: 0
+        };
+      }
+      dailyUsage[date].calls++;
+      dailyUsage[date].tokens += record.inputTokens + record.outputTokens;
+    });
+
+    const stats = {
+      user: targetUser,
+      summary: {
+        totalCalls,
+        totalTokens,
+        totalInputTokens,
+        totalOutputTokens,
+        averageTokensPerCall: totalCalls > 0 ? Math.round(totalTokens / totalCalls) : 0
+      },
+      modelStats: Object.entries(modelStats).map(([model, stats]) => ({
+        model,
+        ...stats
+      })),
+      dailyUsage: Object.values(dailyUsage),
+      range,
+      startDate: startDate.toISOString(),
+      endDate: now.toISOString()
+    };
+
+    logger.info(`Admin accessed user stats for ${targetUser.email} by ${req.user.email}`);
+    res.json(createResponse(stats));
+  } catch (error) {
+    logger.error('Error fetching user stats:', error);
+    res.status(500).json(createResponse(null, 'Failed to fetch user stats'));
+  }
+});
+
+// GET /api/v1/user/admin/stats - Get admin statistics (enterprise only)
+router.get('/admin/stats', authenticateToken, async (req, res) => {
+  try {
+    // Authorization check - only enterprise@test.com can access
+    if (req.user.email !== 'enterprise@test.com') {
+      logger.warn(`Unauthorized admin stats access attempt by ${req.user.email}`);
+      return res.status(403).json(createResponse(null, 'Access denied. Admin privileges required.'));
+    }
+
+    const { range = '30d' } = req.query;
+
+    // Calculate date range
+    const now = new Date();
+    let startDate = new Date();
+
+    switch (range) {
+      case '7d':
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case '30d':
+        startDate.setDate(now.getDate() - 30);
+        break;
+      case '90d':
+        startDate.setDate(now.getDate() - 90);
+        break;
+      case 'all':
+        startDate = new Date(0); // Beginning of time
+        break;
+      default:
+        startDate.setDate(now.getDate() - 30);
+    }
+
+    // Get total users count
+    const totalUsers = await prisma.user.count();
+
+    // Get all usage records for the specified range
+    const usageRecords = await prisma.usageRecord.findMany({
+      where: {
+        createdAt: {
+          gte: startDate
+        }
+      },
+      select: {
+        modelName: true,
+        inputTokens: true,
+        outputTokens: true,
+        createdAt: true
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    });
+
+    // Calculate aggregate statistics
+    const totalCalls = usageRecords.length;
+    const totalTokens = usageRecords.reduce((acc, record) => {
+      return acc + record.inputTokens + record.outputTokens;
+    }, 0);
+    const totalInputTokens = usageRecords.reduce((acc, record) => acc + record.inputTokens, 0);
+    const totalOutputTokens = usageRecords.reduce((acc, record) => acc + record.outputTokens, 0);
+
+    // Group by model
+    const modelStats = {};
+    usageRecords.forEach(record => {
+      if (!modelStats[record.modelName]) {
+        modelStats[record.modelName] = {
+          calls: 0,
+          inputTokens: 0,
+          outputTokens: 0,
+          totalTokens: 0
+        };
+      }
+      modelStats[record.modelName].calls++;
+      modelStats[record.modelName].inputTokens += record.inputTokens;
+      modelStats[record.modelName].outputTokens += record.outputTokens;
+      modelStats[record.modelName].totalTokens += record.inputTokens + record.outputTokens;
+    });
+
+    // Group by date for chart data
+    const dailyUsage = {};
+    usageRecords.forEach(record => {
+      const date = record.createdAt.toISOString().split('T')[0];
+      if (!dailyUsage[date]) {
+        dailyUsage[date] = {
+          date,
+          calls: 0,
+          tokens: 0
+        };
+      }
+      dailyUsage[date].calls++;
+      dailyUsage[date].tokens += record.inputTokens + record.outputTokens;
+    });
+
+    const stats = {
+      totalUsers,
+      summary: {
+        totalCalls,
+        totalTokens,
+        totalInputTokens,
+        totalOutputTokens,
+        averageTokensPerCall: totalCalls > 0 ? Math.round(totalTokens / totalCalls) : 0
+      },
+      modelStats: Object.entries(modelStats).map(([model, stats]) => ({
+        model,
+        ...stats
+      })),
+      dailyUsage: Object.values(dailyUsage),
+      range,
+      startDate: startDate.toISOString(),
+      endDate: now.toISOString()
+    };
+
+    logger.info(`Admin stats accessed by ${req.user.email} for range ${range}`);
+    res.json(createResponse(stats));
+  } catch (error) {
+    logger.error('Error fetching admin stats:', error);
+    res.status(500).json(createResponse(null, 'Failed to fetch admin stats'));
   }
 });
 

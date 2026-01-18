@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import api from '../config/api';
 import './Auth.css';
 
 const Register = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     email: '',
     username: '',
@@ -43,12 +45,12 @@ const Register = () => {
 
     // Validation
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.passwordMismatch'));
       return;
     }
 
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError(t('auth.passwordTooShort'));
       return;
     }
 
@@ -63,7 +65,7 @@ const Register = () => {
       );
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Registration failed. Please try again.');
+      setError(err.message || t('auth.registerFailed'));
     } finally {
       setLoading(false);
     }
@@ -81,14 +83,14 @@ const Register = () => {
       <div className="auth-card">
         <div className="auth-header">
           <h1>NewMind Hub</h1>
-          <p>Create your account</p>
+          <p>{t('auth.registerTitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
           {error && <div className="auth-error">{error}</div>}
 
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">{t('auth.email')}</label>
             <input
               type="email"
               id="email"
@@ -96,13 +98,13 @@ const Register = () => {
               value={formData.email}
               onChange={handleChange}
               required
-              placeholder="your@email.com"
+              placeholder={t('auth.emailPlaceholder')}
               autoComplete="email"
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="username">Username</label>
+            <label htmlFor="username">{t('auth.username')}</label>
             <input
               type="text"
               id="username"
@@ -110,13 +112,13 @@ const Register = () => {
               value={formData.username}
               onChange={handleChange}
               required
-              placeholder="Your name"
+              placeholder={t('auth.usernamePlaceholder')}
               autoComplete="name"
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{t('auth.password')}</label>
             <input
               type="password"
               id="password"
@@ -124,14 +126,14 @@ const Register = () => {
               value={formData.password}
               onChange={handleChange}
               required
-              placeholder="••••••••"
+              placeholder={t('auth.passwordPlaceholder')}
               autoComplete="new-password"
               minLength="6"
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
+            <label htmlFor="confirmPassword">{t('auth.confirmPassword')}</label>
             <input
               type="password"
               id="confirmPassword"
@@ -139,14 +141,14 @@ const Register = () => {
               value={formData.confirmPassword}
               onChange={handleChange}
               required
-              placeholder="••••••••"
+              placeholder={t('auth.passwordPlaceholder')}
               autoComplete="new-password"
             />
           </div>
 
           {inviteCodeRequired && (
             <div className="form-group">
-              <label htmlFor="inviteCode">Invite Code</label>
+              <label htmlFor="inviteCode">{t('auth.inviteCode')}</label>
               <input
                 type="text"
                 id="inviteCode"
@@ -154,7 +156,7 @@ const Register = () => {
                 value={formData.inviteCode}
                 onChange={handleChange}
                 required
-                placeholder="Enter your invite code"
+                placeholder={t('auth.inviteCodePlaceholder')}
                 autoComplete="off"
               />
             </div>
@@ -165,14 +167,14 @@ const Register = () => {
             className="auth-button"
             disabled={loading || configLoading}
           >
-            {loading ? 'Creating account...' : 'Sign up'}
+            {loading ? t('auth.registering') : t('auth.register')}
           </button>
         </form>
 
         <div className="auth-footer">
           <p>
-            Already have an account?{' '}
-            <Link to="/login">Sign in</Link>
+            {t('auth.hasAccount')}{' '}
+            <Link to="/login">{t('auth.signInNow')}</Link>
           </p>
         </div>
       </div>

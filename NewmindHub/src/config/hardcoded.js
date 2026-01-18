@@ -19,17 +19,18 @@ export const HARDCODED_CONFIG = {
   ],
 
   // ==================== 下载地址配置 ====================
+  // 从环境变量读取，如果未配置则使用空字符串
   DOWNLOAD_URLS: {
     windows: {
-      x64: '' // Windows x64 下载地址（待配置）
+      x64: process.env.DOWNLOAD_URL_WINDOWS_X64 || ''
     },
     macos: {
-      intel: 'http://xiaopenges.tocharian.eu/download/NewmindChat-electron-1.0.0-mac-x64.dmg',
-      appleSilicon: 'http://xiaopenges.tocharian.eu/download/NewmindChat-electron-1.0.0-mac-arm64.dmg'
+      intel: process.env.DOWNLOAD_URL_MACOS_INTEL || '',
+      appleSilicon: process.env.DOWNLOAD_URL_MACOS_APPLE_SILICON || ''
     },
     linux: {
-      x64: '',   // Linux x64 下载地址（待配置）
-      arm64: ''  // Linux ARM64 下载地址（待配置）
+      x64: process.env.DOWNLOAD_URL_LINUX_X64 || '',
+      arm64: process.env.DOWNLOAD_URL_LINUX_ARM64 || ''
     }
   },
 

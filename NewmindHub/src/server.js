@@ -5,16 +5,13 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
-import passport from 'passport';
 
 // Load environment variables
 dotenv.config();
 
-// Import Passport configuration
-import { setupPassport } from './config/passport.js';
-
 // Import routes
 import authRoutes from './routes/auth.js';
+import ssoRoutes from './routes/sso.js';
 import userRoutes from './routes/user.js';
 import modelRoutes from './routes/models.js';
 import proxyRoutes from './routes/proxy.js';
@@ -31,6 +28,7 @@ import { rateLimiter } from './middleware/rateLimiter.js';
 // Import utilities
 import logger from './utils/logger.js';
 import { startSubscriptionExpirationCheck } from './utils/subscriptionExpiration.js';
+import { initializeSSOProviders } from './sso/index.js';
 
 // Create Express app
 const app = express();
@@ -100,11 +98,6 @@ app.post('/api/v1/payment/webhook', express.raw({ type: 'application/json' }), s
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Initialize Passport for OAuth
-setupPassport();
-app.use(passport.initialize());
-logger.info('✓ Passport OAuth initialized');
-
 // Rate limiting
 app.use('/api/', rateLimiter);
 
@@ -119,6 +112,7 @@ app.get('/api/health', (req, res) => {
 
 // API Routes - Re-enabled for authentication
 app.use('/api/auth', authRoutes);        // Dive expects this path for login
+app.use('/api/auth/sso', ssoRoutes);     // SSO authentication routes
 app.use('/api/v1/user', userRoutes);
 app.use('/api/v1', modelRoutes);
 app.use('/api/v1', proxyRoutes);
@@ -184,6 +178,9 @@ app.use((req, res) => {
     data: null
   });
 });
+
+// Initialize SSO providers
+initializeSSOProviders();
 
 // Start server
 const PORT = process.env.PORT || 3000;

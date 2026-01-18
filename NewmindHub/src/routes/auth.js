@@ -1,24 +1,19 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import passport from 'passport';
+import CryptoJS from 'crypto-js';
 import { prisma } from '../config/database.js';
 import { createResponse } from '../config/constants.js';
 import logger from '../utils/logger.js';
 import HARDCODED_CONFIG from '../config/hardcoded.js';
-import { getOAuthConfig, getPublicProviderList, getProviderScope } from '../config/oauth.js';
 
 const router = express.Router();
 
-// Get auth configuration (e.g., invite code requirement, OAuth config)
+// Get auth configuration (e.g., invite code requirement)
 router.get('/config', (req, res) => {
   try {
-    const oauthConfig = getOAuthConfig();
     res.json(createResponse({
-      inviteCodeRequired: HARDCODED_CONFIG.INVITE_CODE_ENABLED,
-      oauthEnabled: oauthConfig.enabled,
-      brandText: oauthConfig.brandText,
-      providers: getPublicProviderList()
+      inviteCodeRequired: HARDCODED_CONFIG.INVITE_CODE_ENABLED
     }));
   } catch (error) {
     logger.error('Config fetch error:', error);
@@ -39,13 +34,34 @@ router.get('/download-config', (req, res) => {
 // Register new user
 router.post('/register', async (req, res) => {
   try {
-    const { email, username, password, inviteCode } = req.body;
+    let { email, username, password, inviteCode, encrypted } = req.body;
 
     // Validate input
     if (!email || !username || !password) {
       return res.status(400).json(
         createResponse(null, 'Email, username and password are required')
       );
+    }
+
+    // Decrypt password if it's encrypted
+    if (encrypted) {
+      try {
+        const encryptionKey = 'newmind';
+        const bytes = CryptoJS.AES.decrypt(password, encryptionKey);
+        password = bytes.toString(CryptoJS.enc.Utf8);
+
+        if (!password) {
+          logger.error(`Password decryption failed: empty result for ${email}`);
+          return res.status(400).json(
+            createResponse(null, 'Failed to decrypt password')
+          );
+        }
+      } catch (decryptError) {
+        logger.error('Password decryption error:', decryptError);
+        return res.status(400).json(
+          createResponse(null, 'Invalid encrypted password')
+        );
+      }
     }
 
     // Check invite code
@@ -124,13 +140,34 @@ router.post('/register', async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password, encrypted } = req.body;
 
     // Validate input
     if (!email || !password) {
       return res.status(400).json(
         createResponse(null, 'Email and password are required')
       );
+    }
+
+    // Decrypt password if it's encrypted
+    if (encrypted) {
+      try {
+        const encryptionKey = 'newmind';
+        const bytes = CryptoJS.AES.decrypt(password, encryptionKey);
+        password = bytes.toString(CryptoJS.enc.Utf8);
+
+        if (!password) {
+          logger.error(`Password decryption failed: empty result for ${email}`);
+          return res.status(400).json(
+            createResponse(null, 'Failed to decrypt password')
+          );
+        }
+      } catch (decryptError) {
+        logger.error('Password decryption error:', decryptError);
+        return res.status(400).json(
+          createResponse(null, 'Invalid encrypted password')
+        );
+      }
     }
 
     // Find user
@@ -243,79 +280,6 @@ router.post('/refresh', async (req, res) => {
     logger.error('Token refresh error:', error);
     res.status(401).json(createResponse(null, 'Token refresh failed'));
   }
-});
-
-// ==================== OAuth Routes ====================
-
-/**
- * 启动OAuth认证流程
- * GET /auth/:provider
- * 支持的provider: google, microsoft, github, gitlab
- */
-router.get('/:provider', (req, res, next) => {
-  const provider = req.params.provider;
-  const scope = getProviderScope(provider);
-  
-  logger.info(`Starting OAuth flow for provider: ${provider}`);
-  
-  passport.authenticate(provider, {
-    scope,
-    session: false,
-    state: req.query.client || 'dive' // 传递client信息
-  })(req, res, next);
-});
-
-/**
- * OAuth回调处理
- * GET /auth/:provider/callback
- */
-router.get('/:provider/callback', (req, res, next) => {
-  const provider = req.params.provider;
-  
-  passport.authenticate(provider, { session: false }, async (err, user, info) => {
-    try {
-      if (err) {
-        logger.error(`OAuth callback error for ${provider}:`, err);
-        return res.redirect(`dive://login/error?message=${encodeURIComponent(err.message || 'Authentication failed')}`);
-      }
-
-      if (!user) {
-        logger.warn(`OAuth authentication failed for ${provider}:`, info);
-        return res.redirect(`dive://login/error?message=${encodeURIComponent('Authentication failed')}`);
-      }
-
-      // 生成JWT token
-      const token = jwt.sign(
-        { userId: user.id },
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-      );
-
-      // 生成refresh token
-      const refreshToken = jwt.sign(
-        { userId: user.id },
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d' }
-      );
-
-      // 保存refresh token
-      await prisma.refreshToken.create({
-        data: {
-          userId: user.id,
-          token: refreshToken,
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        }
-      });
-
-      logger.info(`OAuth login successful for ${provider}: ${user.email}`);
-
-      // 通过deep link返回token给Electron应用
-      res.redirect(`dive://login/${token}`);
-    } catch (error) {
-      logger.error(`OAuth callback processing error for ${provider}:`, error);
-      res.redirect(`dive://login/error?message=${encodeURIComponent('Login processing failed')}`);
-    }
-  })(req, res, next);
 });
 
 export default router;

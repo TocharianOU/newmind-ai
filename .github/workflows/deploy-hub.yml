@@ -1,0 +1,406 @@
+name: Deploy NewmindHub
+# Trigger deployment: 2026-01-18 (retry after Docker installation)
+
+on:
+  push:
+    branches:
+      - main          # 推送到 main 分支时部署到生产环境
+      - dev           # 推送到 dev 分支时部署到测试环境
+    paths:
+      - 'NewmindHub/**'
+      - '.github/workflows/deploy-hub.yml'
+  workflow_dispatch:  # 允许手动触发
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - test
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  # 构建并推送 Docker 镜像到 GitHub Container Registry
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      backend_image: ${{ steps.meta-backend.outputs.tags }}
+      frontend_image: ${{ steps.meta-frontend.outputs.tags }}
+      version: ${{ steps.version.outputs.version }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Convert repository name to lowercase
+        id: lowercase
+        run: |
+          echo "repository=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+          echo "Repository (lowercase): $(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate version
+        id: version
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          VERSION="${BRANCH_NAME}-${SHORT_SHA}-$(date +%Y%m%d%H%M%S)"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Generated version: ${VERSION}"
+
+      # 构建并推送后端镜像
+      - name: Extract metadata for backend
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}/newmindhub-backend
+          tags: |
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=test,enable=${{ github.ref == 'refs/heads/dev' }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./NewmindHub
+          file: ./NewmindHub/Dockerfile
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 构建并推送前端镜像
+      - name: Extract metadata for frontend
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}/newmindhub-frontend
+          tags: |
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=test,enable=${{ github.ref == 'refs/heads/dev' }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./NewmindHub/frontend
+          file: ./NewmindHub/frontend/Dockerfile
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          build-args: |
+            VITE_API_BASE_URL=${{ github.ref == 'refs/heads/main' && secrets.PROD_VITE_API_BASE_URL || secrets.TEST_VITE_API_BASE_URL }}
+            VITE_DOCS_URL=${{ github.ref == 'refs/heads/main' && secrets.PROD_VITE_DOCS_URL || secrets.TEST_VITE_DOCS_URL }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # 部署到服务器
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'test' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Convert repository name to lowercase
+        id: lowercase
+        run: |
+          echo "repository=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+          echo "Repository (lowercase): $(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
+
+      - name: Set environment variables
+        id: set-env
+        run: |
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "ENV_NAME=production" >> $GITHUB_OUTPUT
+            echo "DEPLOY_PATH=/opt/newmindhub/prod" >> $GITHUB_OUTPUT
+            echo "COMPOSE_PROJECT=newmindhub-prod" >> $GITHUB_OUTPUT
+          else
+            echo "ENV_NAME=test" >> $GITHUB_OUTPUT
+            echo "DEPLOY_PATH=/opt/newmindhub/test" >> $GITHUB_OUTPUT
+            echo "COMPOSE_PROJECT=newmindhub-test" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy to server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          VERSION: ${{ needs.build-and-push.outputs.version }}
+          DEPLOY_PATH: ${{ steps.set-env.outputs.DEPLOY_PATH }}
+          COMPOSE_PROJECT: ${{ steps.set-env.outputs.COMPOSE_PROJECT }}
+          ENV_NAME: ${{ steps.set-env.outputs.ENV_NAME }}
+          BACKEND_IMAGE: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}/newmindhub-backend:${{ needs.build-and-push.outputs.version }}
+          FRONTEND_IMAGE: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}/newmindhub-frontend:${{ needs.build-and-push.outputs.version }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          envs: VERSION,DEPLOY_PATH,COMPOSE_PROJECT,ENV_NAME,BACKEND_IMAGE,FRONTEND_IMAGE
+          script: |
+            set -e
+            echo "🚀 Starting deployment to ${ENV_NAME} environment..."
+            echo "📦 Version: ${VERSION}"
+            
+            # 创建部署目录
+            mkdir -p ${DEPLOY_PATH}
+            cd ${DEPLOY_PATH}
+            
+            # 备份当前 docker-compose.yml（如果存在）
+            if [ -f docker-compose.yml ]; then
+              cp docker-compose.yml docker-compose.yml.backup-$(date +%Y%m%d%H%M%S)
+              echo "✅ Backed up existing docker-compose.yml"
+            fi
+            
+            # 创建新的 docker-compose.yml（使用预构建的镜像）
+            cat > docker-compose.yml << 'EOF'
+            services:
+              postgres:
+                image: postgres:16-alpine
+                container_name: ${COMPOSE_PROJECT}-postgres
+                restart: unless-stopped
+                environment:
+                  POSTGRES_USER: ${POSTGRES_USER:-postgres}
+                  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+                  POSTGRES_DB: ${POSTGRES_DB:-newmindhub_auth}
+                volumes:
+                  - postgres_data:/var/lib/postgresql/data
+                healthcheck:
+                  test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+                  interval: 10s
+                  timeout: 5s
+                  retries: 5
+                networks:
+                  - newmindhub-network
+
+              backend:
+                image: ${BACKEND_IMAGE}
+                container_name: ${COMPOSE_PROJECT}-backend
+                restart: unless-stopped
+                depends_on:
+                  postgres:
+                    condition: service_healthy
+                env_file:
+                  - .env
+                ports:
+                  - "${BACKEND_PORT:-23000}:3000"
+                volumes:
+                  - ./logs:/app/logs
+                  - ./system-prompt.txt:/app/system-prompt.txt:ro
+                healthcheck:
+                  test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+                  interval: 30s
+                  timeout: 10s
+                  retries: 3
+                  start_period: 40s
+                networks:
+                  - newmindhub-network
+
+              frontend:
+                image: ${FRONTEND_IMAGE}
+                container_name: ${COMPOSE_PROJECT}-frontend
+                restart: unless-stopped
+                depends_on:
+                  - backend
+                ports:
+                  - "${FRONTEND_PORT:-23001}:3001"
+                healthcheck:
+                  test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/"]
+                  interval: 30s
+                  timeout: 3s
+                  retries: 3
+                  start_period: 5s
+                networks:
+                  - newmindhub-network
+
+            volumes:
+              postgres_data:
+                driver: local
+
+            networks:
+              newmindhub-network:
+                driver: bridge
+            EOF
+            
+            echo "✅ Created docker-compose.yml"
+            
+            # 检查 .env 文件是否存在
+            if [ ! -f .env ]; then
+              echo "❌ Error: .env file not found at ${DEPLOY_PATH}/.env"
+              echo "Please create .env file with required environment variables before deployment"
+              exit 1
+            fi
+            
+            # 生成 DATABASE_URL（如果不存在）
+            if ! grep -q "^DATABASE_URL=" .env; then
+              POSTGRES_USER=$(grep "^POSTGRES_USER=" .env | cut -d'=' -f2 | tr -d '"' || echo "postgres")
+              POSTGRES_PASSWORD=$(grep "^POSTGRES_PASSWORD=" .env | cut -d'=' -f2 | tr -d '"')
+              POSTGRES_DB=$(grep "^POSTGRES_DB=" .env | cut -d'=' -f2 | tr -d '"' || echo "newmindhub_auth")
+              
+              echo "" >> .env
+              echo "# Auto-generated DATABASE_URL" >> .env
+              echo "DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public" >> .env
+              echo "✅ Generated DATABASE_URL"
+            fi
+            
+            # 添加/更新 Docker Compose 变量到 .env
+            sed -i '/^COMPOSE_PROJECT=/d' .env
+            sed -i '/^BACKEND_IMAGE=/d' .env
+            sed -i '/^FRONTEND_IMAGE=/d' .env
+            echo "COMPOSE_PROJECT=${COMPOSE_PROJECT}" >> .env
+            echo "BACKEND_IMAGE=${BACKEND_IMAGE}" >> .env
+            echo "FRONTEND_IMAGE=${FRONTEND_IMAGE}" >> .env
+            echo "✅ Updated Docker Compose variables in .env"
+            
+            # 登录到 GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # 拉取新镜像
+            echo "📥 Pulling new images..."
+            docker pull ${BACKEND_IMAGE}
+            docker pull ${FRONTEND_IMAGE}
+            
+            # 健康检查函数
+            check_health() {
+              local service=$1
+              local max_attempts=30
+              local attempt=0
+              
+              echo "🔍 Checking health of ${service}..."
+              while [ $attempt -lt $max_attempts ]; do
+                if docker compose ps ${service} | grep -q "healthy"; then
+                  echo "✅ ${service} is healthy"
+                  return 0
+                fi
+                attempt=$((attempt + 1))
+                echo "⏳ Waiting for ${service} to be healthy (${attempt}/${max_attempts})..."
+                sleep 2
+              done
+              
+              echo "❌ ${service} failed health check"
+              return 1
+            }
+            
+            # 执行部署
+            echo "🔄 Starting services with new images..."
+            docker compose up -d
+            
+            # 等待服务健康
+            if check_health backend; then
+              echo "🎉 Backend deployed successfully!"
+              
+              # 清理旧镜像（保留最近3个版本）
+              echo "🧹 Cleaning up old images..."
+              docker images "${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}/newmindhub-backend" --format "{{.ID}} {{.CreatedAt}}" | \
+                sort -rk 2 | tail -n +4 | awk '{print $1}' | xargs -r docker rmi || true
+              docker images "${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}/newmindhub-frontend" --format "{{.ID}} {{.CreatedAt}}" | \
+                sort -rk 2 | tail -n +4 | awk '{print $1}' | xargs -r docker rmi || true
+              
+              echo "✅ Deployment completed successfully!"
+              echo "📊 Version: ${VERSION}"
+              echo "🌐 Environment: ${ENV_NAME}"
+              
+              # 部署 Stripe webhook（仅测试环境）
+              if [ "${ENV_NAME}" == "test" ]; then
+                echo "🔧 Configuring Stripe webhook for test environment..."
+                
+                # 停止并删除旧的 Stripe webhook 容器（如果存在）
+                docker stop stripe-webhook 2>/dev/null || true
+                docker rm stripe-webhook 2>/dev/null || true
+                
+                # 获取实际的网络名称（Docker Compose 创建的网络）
+                echo "🔍 Looking for Docker network..."
+                docker network ls
+                
+                NETWORK_NAME=$(docker network ls --format "{{.Name}}" | grep "newmindhub-network" | head -1)
+                
+                if [ -z "$NETWORK_NAME" ]; then
+                  echo "⚠️ Warning: Could not find newmindhub-network"
+                  echo "Stripe webhook will not be configured automatically"
+                  echo "You can configure it manually later"
+                else
+                  echo "📡 Using network: ${NETWORK_NAME}"
+                  
+                  # 启动新的 Stripe webhook 容器
+                  docker run -d --name stripe-webhook \
+                    --restart unless-stopped \
+                    --network ${NETWORK_NAME} \
+                    -e STRIPE_API_KEY='${{ secrets.STRIPE_TEST_API_KEY }}' \
+                    stripe/stripe-cli:latest listen \
+                    --forward-to http://${COMPOSE_PROJECT}-backend:3000/api/v1/payment/webhook \
+                    --events checkout.session.completed,invoice.payment_succeeded,customer.subscription.deleted,payment_intent.payment_failed
+                  
+                  # 等待 webhook 容器启动
+                  sleep 3
+                  
+                  # 验证 webhook 容器状态
+                  if docker ps | grep -q stripe-webhook; then
+                    echo "✅ Stripe webhook configured successfully!"
+                    docker logs stripe-webhook 2>&1 | tail -5
+                  else
+                    echo "⚠️ Warning: Stripe webhook container failed to start"
+                    docker logs stripe-webhook 2>&1 || true
+                  fi
+                fi
+              fi
+            else
+              echo "❌ Deployment failed! Rolling back..."
+              
+              # 回滚到备份配置
+              BACKUP_FILES=$(ls -t docker-compose.yml.backup-* 2>/dev/null | head -1)
+              if [ -n "$BACKUP_FILES" ]; then
+                cp "$BACKUP_FILES" docker-compose.yml
+                docker compose up -d
+                echo "🔙 Rolled back to previous version"
+              else
+                echo "⚠️ No backup found, skipping rollback"
+              fi
+              
+              exit 1
+            fi
+
+  # 数据库迁移（仅在需要时手动触发）
+  migrate-db:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: github.event.inputs.migrate_db == 'true'
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'test' }}
+    
+    steps:
+      - name: Run database migration
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            DEPLOY_PATH=${{ github.ref == 'refs/heads/main' && '/opt/newmindhub/prod' || '/opt/newmindhub/test' }}
+            cd ${DEPLOY_PATH}
+            
+            echo "🔄 Running database migration..."
+            docker compose exec -T backend npx prisma migrate deploy
+            docker compose exec -T backend npx prisma db push --accept-data-loss --skip-generate
+            docker compose restart backend
+            
+            echo "✅ Database migration completed"

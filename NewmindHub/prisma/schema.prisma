@@ -11,15 +11,10 @@ model User {
   id            String   @id @default(uuid())
   email         String   @unique
   username      String
-  password      String?  // 改为可选（OAuth用户无密码）
+  password      String?  // 改为可空，支持 SSO-only 用户
   picture       String?  @db.VarChar(500)
   team          String?
   tokenBalance  Int      @default(0)  // 用户 Token 余额
-  
-  // OAuth字段
-  oauthProvider String?  // google, microsoft, github, gitlab
-  oauthId       String?  // OAuth提供商的用户ID
-  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -30,12 +25,12 @@ model User {
   refreshTokens RefreshToken[]
   tokenPurchases TokenPurchase[]
   subscriptionPayments SubscriptionPayment[]
+  authIdentities AuthIdentity[]  // SSO 身份绑定
   // 预留聊天关系（暂时不使用）
   chatSessions  ChatSession[]
   messages      Message[]
 
   @@index([email])
-  @@index([oauthProvider, oauthId])
 }
 
 model Subscription {
@@ -143,6 +138,26 @@ model RefreshToken {
 
   @@index([token])
   @@index([expiresAt])
+}
+
+// SSO 身份绑定表
+model AuthIdentity {
+  id              String   @id @default(uuid())
+  userId          String
+  provider        String   // google, azure, aws, etc.
+  providerUserId  String   // SSO provider 的用户 ID
+  email           String?  // SSO 返回的邮箱（可能与 User.email 不同）
+  displayName     String?  // SSO 返回的显示名
+  profilePicture  String?  @db.VarChar(500)
+  metadata        Json?    // 额外的 SSO 元数据
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@index([provider])
 }
 
 model ModelDescription {
