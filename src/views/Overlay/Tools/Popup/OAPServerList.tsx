@@ -309,7 +309,7 @@ const OAPServerList = ({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"></path>
                 </svg>
               </Button>
-              <img className="oap-logo" src={`${imgPrefix}logo_oap.png`} alt="info" />
+              <img className="oap-logo" src={`${imgPrefix}icon.png`} alt="info" />
               Security Integrations
             </div>
             <div className="oap-search-wrapper">
@@ -533,7 +533,7 @@ const OAPServerList = ({
                                   </InfoTooltip>
                                 </div>
                                 <Tooltip
-                                  content={`≈ ${item.token_required} OAPhub Tokens / ${item.token_price_unit}`}
+                                  content={`≈ ${item.token_required} Credits / ${item.token_price_unit}`}
                                 >
                                   <div className="oap-cost">
                                     <span>$ {item.token_cost} / {item.token_price_unit}</span>
@@ -598,7 +598,7 @@ const OAPServerList = ({
                         <Tooltip
                           key={item.id}
                           side="right"
-                          content={`≈ ${item.token_required} OAPhub Tokens / ${item.token_price_unit}`}
+                          content={`≈ ${item.token_required} Credits / ${item.token_price_unit}`}
                         >
                           <li>
                             <div className="oap-high-cost-item-name">
