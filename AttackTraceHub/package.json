@@ -1,0 +1,49 @@
+{
+  "name": "newmind-hub",
+  "version": "1.0.0",
+  "description": "NewmindHub - AI Model Proxy and Management Platform",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "node prisma/seed.js",
+    "db:reset": "prisma migrate reset --force"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.15.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.2.0",
+    "helmet": "^7.1.0",
+    "ioredis": "^5.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "node-fetch": "^3.3.2",
+    "prisma": "^5.15.0",
+    "stripe": "^14.0.0",
+    "undici": "^7.16.0",
+    "uuid": "^10.0.0",
+    "winston": "^3.13.0",
+    "ws": "^8.16.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "keywords": [
+    "ai",
+    "anthropic",
+    "claude",
+    "proxy",
+    "hub"
+  ],
+  "author": "NewmindHub Team",
+  "license": "MIT"
+}

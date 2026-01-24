@@ -1,0 +1,19 @@
+@use "../_variables" as *;
+
+.dropdown-container-wrapper{
+  @include list-style;
+  min-width: 250px;
+  max-width: 300px;
+  max-height: min( 480px, calc( var(--radix-dropdown-menu-content-available-height) - 24px ));
+
+  @include scrollbar;
+
+  &.fill{
+    width: var(--radix-popper-anchor-width);
+    max-width: unset;
+  }
+
+  [role="menuitem"][data-highlighted]:hover .item {
+    background-color: transparent;
+  }
+}

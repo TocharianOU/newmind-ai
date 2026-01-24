@@ -1,0 +1,663 @@
+/* AttackTrace Custom Theme Colors */
+
+:root {
+  /* Primary brand colors - 使用更柔和的紫/蓝色调 */
+  --color-primary: #6366F1;           /* Indigo-500 主色调 */
+  --color-primary-dark: #4F46E5;     /* Indigo-600 深色 */
+  --color-primary-light: #818CF8;    /* Indigo-400 浅色 */
+  
+  /* Text colors */
+  --color-text-base: #1F2937;        /* Gray-800 主文本 */
+  --color-text-secondary: #6B7280;   /* Gray-500 次要文本 */
+  --color-text-light: #FFFFFF;       /* 白色文本 */
+  
+  /* Background colors */
+  --color-background-white: #FFFFFF;
+  --color-background-light: #F9FAFB; /* Gray-50 */
+  --color-background-dark: #111827;  /* Gray-900 */
+  
+  /* Accent colors */
+  --color-accent: #8B5CF6;           /* Violet-500 */
+  --color-success: #10B981;          /* Green-500 */
+  --color-warning: #F59E0B;          /* Amber-500 */
+  --color-error: #EF4444;            /* Red-500 */
+}
+
+/* Header (顶部导航栏) - 灰色背景 + 深色文字 */
+[data-md-color-scheme="light"] {
+  /* 主色调 */
+  --md-primary-fg-color: #FFFFFF; /* 白色文字 */
+  --md-primary-bg-color: #6B7280; /* 灰色背景 */
+  --md-accent-fg-color: var(--color-primary);
+  
+  /* 文字颜色 */
+  --md-typeset-color: var(--color-text-base);
+  --md-typeset-a-color: var(--color-primary);
+  
+  /* 页脚 */
+  --md-footer-bg-color: var(--color-background-light);
+  --md-footer-fg-color: var(--color-text-base);
+  --md-footer-bg-color--dark: var(--color-background-dark);
+}
+
+/* 顶部 Header - 灰色背景，白色文字 */
+.md-header {
+  background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%) !important;
+  box-shadow: 0 2px 4px 0 rgb(0 0 0 / 0.1);
+  border-bottom: 1px solid #4B5563;
+}
+
+.md-header__button, .md-header__topic {
+  color: #FFFFFF !important;
+}
+
+/* Logo 旁边的标题文字 */
+.md-header__title {
+  color: #FFFFFF !important;
+  font-weight: 600;
+}
+
+/* 顶部导航标签 - 深灰色背景 */
+.md-tabs {
+  background: linear-gradient(135deg, #4B5563 0%, #374151 100%) !important;
+  border-bottom: 1px solid #374151;
+}
+
+/* 导航标签链接文字颜色 */
+.md-tabs__link {
+  color: #D1D5DB !important;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+/* 激活状态的标签 */
+.md-tabs__link--active,
+.md-tabs__link:hover {
+  color: #FFFFFF !important;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 0.375rem;
+}
+
+/* 左侧边栏 - 保持白色 */
+.md-sidebar {
+  background-color: var(--color-background-white);
+}
+
+/* 左侧导航链接 */
+.md-nav__link {
+  color: var(--color-text-base);
+}
+
+.md-nav__link:hover {
+  color: var(--color-primary);
+}
+
+.md-nav__link--active {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+/* 搜索框 */
+.md-search__input {
+  border: 1px solid #D1D5DB;
+  background-color: var(--color-background-white);
+  color: var(--color-text-base);
+}
+
+.md-search__input::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.md-search__input:focus {
+  border-color: var(--color-primary);
+}
+
+/* 按钮 */
+.md-button {
+  background-color: var(--color-primary);
+  color: var(--color-text-light);
+  border-radius: 0.375rem;
+}
+
+.md-button:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.md-button--primary {
+  background-color: var(--color-primary);
+  color: var(--color-text-light);
+}
+
+/* 链接颜色 */
+.md-typeset a {
+  color: var(--color-primary);
+}
+
+.md-typeset a:hover {
+  color: var(--color-primary-dark);
+}
+
+/* 代码块 - 全新现代化风格 */
+.md-typeset code {
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  color: #92400E;
+  border: 1px solid #F59E0B;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875em;
+  font-weight: 600;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.md-typeset pre {
+  background: #000000 !important;
+  border: 2px solid #374151 !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
+  margin: 1rem 0 !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* 移除花哨的渐变效果 */
+
+.md-typeset pre code {
+  background-color: transparent !important;
+  color: #FFFFFF !important;
+  font-size: 0.875rem !important;
+  line-height: 1.6 !important;
+  padding: 1.5rem !important;
+  display: block !important;
+  position: relative !important;
+  z-index: 1 !important;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace !important;
+}
+
+/* 代码块标题 */
+.md-typeset pre + .md-typeset__scrollwrap {
+  margin-top: 0.5rem;
+}
+
+/* 行内代码样式 - 现代化设计 */
+.md-typeset :not(pre) > code {
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  color: #92400E;
+  border: 1px solid #F59E0B;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-weight: 600;
+  font-size: 0.875em;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  transition: all 0.2s ease;
+}
+
+.md-typeset :not(pre) > code:hover {
+  background: linear-gradient(135deg, #FDE68A 0%, #FCD34D 100%);
+  box-shadow: 0 2px 4px 0 rgb(0 0 0 / 0.1);
+  transform: translateY(-1px);
+}
+
+/* 统一所有代码块样式 - 黑色底白色字 */
+.md-typeset pre[class*="language-json"],
+.md-typeset pre[class*="language-javascript"],
+.md-typeset pre[class*="language-js"],
+.md-typeset pre[class*="language-python"],
+.md-typeset pre[class*="language-bash"],
+.md-typeset pre[class*="language-shell"],
+.md-typeset pre[class*="language-yaml"],
+.md-typeset pre[class*="language-yml"] {
+  background: #000000 !important;
+  border: 2px solid #374151 !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
+}
+
+.md-typeset pre[class*="language-json"] code,
+.md-typeset pre[class*="language-javascript"] code,
+.md-typeset pre[class*="language-js"] code,
+.md-typeset pre[class*="language-python"] code,
+.md-typeset pre[class*="language-bash"] code,
+.md-typeset pre[class*="language-shell"] code,
+.md-typeset pre[class*="language-yaml"] code,
+.md-typeset pre[class*="language-yml"] code {
+  color: #FFFFFF !important;
+}
+
+/* 代码块复制按钮 */
+.md-clipboard {
+  color: #9CA3AF;
+  transition: all 0.2s ease;
+}
+
+.md-clipboard:hover {
+  color: #E5E7EB;
+  transform: scale(1.1);
+}
+
+/* 环境变量特殊样式 */
+.md-typeset pre[class*="language-env"],
+.md-typeset pre[class*="language-environment"] {
+  background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #7C2D12 100%);
+  border: 2px solid #DC2626;
+  border-left: 6px solid #DC2626;
+}
+
+.md-typeset pre[class*="language-env"]::before,
+.md-typeset pre[class*="language-environment"]::before {
+  background: linear-gradient(90deg, #DC2626, #B91C1C, #991B1B);
+}
+
+.md-typeset pre[class*="language-env"] code,
+.md-typeset pre[class*="language-environment"] code {
+  color: #FEE2E2;
+}
+
+/* 配置文件特殊样式 */
+.md-typeset pre[class*="language-config"],
+.md-typeset pre[class*="language-toml"] {
+  background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #7C2D12 100%);
+  border: 2px solid #F97316;
+  border-left: 6px solid #F97316;
+}
+
+.md-typeset pre[class*="language-config"]::before,
+.md-typeset pre[class*="language-toml"]::before {
+  background: linear-gradient(90deg, #F97316, #EA580C, #DC2626);
+}
+
+.md-typeset pre[class*="language-config"] code,
+.md-typeset pre[class*="language-toml"] code {
+  color: #FED7AA;
+}
+
+/* 代码块标题栏 */
+.md-typeset pre[data-lang]::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 0.5rem;
+  right: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: #E5E7EB;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  z-index: 2;
+}
+
+/* 代码块行号样式 */
+.md-typeset pre code {
+  counter-reset: line;
+}
+
+.md-typeset pre code .line::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 2rem;
+  text-align: right;
+  margin-right: 1rem;
+  color: #6B7280;
+  font-size: 0.75rem;
+  user-select: none;
+}
+
+/* 告示框 */
+.md-typeset .admonition {
+  border-radius: 0.5rem;
+}
+
+.md-typeset .admonition.note {
+  border-left-color: var(--color-primary);
+}
+
+.md-typeset .admonition.info {
+  border-left-color: #3B82F6;
+}
+
+.md-typeset .admonition.tip {
+  border-left-color: var(--color-success);
+}
+
+.md-typeset .admonition.warning {
+  border-left-color: var(--color-warning);
+}
+
+.md-typeset .admonition.danger {
+  border-left-color: var(--color-error);
+}
+
+/* 表格 */
+.md-typeset table:not([class]) th {
+  background-color: var(--color-background-light);
+  color: var(--color-text-base);
+  font-weight: 600;
+}
+
+.md-typeset table:not([class]) tr:hover {
+  background-color: var(--color-background-light);
+}
+
+/* 页脚 */
+.md-footer {
+  background-color: var(--color-background-light);
+  border-top: 1px solid #E5E7EB;
+}
+
+.md-footer-meta {
+  background-color: var(--color-background-light);
+}
+
+/* 标题字体 */
+.md-typeset h1 {
+  color: var(--color-text-base);
+  font-weight: 700;
+}
+
+.md-typeset h2 {
+  color: var(--color-text-base);
+  font-weight: 600;
+}
+
+.md-typeset h3, .md-typeset h4, .md-typeset h5, .md-typeset h6 {
+  color: var(--color-text-base);
+  font-weight: 600;
+}
+
+/* 语言切换器样式 */
+.md-select__inner {
+  background-color: transparent;
+  border: 1px solid #D1D5DB;
+  border-radius: 0.375rem;
+  color: var(--color-text-base);
+  padding: 0.25rem 0.5rem;
+}
+
+.md-select__inner:hover {
+  border-color: var(--color-primary);
+}
+
+/* 优化演示和展示效果 */
+.md-typeset .admonition {
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.1);
+  margin: 1.5rem 0;
+}
+
+/* 表格优化 */
+.md-typeset table:not([class]) {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  border: 1px solid #E5E7EB;
+}
+
+.md-typeset table:not([class]) th {
+  background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+  color: var(--color-text-base);
+  font-weight: 600;
+  padding: 1rem;
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.md-typeset table:not([class]) td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.md-typeset table:not([class]) tr:hover {
+  background-color: #F9FAFB;
+  transition: background-color 0.2s ease;
+}
+
+/* 按钮和链接优化 */
+.md-typeset a {
+  color: var(--color-primary);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.md-typeset a:hover {
+  color: var(--color-primary-dark);
+  border-bottom-color: var(--color-primary);
+}
+
+/* 标题优化 */
+.md-typeset h1 {
+  color: var(--color-text-base);
+  font-weight: 700;
+  border-bottom: 3px solid var(--color-primary);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.md-typeset h2 {
+  color: var(--color-text-base);
+  font-weight: 600;
+  border-bottom: 2px solid #E5E7EB;
+  padding-bottom: 0.375rem;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.md-typeset h3 {
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+/* 列表优化 */
+.md-typeset ul li, .md-typeset ol li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.md-typeset ul li::marker {
+  color: var(--color-primary);
+}
+
+/* 引用块优化 */
+.md-typeset blockquote {
+  border-left: 4px solid var(--color-primary);
+  background-color: #F9FAFB;
+  border-radius: 0 0.5rem 0.5rem 0;
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+}
+
+/* 图片优化 */
+.md-typeset img {
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  margin: 1rem 0;
+}
+
+/* 搜索框优化 - 完美融入灰色主题 */
+.md-search__input {
+  border: 2px solid #9CA3AF;
+  background-color: #F9FAFB;
+  color: var(--color-text-base);
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+}
+
+.md-search__input:focus {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+  background-color: #FFFFFF;
+}
+
+/* 搜索框在灰色背景下的完美样式 - 修复边框渲染 */
+.md-header .md-search__input {
+  background: #FFFFFF !important;
+  border: 2px solid #FFFFFF !important;
+  color: #1F2937 !important;
+  border-radius: 1rem !important;
+  box-shadow: 
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -1px rgb(0 0 0 / 0.06) !important;
+  transition: all 0.3s ease !important;
+  outline: none !important;
+}
+
+.md-header .md-search__input:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 
+    0 6px 8px -1px rgb(0 0 0 / 0.1),
+    0 4px 6px -1px rgb(0 0 0 / 0.06),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+}
+
+.md-header .md-search__input:focus {
+  background: #FFFFFF;
+  border-color: #3B82F6;
+  box-shadow: 
+    0 0 0 3px rgb(59 130 246 / 0.1),
+    0 4px 6px -1px rgb(0 0 0 / 0.1);
+  transform: translateY(-1px);
+}
+
+/* 搜索框占位符文字 */
+.md-header .md-search__input::placeholder {
+  color: #6B7280;
+  font-weight: 500;
+}
+
+/* 搜索框图标样式 */
+.md-header .md-search__icon {
+  color: #6B7280;
+  transition: color 0.2s ease;
+}
+
+.md-header .md-search__input:focus + .md-search__icon {
+  color: #3B82F6;
+}
+
+/* 滚动条优化 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F3F4F6;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9CA3AF;
+}
+
+/* 整体页面背景优化 */
+.md-main {
+  background-color: #FFFFFF;
+}
+
+.md-content {
+  background-color: #FFFFFF;
+}
+
+/* 左侧边栏优化 */
+.md-sidebar {
+  background-color: #FFFFFF;
+  border-right: 1px solid #E5E7EB;
+}
+
+.md-nav__link {
+  color: var(--color-text-base);
+  transition: all 0.2s ease;
+}
+
+.md-nav__link:hover {
+  color: var(--color-primary);
+  background-color: #F9FAFB;
+  border-radius: 0.375rem;
+}
+
+.md-nav__link--active {
+  color: var(--color-primary);
+  background-color: #F3F4F6;
+  border-radius: 0.375rem;
+  font-weight: 600;
+}
+
+/* 按钮在灰色主题下的优化 */
+.md-button {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: #FFFFFF;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.1);
+}
+
+.md-button:hover {
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, #3730A3 100%);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  transform: translateY(-1px);
+}
+
+/* 表格在白色背景下的优化 */
+.md-typeset table:not([class]) {
+  background-color: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+}
+
+.md-typeset table:not([class]) th {
+  background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+  color: var(--color-text-base);
+  font-weight: 600;
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.md-typeset table:not([class]) tr:nth-child(even) {
+  background-color: #F9FAFB;
+}
+
+.md-typeset table:not([class]) tr:hover {
+  background-color: #F3F4F6;
+  transition: background-color 0.2s ease;
+}
+
+/* 环境变量配置框 - 修复黄色大框问题 */
+.md-typeset .highlight,
+.md-typeset .highlight pre,
+.md-typeset .highlight code {
+  background: #000000 !important;
+  border: 2px solid #374151 !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
+  margin: 1rem 0 !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* 移除配置标签 */
+
+.md-typeset .highlight code {
+  background: transparent !important;
+  color: #FFFFFF !important;
+  font-size: 0.875rem !important;
+  line-height: 1.6 !important;
+  padding: 1.5rem !important;
+  display: block !important;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace !important;
+  font-weight: 500 !important;
+}
+
+/* 移除悬停效果 */
+

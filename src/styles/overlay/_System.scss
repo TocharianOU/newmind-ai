@@ -1,0 +1,115 @@
+@use "../variables" as *;
+
+.system-page {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  margin: 0 auto;
+  max-width: $chat-width;
+  width: 100%;
+}
+
+.system-container {
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+
+  h1 {
+    margin: 0;
+    font-size: 28px;
+  }
+
+  .system-header {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 34px;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 36px;
+  }
+
+  .system-title-container {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 17px;
+    width: 100%;
+  }
+
+  .system-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow: hidden;
+
+    .system-list-section {
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 8px;
+      border: 1px solid var(--border-weak);
+      border-radius: 10px;
+
+      .system-list-content {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+
+        img, svg {
+          width: 24px;
+          height: 24px;
+        }
+
+        .system-list-name {
+          font-weight: 500;
+          font-size: 20px;
+        }
+      }
+
+      .system-list-switch-container {
+        .select-button {
+          width: 160px;
+        }
+      }
+
+      .system-list-description {
+        font-size: 16px;
+        font-weight: 400;
+        color: var(--text-weak);
+      }
+
+      .custom-prompt-container {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 20px;
+
+        .custom-prompt-description {
+          font-size: 16px;
+          font-weight: 400;
+          color: var(--text-pri-blue-medium);
+        }
+
+        .custom-prompt-button {
+          background-color: transparent;
+          color: var(--text-pri-blue-medium);
+          border-color: var(--border-pri-blue-medium);
+          width: fit-content;
+          font-weight: 600;
+          border-radius: 4px;
+
+          &:hover {
+            background-color: var(--bg-btn-hover-strong);
+          }
+        }
+      }
+    }
+  }
+}

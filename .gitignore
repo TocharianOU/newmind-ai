@@ -1,0 +1,62 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+BUILD.md
+CRITICAL_FIXES.md
+RENAME_CHANGES.md
+RENAME_CHANGES.md
+
+node_modules
+dist
+dist-ssr
+dist-electron
+*.local
+.env
+
+# Editor directories and files
+.vscode/.debug.env
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# build output
+*.zip
+release
+
+# env file
+modelConfig.json
+.customrules
+config.json
+
+# runtime folder
+uploads
+
+# bin folder
+bin
+
+# for host
+requirements.txt
+host-deps/
+
+# development tmp files
+.config/
+
+# MCP Servers - keep source but ignore their git repos, node_modules and build output
+prebuilt/scripts/mcp-server-*/node_modules/
+prebuilt/scripts/mcp-server-*/.git/
+prebuilt/scripts/mcp-server-*/dist/
+prebuilt/scripts/mcp-server-*/yarn.lock
+prebuilt/scripts/mcp-server-*/package-lock.json
+
+temp/

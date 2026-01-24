@@ -1,0 +1,35 @@
+nav:
+  - 首页: index.md
+  - 快速开始:
+    - getting-started/index.md
+    - 下载: getting-started/download.md
+    - 安装: getting-started/installation.md
+    - 首次对话: getting-started/first-chat.md
+  - Hub:
+    - hub/index.md
+    - 登录 Hub: hub/login.md
+    - Hub 模型: hub/models.md
+    - MCP 市场: hub/mcp-marketplace.md
+    - 订阅计划: hub/subscription.md
+  - 功能特性:
+    - features/index.md
+    - 聊天界面: features/chat.md
+    - 模型管理: features/models.md
+    - MCP 工具: features/mcp-tools.md
+    - 对话历史: features/history.md
+  - MCP 服务器:
+    - mcp-servers/index.md
+    - Echo 服务器: mcp-servers/echo.md
+    - Kibana: mcp-servers/kibana.md
+    - Elasticsearch: mcp-servers/elasticsearch.md
+    - 自定义服务器: mcp-servers/custom.md
+  - 配置:
+    - configuration/index.md
+    - MCP 配置: configuration/mcp-config.md
+    - 模型配置: configuration/model-config.md
+    - 设置: configuration/settings.md
+  - 故障排除:
+    - troubleshooting/index.md
+    - 常见问题: troubleshooting/common-issues.md
+    - 连接错误: troubleshooting/connection-errors.md
+    - 日志: troubleshooting/logs.md

@@ -1,0 +1,59 @@
+# Node modules
+node_modules
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Development files
+.git
+.gitignore
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Test files
+test
+tests
+*.test.js
+*.spec.js
+coverage
+
+# Documentation
+README.md
+docs
+*.md
+
+# Logs
+logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Frontend build (we'll build separately)
+frontend/node_modules
+frontend/dist
+frontend/.vite
+
+# Docker files
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Scripts
+*.sh
+deploy-*.sh
+

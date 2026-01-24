@@ -1,0 +1,564 @@
+import "katex/dist/katex.min.css"
+
+import React, { useEffect, useMemo, useRef, useState } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import remarkMath from "remark-math"
+import rehypeKatex from "rehype-katex"
+import rehypeRaw from "rehype-raw"
+import { PrismAsyncLight as SyntaxHighlighter } from "react-syntax-highlighter"
+import { tomorrow, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism"
+import { useAtom, useAtomValue, useSetAtom } from "jotai"
+import { codeStreamingAtom } from "../../atoms/codeStreaming"
+import ToolPanel from "./ToolPanel"
+import FilePreview from "./FilePreview"
+import { useTranslation } from "react-i18next"
+import { themeAtom } from "../../atoms/themeState"
+import Textarea from "../../components/WrappedTextarea"
+import { isChatStreamingAtom } from "../../atoms/chatState"
+import Zoom from "../../components/Zoom"
+import { convertLocalFileSrc } from "../../ipc/util"
+import Button from "../../components/Button"
+import { useLocation } from "react-router-dom"
+import { isElectron } from "../../ipc/env"
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      "tool-call": {
+        children: any
+        name: string
+        toolkey: string
+      };
+      "think": {
+        children: any
+      };
+      "none": {
+        children: any
+      }
+      "thread-query-error": {
+        children: any
+      }
+      "document_card": {
+        title?: string
+        page?: string
+        total_pages?: string
+        preview_url?: string
+        minio_bucket?: string
+        minio_prefix?: string
+        minio_base_url?: string
+        file_type?: string
+        file_size?: string
+        project_name?: string
+        drawing_number?: string
+        checksum?: string
+        original_file_url?: string
+      }
+    }
+  }
+}
+
+interface MessageProps {
+  messageId: string
+  text: string
+  isSent: boolean
+  timestamp: number
+  files?: (File | string)[]
+  isError?: boolean
+  isLoading?: boolean
+  onRetry: () => void
+  onEdit: (editedText: string) => void
+}
+
+const Message = ({ messageId, text, isSent, files, isError, isLoading, onRetry, onEdit }: MessageProps) => {
+  const { t } = useTranslation()
+  const [theme] = useAtom(themeAtom)
+  const updateStreamingCode = useSetAtom(codeStreamingAtom)
+  const cacheCode = useRef<string>("")
+  const [isCopied, setIsCopied] = useState<Record<string, NodeJS.Timeout>>({})
+  const [isEditing, setIsEditing] = useState(false)
+  const [content, setContent] = useState(text)
+  const [editedText, setEditedText] = useState(text)
+  const isChatStreaming = useAtomValue(isChatStreamingAtom)
+  const [openToolPanels, setOpenToolPanels] = useState<Record<string, boolean>>({})
+  const location = useLocation()
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch (err) {
+      console.error("Failed to copy text: ", err)
+    }
+  }
+
+  useEffect(() => {
+    setIsEditing(false)
+    setIsCopied({})
+  }, [location])
+
+  useEffect(() => {
+    setContent(text)
+  }, [messageId])
+
+  const onCopy = (messageId: string, text: string) => {
+    const _text = text.replace(/<tool-call[\s\S]*?<\/tool-call>/g, "")
+                      .replace(/<thinking>/g, "")
+                      .replace(/<\/thinking>/g, "")
+    copyToClipboard(_text)
+    clearTimeout(isCopied[messageId])
+    const timeout = setTimeout(() => {
+      setIsCopied(prev => {
+        const newState = { ...prev }
+        delete newState[messageId]
+        return newState
+      })
+    }, 3000)
+    setIsCopied({ [messageId]: timeout })
+  }
+
+  const handleEdit = () => {
+    setEditedText(content)
+    setIsEditing(true)
+  }
+
+  const editText = useMemo(() => {
+    const onCancel = () => {
+      setIsEditing(false)
+    }
+
+    const onSave = async () => {
+      setContent(editedText)
+      setIsEditing(false)
+      onEdit(editedText)
+    }
+
+    return (
+      <div className="edit-text">
+        <Textarea
+          value={editedText}
+          onChange={(e) => setEditedText(e.target.value)}
+        />
+        <div className="edit-text-footer">
+          <div className="edit-text-footer-left">
+            <span>{t("chat.editDescription")}</span>
+          </div>
+          <div className="edit-text-footer-right">
+            <Button
+              color="white"
+              size="fit"
+              padding="n"
+              minHeight="40px"
+              onClick={onCancel}
+            >
+              {t("chat.cancel")}
+            </Button>
+            <Button
+              color="blue"
+              size="fit"
+              padding="n"
+              minHeight="40px"
+              onClick={onSave}
+              disabled={editedText === ""}
+            >
+              {t("chat.save")}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }, [editedText])
+
+  // 在外部浏览器中打开URL
+  const openExternalUrl = (url: string) => {
+    if (isElectron) {
+      // Electron 环境：使用 IPC 在外部浏览器打开
+      if (window.ipcRenderer && window.ipcRenderer.invoke) {
+        window.ipcRenderer.invoke('open-external-url', url)
+      } else {
+        // 降级方案
+        window.open(url, '_blank')
+      }
+    } else {
+      // Tauri 环境：直接打开
+      window.open(url, '_blank')
+    }
+  }
+
+  // 解析 document_card 标签
+  const parseDocumentCards = (text: string) => {
+    const parts: (string | JSX.Element)[] = []
+    const regex = /<document_card\s+([^>]+)\/>/g
+    let lastIndex = 0
+    let match
+
+    while ((match = regex.exec(text)) !== null) {
+      // 添加标签前的文本
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index))
+      }
+
+      // 解析属性
+      const attrs = match[1]
+      const attrRegex = /(\w+)="([^"]*)"/g
+      const props: Record<string, string> = {}
+      let attrMatch
+      while ((attrMatch = attrRegex.exec(attrs)) !== null) {
+        props[attrMatch[1]] = attrMatch[2]
+      }
+
+      // 生成文档卡片组件
+      // PNG 页面地址：直接使用 preview_url
+      const pngUrl = props.preview_url || ''
+      // 完整文档地址：使用 original_file_url 或构建路径
+      const originalDocUrl = props.original_file_url || `${props.minio_base_url}/${props.minio_bucket}/${props.minio_prefix}/${props.title}`
+
+      parts.push(
+        <div key={match.index} className="document-card-compact">
+          {props.preview_url && (
+            <img 
+              src={props.preview_url} 
+              alt={`Page ${props.page || '1'}`}
+              className="document-preview-img"
+            />
+          )}
+          <div className="document-actions-compact">
+            <button 
+              className="doc-btn-compact doc-download-page"
+              onClick={() => openExternalUrl(pngUrl)}
+              title="下载此页面 PNG 图片"
+            >
+              📄 下载页面
+            </button>
+            <button 
+              className="doc-btn-compact doc-download-full"
+              onClick={() => openExternalUrl(originalDocUrl)}
+              title="下载完整文档"
+            >
+              📥 下载文档
+            </button>
+          </div>
+        </div>
+      )
+
+      lastIndex = regex.lastIndex
+    }
+
+    // 添加剩余文本
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex))
+    }
+
+    return parts.length > 0 ? parts : [text]
+  }
+
+  const formattedText = useMemo(() => {
+    const _text = isSent ? content : text
+    if (isSent) {
+      const splitText = _text.split("\n")
+      return splitText.map((line, i) => (
+        <React.Fragment key={i}>
+          {line}
+          {i < splitText.length - 1 && <br />}
+        </React.Fragment>
+      ))
+    }
+
+    // 先解析 document_card 标签
+    const parts = parseDocumentCards(_text)
+    
+    return parts.map((part, index) => {
+      if (typeof part === 'string') {
+        // 对字符串部分使用 ReactMarkdown 渲染
+    return (
+      <ReactMarkdown
+            key={index}
+        remarkPlugins={[[remarkMath, {
+          singleDollarTextMath: false,
+          inlineMathDouble: false
+        }], remarkGfm]}
+        rehypePlugins={[rehypeKatex, rehypeRaw]}
+        remarkRehypeOptions={{
+          allowDangerousHtml: true
+        }}
+        components={{
+          think({ children }) {
+            return <div className="think">{children}</div>
+          },
+          none() {
+            return null
+          },
+          "thread-query-error"({ children }) {
+            return (
+              <details>
+                <summary style={{ color: "var(--text-inverted-weak)", cursor: "pointer" }}>Error occurred click to show details:</summary>
+                <div style={{ maxHeight: "100px", overflow: "auto" }}>
+                  {children}
+                </div>
+              </details>
+            )
+          },
+          "tool-call"({children, name, toolkey}) {
+            let content = children
+            if (typeof children !== "string") {
+              if (!Array.isArray(children) || children.length === 0 || typeof children[0] !== "string") {
+                return <></>
+              }
+
+              content = children[0]
+            }
+
+            const isOpen = openToolPanels[toolkey] || false
+
+            return (
+              <ToolPanel
+                key={toolkey}
+                content={content}
+                name={name}
+                isOpen={isOpen}
+                onToggle={(open) => {
+                  setOpenToolPanels(prev => ({
+                    ...prev,
+                    [toolkey]: open
+                  }))
+                }}
+              />
+            )
+          },
+          a(props) {
+            if(props.children?.toString().toLowerCase().includes("audio")) {
+              if (isChatStreaming) {
+                return <></>
+              }
+
+              return <audio src={props.href} controls />
+            }
+
+            if(props.children?.toString().toLowerCase().includes("video") || props.children?.toString().toLowerCase().includes("影片")) {
+              if (isChatStreaming) {
+                return <></>
+              }
+
+              return <video style={{maxWidth: "720px"}} className="message-video" src={props.href} controls />
+            }
+
+            return (
+              <a href={props.href} target="_blank" rel="noreferrer">
+                {props.children}
+              </a>
+            )
+          },
+          img({className, src}) {
+            let imageSrc = src
+            if (src?.startsWith("https://localfile")) {
+              let path = src.replace("https://localfile", "").replace(/\\/g, "/")
+              if (path === decodeURI(path)) {
+                path = encodeURI(path)
+              }
+
+              imageSrc = convertLocalFileSrc(path)
+            }
+
+            return <img src={imageSrc} className={className} />
+          },
+          audio({className, src, controls}) {
+            let audioSrc = src
+            if (src?.startsWith("https://localfile")) {
+              let path = src.replace("https://localfile", "").replace(/\\/g, "/")
+              if (path === decodeURI(path)) {
+                path = encodeURI(path)
+              }
+
+              audioSrc = convertLocalFileSrc(path)
+            }
+
+            return (
+              <div className="audio-container">
+                <audio
+                  src={audioSrc}
+                  controls={controls}
+                  className={className}
+                />
+              </div>
+            )
+          },
+          code({node, className, children, ...props}) {
+            const match = /language-(\w+)/.exec(className || "")
+            const language = match ? match[1] : ""
+            let code = String(children).replace(/\n$/, "")
+
+            const inline = node?.position?.start.line === node?.position?.end.line
+            if (inline) {
+              return <code className={`${className} inline-code`} {...props}>{children}</code>
+            }
+
+            const lines = code.split("\n")
+            const isLongCode = lines.length > 10
+
+            if (isLongCode) {
+              const cleanText = _text.replace(/[\s\S\n]+(?=```)/gm, "")
+              const isBlockComplete = cleanText.includes(code.trim() + "```")
+              code = code.endsWith("``") ? code.slice(0, -2) : code
+              code = code.endsWith("`") ? code.slice(0, -1) : code
+              const handleClick = () => {
+                updateStreamingCode({ code, language })
+              }
+
+              const diffLength = Math.abs(code.length - cacheCode.current.length)
+              if ((!isBlockComplete && isLoading) || (diffLength < 10 && cacheCode.current !== code)) {
+                cacheCode.current = code
+                if(isChatStreaming) {
+                  console.log("updateStreamingCode", code, language)
+                  updateStreamingCode({ code, language })
+                }
+              }
+
+              return (
+                <button
+                  className="code-block-button"
+                  onClick={handleClick}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24">
+                    <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>
+                  </svg>
+                  <span>{t("chat.previewCode")}</span>
+                </button>
+              )
+            }
+
+            return (
+              <div className="code-block">
+                <div className="code-header">
+                  <span className="language">{language}</span>
+                  <button
+                    className="copy-btn"
+                    onClick={() => copyToClipboard(code)}
+                  >
+                    {t("chat.copyCode")}
+                  </button>
+                </div>
+                <SyntaxHighlighter
+                  language={language.toLowerCase()}
+                  style={theme === "dark" ? tomorrow : oneLight}
+                  customStyle={{
+                    margin: 0,
+                    padding: "12px",
+                    background: "transparent"
+                  }}
+                >
+                  {code}
+                </SyntaxHighlighter>
+              </div>
+            )
+          }
+        }}
+      >
+        {
+        part
+          .replaceAll("file://", "https://localfile")
+          .replaceAll("</think>\n\n", "\n\n</think>\n\n")
+          // prompt tool call from host
+          .replaceAll("<tool_call>", "<none>")
+          .replaceAll("</tool_call>", "</none>")
+        }
+      </ReactMarkdown>
+    )
+      } else {
+        // 直接返回 JSX 元素（document_card）
+        return part
+      }
+    })
+  }, [content, text, isSent, isLoading, openToolPanels])
+
+  if (isEditing) {
+    return (
+      <div className="message-container">
+        <div className="message sent edit">
+          {editText}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <>
+    <div className="message-container">
+      <div className={`message ${isSent ? "sent" : "received"} ${isError ? "error" : ""}`}>
+        {formattedText}
+        {files && files.length > 0 && <FilePreview files={typeof files === "string" ? JSON.parse(files) : files} />}
+        {isLoading && (
+          <div className="loading-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        )}
+        {!isLoading && !isChatStreaming && (
+          <div className="message-tools">
+            <button
+              type="button"
+              className="tools-btn"
+              onClick={() => onCopy(messageId, isSent ? content : text)}
+            >
+              {isCopied[messageId] ? (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18px" height="18px" viewBox="0 0 22 22" fill="transparent">
+                    <path d="M4.6709 10.4241L9.04395 15.1721L17.522 7.49414" stroke="currentColor" fill="transparent" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span>{t("chat.copied")}</span>
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18px" height="18px" viewBox="0 0 22 22" fill="transparent">
+                    <path d="M13 20H2V6H10.2498L13 8.80032V20Z" fill="transparent" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinejoin="round"/>
+                    <path d="M13 9H10V6L13 9Z" fill="currentColor" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M9 3.5V2H17.2498L20 4.80032V16H16" fill="transparent" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinejoin="round"/>
+                    <path d="M20 5H17V2L20 5Z" fill="currentColor" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span>{t("chat.copy")}</span>
+                </>
+              )}
+            </button>
+            {isSent ?
+              <>
+                <button
+                  type="button"
+                  className="tools-btn"
+                  onClick={handleEdit}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="18px" viewBox="0 0 25 22" fill="none">
+                    <path d="M3.38184 13.6686V19.0001H21.4201" fill="transparent" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M3.38178 13.5986L14.1186 4.12082C15.7828 2.65181 18.4809 2.65181 20.1451 4.12082V4.12082C21.8092 5.58983 21.8092 7.97157 20.1451 9.44059L9.40824 18.9183" fill="transparent" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span>{t("chat.edit")}</span>
+                </button>
+              </>
+              :
+              <>
+                {String(messageId).includes("-") && (  //if messageId doesn't contain "-" then it's aborted before ready then it can't retry
+                  <button
+                    type="button"
+                    className="tools-btn"
+                    onClick={onRetry}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="transparent" height="15px" width="15px" viewBox="0 0 489.698 489.698">
+                      <g>
+                        <g>
+                          <path d="M468.999,227.774c-11.4,0-20.8,8.3-20.8,19.8c-1,74.9-44.2,142.6-110.3,178.9c-99.6,54.7-216,5.6-260.6-61l62.9,13.1    c10.4,2.1,21.8-4.2,23.9-15.6c2.1-10.4-4.2-21.8-15.6-23.9l-123.7-26c-7.2-1.7-26.1,3.5-23.9,22.9l15.6,124.8    c1,10.4,9.4,17.7,19.8,17.7c15.5,0,21.8-11.4,20.8-22.9l-7.3-60.9c101.1,121.3,229.4,104.4,306.8,69.3    c80.1-42.7,131.1-124.8,132.1-215.4C488.799,237.174,480.399,227.774,468.999,227.774z"/>
+                          <path d="M20.599,261.874c11.4,0,20.8-8.3,20.8-19.8c1-74.9,44.2-142.6,110.3-178.9c99.6-54.7,216-5.6,260.6,61l-62.9-13.1    c-10.4-2.1-21.8,4.2-23.9,15.6c-2.1,10.4,4.2,21.8,15.6,23.9l123.8,26c7.2,1.7,26.1-3.5,23.9-22.9l-15.6-124.8    c-1-10.4-9.4-17.7-19.8-17.7c-15.5,0-21.8,11.4-20.8,22.9l7.2,60.9c-101.1-121.2-229.4-104.4-306.8-69.2    c-80.1,42.6-131.1,124.8-132.2,215.3C0.799,252.574,9.199,261.874,20.599,261.874z"/>
+                        </g>
+                      </g>
+                    </svg>
+                    <span>{t("chat.retry")}</span>
+                  </button>
+                )}
+              </>
+            }
+          </div>
+        )}
+      </div>
+    </div>
+    </>
+  )
+}
+
+export default React.memo(Message)
