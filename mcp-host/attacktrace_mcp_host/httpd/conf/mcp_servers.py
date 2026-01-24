@@ -15,7 +15,7 @@ from pydantic import (
     field_serializer,
 )
 
-from attacktrace_mcp_host.env import DIVE_CONFIG_DIR
+from attacktrace_mcp_host.env import ATTACKTRACE_CONFIG_DIR
 from attacktrace_mcp_host.host.conf import ProxyUrl
 from attacktrace_mcp_host.httpd.conf.misc import write_then_replace
 from attacktrace_mcp_host.plugins.registry import HookInfo, PluginManager
@@ -96,7 +96,7 @@ class MCPServerManager:
                 If not provided, it will be set to "config.json" in current
                 working directory.
         """
-        self._config_path: str = config_path or str(DIVE_CONFIG_DIR / "mcp_config.json")
+        self._config_path: str = config_path or str(ATTACKTRACE_CONFIG_DIR / "mcp_config.json")
         self._current_config: Config | None = None
 
         self._update_config_callbacks: list[tuple[McpServerConfigCallback, str]] = []

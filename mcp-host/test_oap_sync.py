@@ -11,9 +11,9 @@ from pathlib import Path
 import httpx
 from attacktrace_mcp_host.oap_plugin.config_mcp_servers import MCPServerManagerPlugin, read_oap_config
 from attacktrace_mcp_host.httpd.conf.mcp_servers import MCPServerManager, Config
-from attacktrace_mcp_host.env import DIVE_CONFIG_DIR
+from attacktrace_mcp_host.env import ATTACKTRACE_CONFIG_DIR
 
-MCP_CONFIG_FILE = Path(DIVE_CONFIG_DIR, "mcp_config.json")
+MCP_CONFIG_FILE = Path(ATTACKTRACE_CONFIG_DIR, "mcp_config.json")
 
 
 async def test_oap_sync():

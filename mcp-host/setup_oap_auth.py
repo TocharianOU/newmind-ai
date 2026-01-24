@@ -11,9 +11,9 @@ from pathlib import Path
 import httpx
 import asyncio
 from attacktrace_mcp_host.oap_plugin.models import OAPConfig
-from attacktrace_mcp_host.env import DIVE_CONFIG_DIR
+from attacktrace_mcp_host.env import ATTACKTRACE_CONFIG_DIR
 
-CONFIG_FILE = Path(DIVE_CONFIG_DIR, "oap_config.json")
+CONFIG_FILE = Path(ATTACKTRACE_CONFIG_DIR, "oap_config.json")
 
 
 async def test_auth_token(token: str, oap_root_url: str = "https://oaphub.ai") -> bool:

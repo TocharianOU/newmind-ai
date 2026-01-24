@@ -4,7 +4,7 @@ from pathlib import Path
 
 from pydantic import Field, RootModel
 
-from attacktrace_mcp_host.env import DIVE_CONFIG_DIR
+from attacktrace_mcp_host.env import ATTACKTRACE_CONFIG_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class CommandAliasManager:
                 working directory.
         """
         self._config_path: str = config_path or str(
-            DIVE_CONFIG_DIR / "command_alias.json"
+            ATTACKTRACE_CONFIG_DIR / "command_alias.json"
         )
         self._current_config: dict[str, str] | None = None
 

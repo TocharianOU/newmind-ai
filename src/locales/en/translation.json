@@ -1,13 +1,13 @@
 {
   "header": {
-    "title": "NewChat",
+    "title": "AttackTrace",
     "openSidebar": "Open sidebar",
     "closeSidebar": "Close sidebar"
   },
   "chat": {
     "placeholder": "Send any message...",
-    "newChat": "New Chat",
-    "newChatTooltip": "Start a new conversation",
+    "newChat": "New Investigation",
+    "newChatTooltip": "Start a new investigation",
     "history": "History",
     "copyCode": "Copy",
     "previewCode": "Click to preview",
@@ -47,8 +47,8 @@
     }
   },
   "welcome": {
-    "title": "Welcome to NewChat",
-    "subtitle": "Start your AI conversation",
+    "title": "Welcome to AttackTrace",
+    "subtitle": "Start your security investigation",
     "startChat": "Start Chat"
   },
   "setup": {
@@ -370,7 +370,7 @@
     "minimalToTray": "Minimize to tray",
     "minimalToTrayDescription": "When closing the window, the program will minimize to the system tray instead of exiting completely",
     "loginTitle": "AttackTrace Login",
-    "loginDescription": "Use AttackTrace Hub to login, no technical background is required to easily connect LLMs, AI Agents and MCP Servers — Experience smart solutions now!",
+    "loginDescription": "Login to AttackTrace Hub for team collaboration, shared investigation cases, and centralized security tool integrations",
     "personalInformationTitle": "Personal Information",
     "defaultSystemPrompt": "AttackTrace Default System Prompt",
     "defaultSystemPromptDescription": "AttackTrace Default System Prompt is used as the default system prompt for chat. It tells the LLM that AttackTrace chat supports KaTeX / Markdown / Mermaid, etc. This feature consumes certain tokens, which may make the response slower than the prompt without a system prompt. On the other hand, if it is disabled, the quality of the LLM's response may decrease",
@@ -421,14 +421,14 @@
     "clickToInstall": "Click to Install Update"
   },
   "login": {
-    "subtitle": "AttackTrace is an open-source desktop application that seamlessly integrates various large language models supporting function calls. Through its clean and intuitive interface, it enables deep intelligent exploration in fields such as data analysis.",
-    "title1": "Custom or Local Models",
-    "description1": "LLM API provided by AttackTrace AI integrated software and hardware team or other custom models suitable options",
-    "button1": "Go to Model Settings",
-    "title2": "Use AttackTrace Hub Platform",
-    "description2": "AttackTrace Hub provides various online large models and vertical domain-specific models, explore the unlimited possibilities of AI and experience intelligent solutions immediately",
-    "button2": "Register for AttackTrace",
-    "button3": "Login to AttackTrace"
+    "subtitle": "AI-Powered Security Operations Assistant for SOC Teams to Efficiently Investigate and Respond to Security Incidents",
+    "title1": "Custom Models",
+    "description1": "Use your own LLM API keys (Claude, OpenAI, etc.) or locally deployed models",
+    "button1": "Configure Model",
+    "title2": "AttackTrace Hub",
+    "description2": "Team collaboration platform for managing user permissions, sharing investigation cases, and centralizing security tool integrations",
+    "button2": "Register",
+    "button3": "Login"
   },
   "InstallHostDependencies": {
     "title": "Downloading Host Dependencies...",

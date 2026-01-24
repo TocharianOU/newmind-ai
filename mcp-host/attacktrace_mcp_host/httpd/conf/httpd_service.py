@@ -6,7 +6,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 from sqlalchemy import make_url
 
-from attacktrace_mcp_host.env import DIVE_CONFIG_DIR, RESOURCE_DIR
+from attacktrace_mcp_host.env import ATTACKTRACE_CONFIG_DIR, RESOURCE_DIR
 from attacktrace_mcp_host.host.conf import CheckpointerConfig, LogConfig
 from attacktrace_mcp_host.httpd.conf.arguments import StrPath
 
@@ -81,7 +81,7 @@ class ServiceManager:
 
     def __init__(self, config_path: str | None = None) -> None:
         """Initialize the ServiceManager."""
-        self._config_path: str = config_path or str(DIVE_CONFIG_DIR / "dive_httpd.json")
+        self._config_path: str = config_path or str(ATTACKTRACE_CONFIG_DIR / "attacktrace_httpd.json")
         self._current_setting: ServiceConfig | None = None
 
     def initialize(self) -> bool:

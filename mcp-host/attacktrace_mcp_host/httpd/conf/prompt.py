@@ -4,7 +4,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from attacktrace_mcp_host.env import DIVE_CONFIG_DIR
+from attacktrace_mcp_host.env import ATTACKTRACE_CONFIG_DIR
 from attacktrace_mcp_host.httpd.conf.misc import write_then_replace
 from attacktrace_mcp_host.httpd.conf.system_prompt import system_prompt
 
@@ -78,7 +78,7 @@ class PromptManager:
         """
         self.prompts: dict[str, str] = {}
         self.custom_rules_path = custom_rules_path or str(
-            DIVE_CONFIG_DIR / "custom_rules"
+            ATTACKTRACE_CONFIG_DIR / "custom_rules"
         )
 
     def initialize(self) -> None:

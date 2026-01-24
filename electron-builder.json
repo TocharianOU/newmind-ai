@@ -7,9 +7,9 @@
   "npmRebuild": false,
   "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
   "protocols": {
-    "name": "dive",
+    "name": "attacktrace",
     "schemes": [
-      "dive"
+      "attacktrace"
     ]
   },
   "electronLanguages": ["en", "zh-CN"],
@@ -125,7 +125,7 @@
           "!.vscode/**/*",
           "!*.env",
           "!command_alias.json",
-          "!dive_httpd.json",
+          "!attacktrace_httpd.json",
           "!mcp_config.json",
           "!model_config.json"
         ]
@@ -135,10 +135,10 @@
   "linux": {
     "target": ["AppImage"],
     "asarUnpack": ["**/*.node"],
-    "executableName": "newmind-chat",
+    "executableName": "attacktrace",
     "desktop": {
       "entry": {
-        "MimeType": "x-scheme-handler/dive;"
+        "MimeType": "x-scheme-handler/attacktrace;"
       }
     },
     "extraResources": [
@@ -170,7 +170,7 @@
           "!.vscode/**/*",
           "!*.env",
           "!command_alias.json",
-          "!dive_httpd.json",
+          "!attacktrace_httpd.json",
           "!mcp_config.json",
           "!model_config.json"
         ]
@@ -196,7 +196,7 @@
     }
   ],
   "dmg": {
-    "title": "NewChat ${version}",
+    "title": "AttackTrace ${version}",
     "background": null,
     "window": {
       "width": 540,

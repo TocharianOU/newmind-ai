@@ -8,7 +8,7 @@ import { setOapHost } from "./oap"
 
 async function waitHostBus(): Promise<number> {
   const home = await path.homeDir()
-  const appDir = await path.join(home, ".newmind")
+  const appDir = await path.join(home, ".attacktrace")
   const hostCacheDir = await path.join(appDir, "host_cache")
   const file = await path.join(hostCacheDir, "bus")
   const read = async (file: string) => {

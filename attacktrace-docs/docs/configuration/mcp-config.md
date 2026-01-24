@@ -5,8 +5,8 @@ MCP（模型上下文协议）配置允许您管理连接到 AttackTrace 的 MCP
 ## 配置文件位置
 
 MCP 配置文件位于：
-- **macOS/Linux**: `~/.newmind/config/mcp_config.json`
-- **Windows**: `%USERPROFILE%\.newmind\config\mcp_config.json`
+- **macOS/Linux**: `~/.attacktrace/config/mcp_config.json`
+- **Windows**: `%USERPROFILE%\.attacktrace\config\mcp_config.json`
 
 ## 配置文件结构
 
@@ -46,7 +46,7 @@ MCP 配置文件位于：
   "echo": {
     "enabled": true,
     "command": "node",
-    "args": ["~/.newmind/scripts/mcp-server-echo/dist/index.js"]
+    "args": ["~/.attacktrace/scripts/mcp-server-echo/dist/index.js"]
   }
 }
 ```
@@ -58,7 +58,7 @@ MCP 配置文件位于：
   "kibana": {
     "enabled": false,
     "command": "node",
-    "args": ["~/.newmind/scripts/mcp-server-kibana/dist/index.js"],
+    "args": ["~/.attacktrace/scripts/mcp-server-kibana/dist/index.js"],
     "env": {
       "KIBANA_URL": "https://your-kibana.com:5601",
       "KIBANA_USERNAME": "your-username",
@@ -75,7 +75,7 @@ MCP 配置文件位于：
   "elasticsearch": {
     "enabled": false,
     "command": "node",
-    "args": ["~/.newmind/scripts/mcp-server-elasticsearch/dist/index.js"],
+    "args": ["~/.attacktrace/scripts/mcp-server-elasticsearch/dist/index.js"],
     "env": {
       "ES_URL": "https://your-elasticsearch.com:9200",
       "ES_API_KEY": "your-api-key"

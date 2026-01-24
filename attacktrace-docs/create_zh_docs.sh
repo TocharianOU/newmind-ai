@@ -114,7 +114,7 @@ cat > docs/zh/configuration/mcp-config.md << 'DOC'
 
 ## 配置文件
 
-位置: `~/.newmind/config/mcp_config.json`
+位置: `~/.attacktrace/config/mcp_config.json`
 
 ## 结构
 
@@ -124,7 +124,7 @@ cat > docs/zh/configuration/mcp-config.md << 'DOC'
     "echo": {
       "enabled": true,
       "command": "node",
-      "args": ["~/.newmind/scripts/mcp-server-echo/dist/index.js"]
+      "args": ["~/.attacktrace/scripts/mcp-server-echo/dist/index.js"]
     }
   }
 }

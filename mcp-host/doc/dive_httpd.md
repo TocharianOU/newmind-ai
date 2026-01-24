@@ -22,10 +22,10 @@ The server is designed to be modular and extensible, with support for:
 
 Configuration loading priority:
 1. Command line arguments
-2. Configuration files (dive_httpd.json)
+2. Configuration files (attacktrace_httpd.json)
 
 ### Environment Variables
-- `DIVE_CONFIG_DIR`: Directory containing configuration files
+- `ATTACKTRACE_CONFIG_DIR`: Directory containing configuration files
   - Default: Current working directory (CWD)
   - Description: Base directory for all configuration files
 - `RESOURCE_DIR`: Directory for resource files
@@ -36,19 +36,19 @@ Configuration loading priority:
 
 #### Configuration Files
 - `--config <path>`: Main service configuration file
-  - Default: `${DIVE_CONFIG_DIR}/dive_httpd.json`
+  - Default: `${ATTACKTRACE_CONFIG_DIR}/attacktrace_httpd.json`
   - Description: Specifies the location of the main service configuration file
 - `--model_config <path>`: Model configuration file
-  - Default: `${DIVE_CONFIG_DIR}/model_config.json`
+  - Default: `${ATTACKTRACE_CONFIG_DIR}/model_config.json`
   - Description: Configuration for model settings and parameters
 - `--mcp_config <path>`: MCP server configuration file
-  - Default: `${DIVE_CONFIG_DIR}/mcp_config.json`
+  - Default: `${ATTACKTRACE_CONFIG_DIR}/mcp_config.json`
   - Description: Configuration for MCP server settings
 - `--custom_rules <path>`: Custom rules file
-  - Default: `${DIVE_CONFIG_DIR}/custom_rules`
+  - Default: `${ATTACKTRACE_CONFIG_DIR}/custom_rules`
   - Description: Custom rules for LLM
 - `--command_alias_config <path>`: Command alias configuration file
-  - Default: `${DIVE_CONFIG_DIR}/command_alias.json`
+  - Default: `${ATTACKTRACE_CONFIG_DIR}/command_alias.json`
   - Description: Configuration for command aliases
 
 #### Server Settings

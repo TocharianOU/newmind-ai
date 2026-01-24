@@ -6,18 +6,18 @@
 
 ### macOS
 - **主日志**：`~/Library/Logs/AttackTrace/`
-- **Host 日志**：`~/.newmind/log/host/`
-- **MCP 服务器**：`~/.newmind/log/mcp/`
+- **Host 日志**：`~/.attacktrace/log/host/`
+- **MCP 服务器**：`~/.attacktrace/log/mcp/`
 
 ### Windows
 - **主日志**：`%APPDATA%\AttackTrace\logs\`
-- **Host 日志**：`%USERPROFILE%\.newmind\log\host\`
-- **MCP 服务器**：`%USERPROFILE%\.newmind\log\mcp\`
+- **Host 日志**：`%USERPROFILE%\.attacktrace\log\host\`
+- **MCP 服务器**：`%USERPROFILE%\.attacktrace\log\mcp\`
 
 ### Linux
 - **主日志**：`~/.config/AttackTrace/logs/`
-- **Host 日志**：`~/.newmind/log/host/`
-- **MCP 服务器**：`~/.newmind/log/mcp/`
+- **Host 日志**：`~/.attacktrace/log/host/`
+- **MCP 服务器**：`~/.attacktrace/log/mcp/`
 
 ## 查看日志
 
@@ -27,10 +27,10 @@
 tail -f ~/Library/Logs/AttackTrace/main.log
 
 # Host 日志
-tail -f ~/.newmind/log/host/dive_httpd.log
+tail -f ~/.attacktrace/log/host/dive_httpd.log
 
 # MCP 服务器日志
-tail -f ~/.newmind/log/mcp/echo.log
+tail -f ~/.attacktrace/log/mcp/echo.log
 ```
 
 ## 日志级别

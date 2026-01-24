@@ -25,7 +25,7 @@ export function setAppImageAutoLaunch(enable: boolean) {
       fse.mkdirSync(autostartDir, { recursive: true })
     }
 
-    const desktopFile = path.join(autostartDir, "dive-ai.desktop")
+    const desktopFile = path.join(autostartDir, "attacktrace.desktop")
 
     if (enable) {
       const desktopContent = getAppImageDesktopFile()
@@ -48,13 +48,13 @@ export function checkAppImageAutoLaunchStatus() {
 
   const desktopFile = path.join(
     process.env.HOME || "~",
-    ".config/autostart/dive-ai.desktop"
+    ".config/autostart/attacktrace.desktop"
   )
   return fse.existsSync(desktopFile)
 }
 
 export function getAppImageDesktopFile() {
-  const desktopFile = path.join(process.env.VITE_PUBLIC, "linux", "dive-ai.desktop")
+  const desktopFile = path.join(process.env.VITE_PUBLIC, "linux", "attacktrace.desktop")
   const content = fse.existsSync(desktopFile) ? fse.readFileSync(desktopFile, "utf-8") : `[Desktop Entry]
 Type=Application
 Name=Newmind AI

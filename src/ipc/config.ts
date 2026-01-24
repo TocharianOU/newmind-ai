@@ -8,7 +8,7 @@ export async function getModelSettings() {
   }
 
   const home = await path.homeDir()
-  const appDir = await path.join(home, ".newmind")
+  const appDir = await path.join(home, ".attacktrace")
   const configDir = await path.join(appDir, "config")
   const configPath = await path.join(configDir, "model_settings.json")
   if (!(await exists(configPath))) {
@@ -25,7 +25,7 @@ export async function setModelSettings(settings: any) {
   }
 
   const home = await path.homeDir()
-  const appDir = await path.join(home, ".newmind")
+  const appDir = await path.join(home, ".attacktrace")
   const configDir = await path.join(appDir, "config")
   const configPath = await path.join(configDir, "model_settings.json")
   await writeTextFile(configPath, JSON.stringify(settings))

@@ -4,7 +4,7 @@
 
 ## 配置文件
 
-位于 `~/.newmind/config/`：
+位于 `~/.attacktrace/config/`：
 
 - `mcp_config.json`：MCP 服务器
 - `model_config.json`：AI 模型

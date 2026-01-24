@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from attacktrace_mcp_host.env import DIVE_CONFIG_DIR
+from attacktrace_mcp_host.env import ATTACKTRACE_CONFIG_DIR
 from attacktrace_mcp_host.host.conf.llm import LLMConfigTypes
 from attacktrace_mcp_host.httpd.conf.misc import write_then_replace
 from attacktrace_mcp_host.httpd.routers.models import (
@@ -30,7 +30,7 @@ class ModelManager:
                 working directory.
         """
         self._config_path: str = config_path or str(
-            DIVE_CONFIG_DIR / "model_config.json"
+            ATTACKTRACE_CONFIG_DIR / "model_config.json"
         )
         self._current_setting: LLMConfigTypes | None = None
         self._full_config: ModelFullConfigs | None = None

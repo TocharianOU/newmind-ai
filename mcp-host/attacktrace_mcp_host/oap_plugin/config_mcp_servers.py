@@ -8,7 +8,7 @@ from typing import Any, Literal
 import httpx
 from pydantic import ValidationError
 
-from attacktrace_mcp_host.env import DIVE_CONFIG_DIR
+from attacktrace_mcp_host.env import ATTACKTRACE_CONFIG_DIR
 from attacktrace_mcp_host.httpd.conf.mcp_servers import (
     Config,
     MCPServerConfig,
@@ -16,7 +16,7 @@ from attacktrace_mcp_host.httpd.conf.mcp_servers import (
 )
 from attacktrace_mcp_host.oap_plugin.models import BaseResponse, OAPConfig, UserMcpConfig
 
-CONFIG_FILE = Path(DIVE_CONFIG_DIR, "oap_config.json")
+CONFIG_FILE = Path(ATTACKTRACE_CONFIG_DIR, "oap_config.json")
 logger = logging.getLogger("OAP_PLUGIN")
 
 MIN_REFRESH_INTERVAL = 60

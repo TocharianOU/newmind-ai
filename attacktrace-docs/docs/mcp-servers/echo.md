@@ -8,7 +8,7 @@ Echo 服务器是一个简单的测试工具，默认启用。
 
 ## 配置
 
-位置：`~/.newmind/scripts/mcp-server-echo/`
+位置：`~/.attacktrace/scripts/mcp-server-echo/`
 
 默认配置：
 ```json
@@ -16,7 +16,7 @@ Echo 服务器是一个简单的测试工具，默认启用。
   "echo": {
     "enabled": true,
     "command": "node",
-    "args": ["~/.newmind/scripts/mcp-server-echo/dist/index.js"]
+    "args": ["~/.attacktrace/scripts/mcp-server-echo/dist/index.js"]
   }
 }
 ```

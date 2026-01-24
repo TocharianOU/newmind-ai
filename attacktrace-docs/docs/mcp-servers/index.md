@@ -15,7 +15,7 @@
 
 ## 配置
 
-MCP 服务器在 `~/.newmind/config/mcp_config.json` 中配置
+MCP 服务器在 `~/.attacktrace/config/mcp_config.json` 中配置
 
 ## 启用/禁用
 

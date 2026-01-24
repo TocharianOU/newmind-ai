@@ -386,7 +386,7 @@ async function startHostService() {
 
   const httpdEnv: any = {
     ...process.env,
-    DIVE_CONFIG_DIR: baseConfigDir,
+    ATTACKTRACE_CONFIG_DIR: baseConfigDir,
     RESOURCE_DIR: hostCacheDir,
   }
 

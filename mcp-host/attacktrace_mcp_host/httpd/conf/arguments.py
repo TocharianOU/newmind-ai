@@ -5,7 +5,7 @@ from typing import Annotated, Self
 
 from pydantic import AfterValidator, BaseModel, Field, model_validator
 
-from attacktrace_mcp_host.env import DIVE_CONFIG_DIR
+from attacktrace_mcp_host.env import ATTACKTRACE_CONFIG_DIR
 
 type StrPath = str | Path
 
@@ -110,9 +110,9 @@ class Arguments(BaseModel):
     @model_validator(mode="after")
     def rewrite_default_path(self) -> Self:
         """Rewrite default config file path according to working directory."""
-        cwd = Path(self.working_dir) if self.working_dir else DIVE_CONFIG_DIR
+        cwd = Path(self.working_dir) if self.working_dir else ATTACKTRACE_CONFIG_DIR
         if not self.httpd_config:
-            self.httpd_config = cwd.joinpath("dive_httpd.json")
+            self.httpd_config = cwd.joinpath("attacktrace_httpd.json")
         if not self.llm_config:
             self.llm_config = cwd.joinpath("model_config.json")
         if not self.mcp_config:

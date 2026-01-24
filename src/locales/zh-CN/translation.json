@@ -1,13 +1,13 @@
 {
   "header": {
-    "title": "NewChat",
+    "title": "AttackTrace",
     "openSidebar": "打开侧边栏",
     "closeSidebar": "关闭侧边栏"
   },
   "chat": {
     "placeholder": "发送任何消息...",
-    "newChat": "新对话",
-    "newChatTooltip": "开始新的对话",
+    "newChat": "新调查",
+    "newChatTooltip": "开始新的安全调查",
     "history": "历史记录",
     "copyCode": "复制",
     "previewCode": "点击预览",
@@ -47,8 +47,8 @@
     }
   },
   "welcome": {
-    "title": "欢迎使用 NewChat",
-    "subtitle": "开始你的 AI 对话",
+    "title": "欢迎使用 AttackTrace",
+    "subtitle": "开始你的安全调查",
     "startChat": "开始对话"
   },
   "setup": {
@@ -368,7 +368,7 @@
     "autoLaunch": "自动启动",
     "autoLaunchDescription": "开机时自动启动 AttackTrace",
     "loginTitle": "AttackTrace 登录",
-    "loginDescription": "使用 AttackTrace Hub 登录，无需技术背景即可轻松连接 LLMs、AI Agents 和 MCP Servers — 立即体验智慧解决方案！",
+    "loginDescription": "登录 AttackTrace Hub 以使用团队协作功能、共享调查案例、集中管理安全工具集成",
     "personalInformationTitle": "个人信息",
     "minimalToTray": "最小化",
     "minimalToTrayDescription": "关闭窗口时不会将程序关闭，而是缩放成最小化 icon",
@@ -421,14 +421,14 @@
     "clickToInstall": "点击安装更新"
   },
   "login": {
-    "subtitle": "AttackTrace 是一款开源的桌面应用程序，无缝整合各种支持功能调用的大型语言模型。通过简洁直观的界面，实现对数据分析等领域深度智能化的探索。",
-    "title1": "自定义或本地模型",
-    "description1": "AttackTrace AI软硬一体机团队提供的 LLM API或者其他自定义模型适合的选项",
-    "button1": "前往设置模型",
-    "title2": "使用 AttackTrace Hub 平台",
-    "description2": "AttackTrace Hub 提供多种在线大模型以及垂直领域专有模型， 探索 AI 的无限可能，是立即体验智能化的解决方案",
-    "button2": "注册 AttackTrace",
-    "button3": "登录 AttackTrace"
+    "subtitle": "AI 驱动的安全运营助手，帮助 SOC 团队高效完成安全事件调查与响应",
+    "title1": "自定义模型",
+    "description1": "使用自己的 LLM API 密钥（如 Claude、OpenAI）或本地部署的模型",
+    "button1": "配置模型",
+    "title2": "AttackTrace Hub",
+    "description2": "团队协作平台，管理用户权限、共享调查案例、统一配置安全集成工具",
+    "button2": "注册账号",
+    "button3": "登录"
   },
   "InstallHostDependencies": {
     "title": "正在下载模组套件...",
