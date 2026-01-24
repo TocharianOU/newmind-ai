@@ -71,7 +71,7 @@
     "temperatureDescription": "Temperature 参数用于控制回答的随机性，数值为 0 时使用默认值；数值越小，回答更精确稳定；数值越大，回答更具创意但较不严谨。"
   },
   "sidebar": {
-    "tools": "工具管理(MCP)",
+    "tools": "安全集成",
     "settings": "模型设置",
     "update": "新版本升级",
     "models": "模型设置",
@@ -91,14 +91,14 @@
   },
   "setting": {
     "tabs": {
-      "Tools": "MCP工具管理",
+      "Tools": "安全集成",
       "Model": "服务提供者设置",
       "Account": "帐号",
       "System": "系统设置"
     }
   },
   "tools": {
-    "title": "工具管理(MCP)",
+    "title": "安全集成",
     "editConfig": "编辑设置",
     "editConfigAlt": "编辑 MCP Server 设置",
     "configTitle": "MCP Server 设置",
@@ -186,6 +186,7 @@
     "no_tool_message": "请新增 MCP Server。",
     "tab": {
       "all": "所有工具",
+      "oap": "集成工具",
       "AttackTrace": "AttackTrace工具",
       "custom": "自定义工具"
     },
@@ -221,6 +222,7 @@
       "hint": "高级集成工具需要升级 Pro 版本方能安装",
       "high_cost_title": "启用高级集成工具",
       "high_cost_desc": "您选择的集成工具可能消耗更多资源。请检查您的计划用量是否充足。",
+      "headerBtn": "集成工具",
       "headerBtnAlt": "新增 / 查看安全集成工具"
     },
     "custom": {

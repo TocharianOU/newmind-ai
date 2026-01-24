@@ -733,8 +733,8 @@ const Tools = () => {
                   size="fit"
                   padding="xs"
                 >
-                  <img className="oap-logo" src={`${imgPrefix}logo_oap.png`} alt="info" />
-                  OAPhub
+                  <img className="oap-logo" src={`${imgPrefix}icon.png`} alt="info" />
+                  {t("tools.oap.headerBtn")}
                 </Button>
               </Tooltip>
             }

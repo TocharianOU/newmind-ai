@@ -71,7 +71,7 @@
     "temperatureDescription": "Temperature parameter controls response randomness. A value of 0 uses the default value; lower values produce more precise and stable responses; higher values generate more creative but less rigorous responses."
   },
   "sidebar": {
-    "tools": "Tools Management(MCP)",
+    "tools": "Security Integrations",
     "settings": "Model Settings",
     "update": "Update available",
     "models": "Model Settings",
@@ -91,14 +91,14 @@
   },
   "setting": {
     "tabs": {
-      "Tools": "MCP Tools Management",
+      "Tools": "Security Integrations",
       "Model": "Provider Settings",
       "Account": "Account",
       "System": "System Settings"
     }
   },
   "tools": {
-    "title": "Tools Management(MCP)",
+    "title": "Security Integrations",
     "editConfig": "Edit Config",
     "editConfigAlt": "Edit MCP Server Configuration",
     "configTitle": "MCP Server Configuration",
@@ -186,6 +186,7 @@
     "no_tool_message": "Please add an MCP Server.",
     "tab": {
       "all": "All Tools",
+      "oap": "Integration Tools",
       "AttackTrace": "AttackTrace Tools",
       "custom": "Custom Tools"
     },
@@ -221,6 +222,7 @@
       "hint": "Advanced integrations require upgrading to the Pro version to install",
       "high_cost_title": "Enable Advanced Integration Tools",
       "high_cost_desc": "You have selected integration tools that may consume more resources. Please check if your plan usage is sufficient.",
+      "headerBtn": "Integrations",
       "headerBtnAlt": "Add / View Security Integrations"
     },
     "custom": {
