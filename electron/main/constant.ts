@@ -108,7 +108,7 @@ export const DEF_PLUGIN_CONFIG = [
 ]
 
 const dbPath = path.join(configDir, "db.sqlite")
-export const DEF_DIVE_HTTPD_CONFIG = {
+export const DEF_ATTACKTRACE_HTTPD_CONFIG = {
   "db": {
     "uri": `sqlite:///${dbPath}`,
     "pool_size": 5,

@@ -8,7 +8,7 @@ import {
   DEF_MCP_SERVER_CONFIG,
   cwd,
   DEF_MODEL_CONFIG,
-  DEF_DIVE_HTTPD_CONFIG,
+  DEF_ATTACKTRACE_HTTPD_CONFIG,
   hostCacheDir,
   __dirname,
   legacyConfigDir,
@@ -61,9 +61,9 @@ async function initApp() {
   const modelConfigPath = path.join(baseConfigDir, "model_config.json")
   await createFileIfNotExists(modelConfigPath, JSON.stringify(DEF_MODEL_CONFIG, null, 2))
 
-  // create dive_httpd config file if not exists
-  const diveHttpdConfigPath = path.join(baseConfigDir, "dive_httpd.json")
-  await createFileIfNotExists(diveHttpdConfigPath, JSON.stringify(DEF_DIVE_HTTPD_CONFIG, null, 2))
+  // create attacktrace_httpd config file if not exists
+  const attacktraceHttpdConfigPath = path.join(baseConfigDir, "attacktrace_httpd.json")
+  await createFileIfNotExists(attacktraceHttpdConfigPath, JSON.stringify(DEF_ATTACKTRACE_HTTPD_CONFIG, null, 2))
 
   // create plugin config file if not exists
   const pluginConfigPath = path.join(baseConfigDir, "plugin_config.json")
