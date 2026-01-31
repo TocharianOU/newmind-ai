@@ -138,6 +138,14 @@
     "jsonDesc": "请在栏位输入或直接粘贴 MCP Server Json",
     "addArg": "新增参数",
     "addEnv": "新增环境变量",
+    "packageInfo": "包信息",
+    "authMode": "认证方式",
+    "enterValue": "输入值...",
+    "selectValue": "选择值...",
+    "tls": {
+      "verify": "验证证书",
+      "skip": "跳过验证"
+    },
     "jsonFormatError": {
       "addFormat": "设置格式错误，请检查并修正格式",
       "format": "{{mcp}} 设置格式错误，请检查并修正格式",
@@ -223,7 +231,9 @@
       "high_cost_title": "启用高级集成工具",
       "high_cost_desc": "您选择的集成工具可能消耗更多资源。请检查您的计划用量是否充足。",
       "headerBtn": "集成工具",
-      "headerBtnAlt": "新增 / 查看安全集成工具"
+      "headerBtnAlt": "新增 / 查看安全集成工具",
+      "edit_managed_notice": "此集成由 AttackTrace Hub 管理。请在下方配置所需设置。",
+      "simplified_config": "简化配置"
     },
     "custom": {
       "headerBtn": "新增 / 编辑 Config",

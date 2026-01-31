@@ -112,6 +112,8 @@ const emptyCustom = (): customListProps => {
   return _emptyCustom
 }
 
+import SchemaForm from "./SchemaForm"
+
 const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, onSubmit, toolLog }: customEditPopupProps) => {
   const [type, setType] = useState<customEditPopupProps["_type"]>(_type)
   const { t } = useTranslation()
@@ -141,8 +143,12 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
     })
 
     Object.keys(newConfig.mcpServers)
-    // streamable is connector, so it will be shown in connector list
-    .filter((toolName) => !newConfig.mcpServers[toolName]?.extraData?.oap)
+    // Filter: allow custom tools, OR the specific OAP tool being edited
+    .filter((toolName) => 
+      // !newConfig.mcpServers[toolName]?.extraData?.oap || toolName === _toolName
+      // Allow all tools to be visible in the list for better debugging and UX
+      true
+    )
     .sort((a, b) => {
       const aEnabled = newConfig.mcpServers[a]?.enabled
       const bEnabled = newConfig.mcpServers[b]?.enabled
@@ -687,6 +693,11 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
 
   const handleSubmit = async () => {
     try {
+      console.log('[handleSubmit] START - customList:', JSON.stringify(customList.map(c => ({
+        name: c.name,
+        env: c.mcpServers.env
+      })), null, 2))
+      
       if (customList.some(mcp => mcp.isError.isError || mcp.isRangeError?.isError)
         || tmpCustom.isError.isError || tmpCustom.isRangeError?.isError)
         return
@@ -705,6 +716,11 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
       }
       for(const mcp of customList) {
         newConfig.mcpServers[mcp.name] = decodeMcpServers(mcp.mcpServers)
+        console.log('[handleSubmit] decoded:', {
+          name: mcp.name,
+          envType: Array.isArray(newConfig.mcpServers[mcp.name].env) ? 'array' : 'object',
+          env: newConfig.mcpServers[mcp.name].env
+        })
       }
 
       //clear env empty key
@@ -720,12 +736,22 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
         }
       })
 
-      // add oap servers to newConfig, otherwise "enabled" of oap servers will be reset to true
+      // add oap servers to newConfig only if they are missing (to avoid overwriting edited ones)
       const oapServers = Object.keys(_config.mcpServers).filter((mcp: string) => _config.mcpServers[mcp].extraData?.oap)
       for(const oap of oapServers) {
-        newConfig.mcpServers[oap] = _config.mcpServers[oap]
+        const oapId = _config.mcpServers[oap].extraData?.oap?.id
+        // Check if this OAP server already exists in newConfig (by checking oap.id)
+        const alreadyExists = Object.values(newConfig.mcpServers).some(
+          (v: any) => v.extraData?.oap?.id === oapId
+        )
+        // Only add if it doesn't exist (user hasn't renamed/edited it)
+        if (!alreadyExists && !newConfig.mcpServers[oap]) {
+          newConfig.mcpServers[oap] = _config.mcpServers[oap]
+        }
       }
 
+      console.log('[handleSubmit] FINAL newConfig:', JSON.stringify(newConfig, null, 2))
+      
       setIsSubmitting(true)
       await onSubmit(newConfig)
     } catch (err) {
@@ -826,6 +852,89 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
     )
   }, [customList, tmpCustom, currentIndex])
 
+  // Calculate currentMcpServers at component top level
+  const currentMcpServers = useMemo(() => {
+    const result = type.includes("add") ? tmpCustom.mcpServers : customList[currentIndex]?.mcpServers
+    // Debug: Log currentMcpServers structure to trace configSchema data flow
+    if (result) {
+      console.log('[CustomEdit] currentMcpServers structure:', {
+        hasConfigSchema: !!result.configSchema,
+        configSchema: result.configSchema,
+        hasExtraData: !!result.extraData,
+        extraDataOap: result.extraData?.oap,
+        extraDataOapConfigSchema: result.extraData?.oap?.configSchema,
+        fullStructure: result
+      })
+    }
+    return result
+  }, [type, tmpCustom.mcpServers, customList, currentIndex])
+
+  // Convert env to array format for SchemaForm - moved to component top level
+  const envConfig = useMemo(() => {
+    const env = currentMcpServers?.env;
+    console.log('[CustomEdit] envConfig useMemo - currentMcpServers?.env:', env);
+    
+    if (!env) {
+      console.log('[CustomEdit] envConfig useMemo - env is empty, returning []');
+      return [];
+    }
+    
+    // If it's already an array, process values and return
+    if (Array.isArray(env)) {
+      const result = env.map(([key, value, error]) => {
+        let processedValue = value;
+        
+        // Convert NODE_TLS_REJECT_UNAUTHORIZED from '0'/'1' to boolean
+        if (key === 'NODE_TLS_REJECT_UNAUTHORIZED') {
+          if (value === '0' || value === 0 || value === false || value === 'false') {
+            processedValue = false;
+          } else if (value === '1' || value === 1 || value === true || value === 'true') {
+            processedValue = true;
+          }
+          console.log(`[CustomEdit] envConfig useMemo - converted ${key}: ${value} -> ${processedValue}`);
+        }
+        
+        // Ensure MAX_TOKEN_CACHE_SIZE is string or number
+        if (key === 'MAX_TOKEN_CACHE_SIZE' && value !== null && value !== undefined) {
+          processedValue = String(value);
+        }
+        
+        return [key, processedValue, error] as [string, unknown, boolean];
+      });
+      console.log('[CustomEdit] envConfig useMemo - array result:', result);
+      return result;
+    }
+    
+    // If it's an object, convert to array format [key, value, error] with value conversion
+    if (typeof env === 'object') {
+      const result = Object.entries(env).map(([key, value]) => {
+        let processedValue = value;
+        
+        // Convert NODE_TLS_REJECT_UNAUTHORIZED from '0'/'1' to boolean
+        if (key === 'NODE_TLS_REJECT_UNAUTHORIZED') {
+          if (value === '0' || value === 0 || value === false || value === 'false') {
+            processedValue = false;
+          } else if (value === '1' || value === 1 || value === true || value === 'true') {
+            processedValue = true;
+          }
+          console.log(`[CustomEdit] envConfig useMemo - converted ${key}: ${value} -> ${processedValue}`);
+        }
+        
+        // Ensure MAX_TOKEN_CACHE_SIZE is string or number
+        if (key === 'MAX_TOKEN_CACHE_SIZE' && value !== null && value !== undefined) {
+          processedValue = String(value);
+        }
+        
+        return [key, processedValue, false] as [string, unknown, boolean];
+      });
+      console.log('[CustomEdit] envConfig useMemo - object result:', result);
+      return result;
+    }
+    
+    console.log('[CustomEdit] envConfig useMemo - env type not recognized, returning []');
+    return [];
+  }, [currentMcpServers?.env]);
+
   const Field = useMemo(() => {
     if(type === "edit-json" || type === "add-json") {
       return null
@@ -838,18 +947,16 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
       )
     }
 
-    let currentMcp: customListProps | undefined
-    let currentMcpServers: mcpServersProps | undefined
-
-    if(type.includes("add")) {
-      currentMcp = tmpCustom
-      currentMcpServers = tmpCustom.mcpServers
-    } else {
-      currentMcp = customList[currentIndex]
-      currentMcpServers = currentMcp?.mcpServers
-    }
+    const currentMcp = type.includes("add") ? tmpCustom : customList[currentIndex]
+    const isOap = currentMcpServers?.extraData?.oap;
+    // Try to get configSchema from multiple possible locations
+    const configSchema = currentMcpServers?.configSchema 
+      || currentMcpServers?.extraData?.oap?.configSchema
+      || null;
 
     const handleEnvChange = (newEnv: [string, unknown, boolean][]) => {
+      console.log('[CustomEdit] handleEnvChange - received newEnv:', newEnv);
+      
       const keys = newEnv.map(([key]) => key)
       keys.forEach((key, index) => {
         newEnv[index][2] = false
@@ -857,226 +964,346 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
           newEnv[index][2] = true
         }
       })
-      handleCustomChange("env", newEnv)
+      
+      // Convert values before passing to handleCustomChange
+      // Ensure all keys are preserved, only convert NODE_TLS_REJECT_UNAUTHORIZED
+      const processedEnv = newEnv.map(([key, value, error]) => {
+        // Convert NODE_TLS_REJECT_UNAUTHORIZED from boolean to '1'/'0'
+        if (key === 'NODE_TLS_REJECT_UNAUTHORIZED') {
+          const boolValue = value === true || value === 'true' || value === 1 || value === '1';
+          return [key, boolValue ? '1' : '0', error] as [string, unknown, boolean];
+        }
+        
+        // Preserve all other keys and values as-is
+        return [key, value, error] as [string, unknown, boolean];
+      });
+      
+      console.log('[CustomEdit] handleEnvChange - processedEnv:', processedEnv);
+      
+      handleCustomChange("env", processedEnv)
     }
 
     return (
       <div className="tool-edit-field">
-        <div className="tool-edit-title">
-          {t("tools.fieldTitle")}
-          <Tooltip content={t("tools.fieldTitleAlt")} side="bottom" align="start" maxWidth={402}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <circle cx="8" cy="8" r="7.5" stroke="currentColor"/>
-              <path d="M8.73 6.64V12H7.85V6.64H8.73ZM8.3 4.63C8.43333 4.63 8.55 4.67667 8.65 4.77C8.75667 4.85667 8.81 4.99667 8.81 5.19C8.81 5.37667 8.75667 5.51667 8.65 5.61C8.55 5.70333 8.43333 5.75 8.3 5.75C8.15333 5.75 8.03 5.70333 7.93 5.61C7.83 5.51667 7.78 5.37667 7.78 5.19C7.78 4.99667 7.83 4.85667 7.93 4.77C8.03 4.67667 8.15333 4.63 8.3 4.63Z" fill="currentColor"/>
-            </svg>
-          </Tooltip>
-        </div>
+        {/* Hide "栏位" title in OAP mode */}
+        {!isOap && (
+          <div className="tool-edit-title">
+            {t("tools.fieldTitle")}
+            <Tooltip content={t("tools.fieldTitleAlt")} side="bottom" align="start" maxWidth={402}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="7.5" stroke="currentColor"/>
+                <path d="M8.73 6.64V12H7.85V6.64H8.73ZM8.3 4.63C8.43333 4.63 8.55 4.67667 8.65 4.77C8.75667 4.85667 8.81 4.99667 8.81 5.19C8.81 5.37667 8.75667 5.51667 8.65 5.61C8.55 5.70333 8.43333 5.75 8.3 5.75C8.15333 5.75 8.03 5.70333 7.93 5.61C7.83 5.51667 7.78 5.37667 7.78 5.19C7.78 4.99667 7.83 4.85667 7.93 4.77C8.03 4.67667 8.15333 4.63 8.3 4.63Z" fill="currentColor"/>
+              </svg>
+            </Tooltip>
+          </div>
+        )}
         <div className="field-content">
-          {/* Name */}
-          <div className="field-item">
-            <label>Name</label>
-            <input
-              placeholder={t("tools.namePlaceholder")}
-              type="text"
-              value={currentMcp.name}
-              onChange={(e) => handleCustomChange("name", e.target.value)}
-            />
-          </div>
-          {/* Command - only show for stdio transport */}
-          {(!currentMcpServers.transport || currentMcpServers.transport === "stdio") && (
-            <div className="field-item">
-              <label>Command</label>
-              <input
-                placeholder={t("tools.commandPlaceholder")}
-                type="text"
-                value={currentMcpServers?.command || ""}
-                onChange={(e) => handleCustomChange("command", e.target.value)}
-              />
-            </div>
-          )}
-          {/* Transport */}
-          <div className="field-item">
-            <label>Transport</label>
-            <Select
-              options={FieldType.transport.options.map((option) => ({
-                value: option,
-                label: (
-                    <div className="model-select-label" key={option}>
-                      <span className="model-select-label-text">
-                        {option}
-                      </span>
-                    </div>
-                  )
-                })
-              )}
-              placeholder={t("tools.transportPlaceholder")}
-              value={currentMcpServers.transport ?? FieldType.transport.options[0]}
-              onSelect={(value) => handleCustomChange("transport", value)}
-            />
-          </div>
-          {/* URL - only for sse/streamable/websocket transports */}
-          {(currentMcpServers.transport === "sse" || currentMcpServers.transport === "streamable" || currentMcpServers.transport === "websocket") && (
-            <div className="field-item">
-              <label>URL</label>
-              <input
-                placeholder={t("tools.urlPlaceholder")}
-                type="text"
-                value={currentMcpServers?.url || ""}
-                onChange={(e) => handleCustomChange("url", e.target.value)}
-              />
-            </div>
-          )}
-          {/* Args - only show for stdio transport */}
-          {(!currentMcpServers.transport || currentMcpServers.transport === "stdio") && (
-            <div className="field-item">
-              <label>
-              ARGS
-              <button onClick={() => handleCustomChange("args", [...(currentMcpServers.args || []), ""])}>
-                + {t("tools.addArg")}
-              </button>
-            </label>
-            <div className={`field-item-array ${(currentMcpServers?.args && currentMcpServers.args.length > 0) ? "no-border" : ""}`}>
-              {currentMcpServers?.args && currentMcpServers.args.map((arg: string, index: number) => (
-                <div key={index} className="field-item-array-item">
-                  <input
-                    placeholder={t("tools.argsPlaceholder")}
-                    type="text"
-                    autoFocus
-                    value={arg}
-                    onChange={(e) => handleCustomChange("args", currentMcpServers.args?.map((arg: string, i: number) => i === index ? e.target.value : arg))}
-                  />
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 18 18"
-                    width="22"
-                    height="22"
-                    className="field-item-array-item-clear"
-                    onClick={() => handleCustomChange("args", currentMcpServers.args?.filter((_: string, i: number) => i !== index))}
-                  >
-                    <path stroke="currentColor" strokeLinecap="round" strokeWidth="2" d="m13.91 4.09-9.82 9.82M13.91 13.91 4.09 4.09"></path>
-                  </svg>
+          {isOap ? (
+            <>
+              {/* OAP Integration: Simplified UI */}
+              <div className="oap-edit-notice">
+                {t("tools.oap.edit_managed_notice") || "This integration is managed by AttackTrace Hub. Configure the required settings below."}
+              </div>
+              
+              {/* Name (editable for OAP) */}
+              <div className="field-item">
+                <label>Name</label>
+                <input
+                  disabled={false}
+                  placeholder={t("tools.namePlaceholder")}
+                  type="text"
+                  value={currentMcp.name}
+                  onChange={(e) => handleCustomChange("name", e.target.value)}
+                />
+              </div>
+              
+              {/* Package Info */}
+              <div className="field-item">
+                <label>{t("tools.packageInfo") || "Package"}</label>
+                <div className="field-item-package-info">
+                  <div className="package-name">
+                    {currentMcpServers?.extraData?.oap?.name || 
+                     currentMcpServers?.extraData?.oap?.id || 
+                     currentMcp.name || 
+                     "Unknown"}
+                  </div>
+                  {currentMcpServers.version && (
+                    <div className="package-version">v{currentMcpServers.version}</div>
+                  )}
                 </div>
-              ))}
-            </div>
-          </div>
-          )}
-          {/* env */}
-          <div className="field-item">
-            <label>
-              ENV
-              <button onClick={() => {
-                const newEnv = Array.isArray(currentMcpServers?.env)
-                  ? [...currentMcpServers.env]
-                  : []
-                let index = 0
-                while(newEnv.some(([key]) => key === `key${index}`)) {
-                  index++
-                }
-                const nextKey = `key${index}`
-                newEnv.push([nextKey, "", false] as [string, unknown, boolean])
-                handleEnvChange(newEnv)
-              }}>
-                + {t("tools.addEnv")}
-              </button>
-            </label>
-            <div className={`field-item-array ${(currentMcpServers?.env && currentMcpServers.env.length > 0) ? "no-border" : ""}`}>
-              {(currentMcpServers?.env && currentMcpServers.env.length > 0) && currentMcpServers?.env.map(([envKey, envValue, isError]: [string, unknown, boolean], index: number) => (
-                  <div key={index} className={`field-item-array-item ${isError ? "error" : ""}`}>
-                    <div className="key-input-wrapper">
-                      <input
-                        className="env-key"
-                        type="text"
-                        placeholder={t("tools.envKey")}
-                        value={envKey}
-                        onChange={(e) => {
-                          const newEnv = [...(currentMcpServers.env || [])]
-                          newEnv[index][0] = e.target.value
-                          newEnv[index][2] = false
-                          handleEnvChange(newEnv)
-                        }}
-                      />
-                      {isError ? (
-                        <Tooltip content={t("tools.inputKeyError", { name: "ENV" })} side="left">
-                          <div
-                            className="key-input-error"
-                            onClick={(e) => {
-                              const input = e.currentTarget.parentElement?.parentElement?.querySelector("input")
-                              if (input) {
-                                input.focus()
-                              }
+              </div>
+              
+              {/* Schema Form for ENV configuration */}
+              {configSchema ? (
+                <SchemaForm
+                  schema={configSchema}
+                  config={envConfig}
+                  onChange={handleEnvChange}
+                  disabled={false}
+                />
+              ) : (
+                // Fallback: manual ENV editing if no schema
+                <div className="field-item">
+                  <label>
+                    ENV
+                    <button onClick={() => {
+                      const newEnv = Array.isArray(currentMcpServers?.env)
+                        ? [...currentMcpServers.env]
+                        : []
+                      let index = 0
+                      while(newEnv.some(([key]) => key === `key${index}`)) {
+                        index++
+                      }
+                      const nextKey = `key${index}`
+                      newEnv.push([nextKey, "", false] as [string, unknown, boolean])
+                      handleEnvChange(newEnv)
+                    }}>
+                      + {t("tools.addEnv")}
+                    </button>
+                  </label>
+                  <div className={`field-item-array ${(currentMcpServers?.env && currentMcpServers.env.length > 0) ? "no-border" : ""}`}>
+                    {(currentMcpServers?.env && currentMcpServers.env.length > 0) && currentMcpServers?.env.map(([envKey, envValue, isError]: [string, unknown, boolean], index: number) => (
+                        <div key={index} className={`field-item-array-item ${isError ? "error" : ""}`}>
+                          <div className="key-input-wrapper">
+                            <input
+                              disabled={!!envKey && envKey !== "key" && !envKey.startsWith("key")}
+                              className="env-key"
+                              type="text"
+                              placeholder={t("tools.envKey")}
+                              value={envKey}
+                              onChange={(e) => {
+                                const newEnv = [...(currentMcpServers.env || [])]
+                                newEnv[index][0] = e.target.value
+                                newEnv[index][2] = false
+                                handleEnvChange(newEnv)
+                              }}
+                            />
+                            {isError ? (
+                              <Tooltip content={t("tools.inputKeyError", { name: "ENV" })} side="left">
+                                <div
+                                  className="key-input-error"
+                                  onClick={(e) => {
+                                    const input = e.currentTarget.parentElement?.parentElement?.querySelector("input")
+                                    if (input) {
+                                      input.focus()
+                                    }
+                                  }}
+                                />
+                              </Tooltip>
+                            ) : null}
+                          </div>
+                          <input
+                            className="env-value"
+                            type="text"
+                            placeholder={t("tools.envValue")}
+                            value={envValue as string}
+                            onChange={(e) => {
+                              const newEnv = [...(currentMcpServers.env || [])]
+                              newEnv[index][1] = e.target.value
+                              newEnv[index][2] = false
+                              handleEnvChange(newEnv)
                             }}
                           />
-                        </Tooltip>
-                      ) : null}
-                    </div>
-                    <input
-                      className="env-value"
-                      type="text"
-                      placeholder={t("tools.envValue")}
-                      value={envValue as string}
-                      onChange={(e) => {
-                        const newEnv = [...(currentMcpServers.env || [])]
-                        newEnv[index][1] = e.target.value
-                        newEnv[index][2] = false
-                        handleEnvChange(newEnv)
-                      }}
-                    />
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 18 18"
-                      width="22"
-                      height="22"
-                      className="field-item-array-item-clear"
-                      onClick={() => {
-                        const newEnv = (currentMcpServers.env || []).filter((_, i) => i !== index)
-                        handleEnvChange(newEnv)
-                      }}
-                    >
-                      <path stroke="currentColor" strokeLinecap="round" strokeWidth="2" d="m13.91 4.09-9.82 9.82M13.91 13.91 4.09 4.09"></path>
-                    </svg>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 18 18"
+                            width="22"
+                            height="22"
+                            className="field-item-array-item-clear"
+                            onClick={() => {
+                              const newEnv = (currentMcpServers.env || []).filter((_, i) => i !== index)
+                              handleEnvChange(newEnv)
+                            }}
+                          >
+                            <path stroke="currentColor" strokeLinecap="round" strokeWidth="2" d="m13.91 4.09-9.82 9.82M13.91 13.91 4.09 4.09"></path>
+                          </svg>
+                        </div>
+                    ))}
                   </div>
-              ))}
-            </div>
-          </div>
-          {/* Initial Timeout (s) */}
-          <div className={`field-item ${isValidRange(currentMcpServers, "initialTimeout")?.isError ? "error" : ""}`}>
-            <div className="field-item-title">
-              <label>Initial Timeout (s)</label>
-              <Tooltip content={t("tools.initialTimeoutAlt")} side="bottom" align="start" maxWidth={402}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <circle cx="8" cy="8" r="7.5" stroke="currentColor"/>
-                  <path d="M8.73 6.64V12H7.85V6.64H8.73ZM8.3 4.63C8.43333 4.63 8.55 4.67667 8.65 4.77C8.75667 4.85667 8.81 4.99667 8.81 5.19C8.81 5.37667 8.75667 5.51667 8.65 5.61C8.55 5.70333 8.43333 5.75 8.3 5.75C8.15333 5.75 8.03 5.70333 7.93 5.61C7.83 5.51667 7.78 5.37667 7.78 5.19C7.78 4.99667 7.83 4.85667 7.93 4.77C8.03 4.67667 8.15333 4.63 8.3 4.63Z" fill="currentColor"/>
-                </svg>
-              </Tooltip>
-            </div>
-            <div className="key-input-wrapper">
-              <input
-                placeholder={t("tools.initialTimeoutPlaceholder")}
-                type="number"
-                value={currentMcpServers.initialTimeout}
-                onChange={(e) => handleCustomChange("initialTimeout", parseFloat(e.target.value))}
-              />
-              {isValidRange(currentMcpServers, "initialTimeout")?.isError ? (
-                <Tooltip content={t("tools.initialTimeoutError")} side="left">
-                  <div
-                    className="key-input-error"
-                    onClick={(e) => {
-                      const input = e.currentTarget.parentElement?.parentElement?.querySelector("input")
-                      if (input) {
-                        input.focus()
-                      }
-                    }}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Custom MCP: Full configuration UI */}
+              {/* Name */}
+              <div className="field-item">
+                <label>Name</label>
+                <input
+                  placeholder={t("tools.namePlaceholder")}
+                  type="text"
+                  value={currentMcp.name}
+                  onChange={(e) => handleCustomChange("name", e.target.value)}
+                />
+              </div>
+              
+              {/* Command - only show for stdio transport */}
+              {(!currentMcpServers.transport || currentMcpServers.transport === "stdio") && (
+                <div className="field-item">
+                  <label>Command</label>
+                  <input
+                    placeholder={t("tools.commandPlaceholder")}
+                    type="text"
+                    value={currentMcpServers?.command || ""}
+                    onChange={(e) => handleCustomChange("command", e.target.value)}
                   />
-                </Tooltip>
-              ) : null}
-            </div>
-          </div>
+                </div>
+              )}
+              
+              {/* Transport */}
+              <div className="field-item">
+                <label>Transport</label>
+                <Select
+                  options={FieldType.transport.options.map((option) => ({
+                    value: option,
+                    label: (
+                        <div className="model-select-label" key={option}>
+                          <span className="model-select-label-text">
+                            {option}
+                          </span>
+                        </div>
+                      )
+                    })
+                  )}
+                  placeholder={t("tools.transportPlaceholder")}
+                  value={currentMcpServers.transport ?? FieldType.transport.options[0]}
+                  onSelect={(value) => handleCustomChange("transport", value)}
+                />
+              </div>
+              
+              {/* URL - only for sse/streamable/websocket transports */}
+              {(currentMcpServers.transport === "sse" || currentMcpServers.transport === "streamable" || currentMcpServers.transport === "websocket") && (
+                <div className="field-item">
+                  <label>URL</label>
+                  <input
+                    placeholder={t("tools.urlPlaceholder")}
+                    type="text"
+                    value={currentMcpServers?.url || ""}
+                    onChange={(e) => handleCustomChange("url", e.target.value)}
+                  />
+                </div>
+              )}
+              
+              {/* ENV - always use key-value for custom MCP */}
+              <div className="field-item">
+                <label>
+                  ENV
+                  <button onClick={() => {
+                    const newEnv = Array.isArray(currentMcpServers?.env)
+                      ? [...currentMcpServers.env]
+                      : []
+                    let index = 0
+                    while(newEnv.some(([key]) => key === `key${index}`)) {
+                      index++
+                    }
+                    const nextKey = `key${index}`
+                    newEnv.push([nextKey, "", false] as [string, unknown, boolean])
+                    handleEnvChange(newEnv)
+                  }}>
+                    + {t("tools.addEnv")}
+                  </button>
+                </label>
+                <div className={`field-item-array ${(currentMcpServers?.env && currentMcpServers.env.length > 0) ? "no-border" : ""}`}>
+                  {(currentMcpServers?.env && currentMcpServers.env.length > 0) && currentMcpServers?.env.map(([envKey, envValue, isError]: [string, unknown, boolean], index: number) => (
+                      <div key={index} className={`field-item-array-item ${isError ? "error" : ""}`}>
+                        <div className="key-input-wrapper">
+                          <input
+                            className="env-key"
+                            type="text"
+                            placeholder={t("tools.envKey")}
+                            value={envKey}
+                            onChange={(e) => {
+                              const newEnv = [...(currentMcpServers.env || [])]
+                              newEnv[index][0] = e.target.value
+                              newEnv[index][2] = false
+                              handleEnvChange(newEnv)
+                            }}
+                          />
+                          {isError ? (
+                            <Tooltip content={t("tools.inputKeyError", { name: "ENV" })} side="left">
+                              <div
+                                className="key-input-error"
+                                onClick={(e) => {
+                                  const input = e.currentTarget.parentElement?.parentElement?.querySelector("input")
+                                  if (input) {
+                                    input.focus()
+                                  }
+                                }}
+                              />
+                            </Tooltip>
+                          ) : null}
+                        </div>
+                        <input
+                          className="env-value"
+                          type="text"
+                          placeholder={t("tools.envValue")}
+                          value={envValue as string}
+                          onChange={(e) => {
+                            const newEnv = [...(currentMcpServers.env || [])]
+                            newEnv[index][1] = e.target.value
+                            newEnv[index][2] = false
+                            handleEnvChange(newEnv)
+                          }}
+                        />
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 18 18"
+                          width="22"
+                          height="22"
+                          className="field-item-array-item-clear"
+                          onClick={() => {
+                            const newEnv = (currentMcpServers.env || []).filter((_, i) => i !== index)
+                            handleEnvChange(newEnv)
+                          }}
+                        >
+                          <path stroke="currentColor" strokeLinecap="round" strokeWidth="2" d="m13.91 4.09-9.82 9.82M13.91 13.91 4.09 4.09"></path>
+                        </svg>
+                      </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Initial Timeout (s) */}
+              <div className={`field-item ${isValidRange(currentMcpServers, "initialTimeout")?.isError ? "error" : ""}`}>
+                <div className="field-item-title">
+                  <label>Initial Timeout (s)</label>
+                  <Tooltip content={t("tools.initialTimeoutAlt")} side="bottom" align="start" maxWidth={402}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <circle cx="8" cy="8" r="7.5" stroke="currentColor"/>
+                      <path d="M8.73 6.64V12H7.85V6.64H8.73ZM8.3 4.63C8.43333 4.63 8.55 4.67667 8.65 4.77C8.75667 4.85667 8.81 4.99667 8.81 5.19C8.81 5.37667 8.75667 5.51667 8.65 5.61C8.55 5.70333 8.43333 5.75 8.3 5.75C8.15333 5.75 8.03 5.70333 7.93 5.61C7.83 5.51667 7.78 5.37667 7.78 5.19C7.78 4.99667 7.83 4.85667 7.93 4.77C8.03 4.67667 8.15333 4.63 8.3 4.63Z" fill="currentColor"/>
+                    </svg>
+                  </Tooltip>
+                </div>
+                <div className="key-input-wrapper">
+                  <input
+                    placeholder={t("tools.initialTimeoutPlaceholder")}
+                    type="number"
+                    value={currentMcpServers.initialTimeout}
+                    onChange={(e) => handleCustomChange("initialTimeout", parseFloat(e.target.value))}
+                  />
+                  {isValidRange(currentMcpServers, "initialTimeout")?.isError ? (
+                    <Tooltip content={t("tools.initialTimeoutError")} side="left">
+                      <div
+                        className="key-input-error"
+                        onClick={(e) => {
+                          const input = e.currentTarget.parentElement?.parentElement?.querySelector("input")
+                          if (input) {
+                            input.focus()
+                          }
+                        }}
+                      />
+                    </Tooltip>
+                  ) : null}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     )
-  }, [customList, tmpCustom, currentIndex, type])
+  }, [customList, tmpCustom, currentIndex, type, envConfig, currentMcpServers])
 
   const JSONEditor = useMemo(() => {
     const copyJson = () => {
@@ -1355,7 +1582,13 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
           </div>
           <div className="tool-edit-content">
             {Field}
-            {JSONEditor}
+            {/* JSON Editor - only show for custom MCP (not OAP) or explicit JSON mode */}
+            {(() => {
+              const currentMcpServers = type.includes("add") ? tmpCustom.mcpServers : customList[currentIndex]?.mcpServers;
+              const isOap = currentMcpServers?.extraData?.oap;
+              const showJsonEditor = !isOap || type.includes("json");
+              return showJsonEditor ? JSONEditor : null;
+            })()}
           </div>
         </div>
       </div>

@@ -2,6 +2,10 @@
 
 import logging
 import time
+import os
+import subprocess
+import tarfile
+import tempfile
 from pathlib import Path
 from typing import Any, Literal
 
@@ -20,6 +24,10 @@ CONFIG_FILE = Path(ATTACKTRACE_CONFIG_DIR, "oap_config.json")
 logger = logging.getLogger("OAP_PLUGIN")
 
 MIN_REFRESH_INTERVAL = 60
+RATE_LIMIT_BACKOFF = 300  # 5 minutes backoff for 429 errors
+
+# MCP packages installation directory
+MCP_PACKAGES_DIR = Path.home() / ".attacktrace" / "mcp-packages"
 
 
 class MCPServerManagerPlugin:
@@ -30,6 +38,7 @@ class MCPServerManagerPlugin:
         self.device_token: str | None = device_token
         self._user_mcp_configs: list[UserMcpConfig] | None = []
         self._refresh_ts: float = 0
+        self._rate_limit_until: float = 0  # Track when rate limit will be lifted
         self._http_client = httpx.AsyncClient(
             base_url=oap_root_url,
             headers={"Authorization": f"bearer {self.device_token}"}
@@ -71,9 +80,19 @@ class MCPServerManagerPlugin:
 
         # oap id and is enable or not
         mcp_enabled = {}
-        for server in config.mcp_servers.values():
+        # Backup local env configurations and instance names for OAP tools (indexed by oap.id)
+        local_oap_envs = {}
+        local_oap_names = {}  # Track custom instance names
+        
+        for server_name, server in config.mcp_servers.items():
             if oap := (server.extra_data or {}).get("oap"):
-                mcp_enabled[oap["id"]] = server.enabled
+                oap_id = oap["id"]
+                mcp_enabled[oap_id] = server.enabled
+                # Store the local env configuration indexed by oap.id
+                if server.env:
+                    local_oap_envs[oap_id] = server.env.copy()
+                # Store the custom instance name indexed by oap.id
+                local_oap_names[oap_id] = server_name
 
         # remove oap mcp servers
         if mcp_servers is None or len(mcp_servers) > 0:
@@ -86,36 +105,93 @@ class MCPServerManagerPlugin:
             return config
 
         for server in mcp_servers:
-            # Build the config based on transport type
-            mcp_config = MCPServerConfig(
-                enabled=mcp_enabled.get(server.id, True),
-                transport=server.transport,
-                extraData={
+            # Check if package needs to be downloaded
+            install_path = None
+            if hasattr(server, 'downloadUrl') and server.downloadUrl and hasattr(server, 'version') and server.version:
+                try:
+                    install_path = await self._ensure_package_installed(
+                        server.name,
+                        server.version,
+                        server.downloadUrl
+                    )
+                    logger.info(f"Package {server.name}@{server.version} installed at {install_path}")
+                except Exception as e:
+                    logger.error(f"Failed to install package {server.name}@{server.version}: {e}")
+                    # Continue without the package
+            
+            # Prepare config parameters based on transport type
+            # Check enabled status (preserve existing, default to True for new)
+            should_enable = mcp_enabled.get(server.id, True)
+            
+            # For new tools (not in current config), auto-disable if they have empty env vars
+            # This prevents startup crashes for tools that require configuration (like Elasticsearch)
+            is_new_tool = server.id not in mcp_enabled
+            
+            # Merge local env with remote env
+            merged_env = {}
+            if hasattr(server, 'env') and isinstance(server.env, dict):
+                merged_env.update(server.env)
+            
+            # Override with local env if exists (user input takes precedence)
+            # Use oap.id to find local env, not server.name
+            if server.id in local_oap_envs:
+                merged_env.update(local_oap_envs[server.id])
+            
+            if is_new_tool and merged_env:
+                if any(v == "" or v is None for v in merged_env.values()):
+                    logger.info(f"Auto-disabling new tool {server.name} due to missing environment variables")
+                    should_enable = False
+
+            config_params = {
+                "enabled": should_enable,
+                "transport": server.transport,
+                "version": getattr(server, 'version', None),
+                "configSchema": getattr(server, 'configSchema', None),
+                "extraData": {
                     "oap": {
                         "id": server.id,
+                        "name": server.name,
                         "planTag": server.plan.lower(),
                         "description": server.description,
+                        "version": getattr(server, 'version', None),
+                        "downloadUrl": getattr(server, 'downloadUrl', None),
+                        "configSchema": getattr(server, 'configSchema', None),
                     }
                 },
-            )
+            }
             
             # Handle stdio transport (command-based)
             if server.transport == "stdio":
                 if hasattr(server, 'command') and server.command:
-                    mcp_config.command = server.command
+                    config_params['command'] = server.command
                 if hasattr(server, 'args') and server.args:
-                    mcp_config.args = server.args if isinstance(server.args, list) else []
-                if hasattr(server, 'env') and server.env:
-                    mcp_config.env = server.env if isinstance(server.env, dict) else {}
+                    # Replace {{install_path}} placeholder with actual install path
+                    if install_path and isinstance(server.args, list):
+                        config_params['args'] = [
+                            arg.replace('{{install_path}}', str(install_path))
+                            for arg in server.args
+                        ]
+                    else:
+                        config_params['args'] = server.args if isinstance(server.args, list) else []
+                
+                # Apply merged env
+                if merged_env:
+                    config_params['env'] = merged_env
             # Handle http/sse/streamable transport (URL-based)
             else:
-                mcp_config.url = server.url
-                mcp_config.headers = {
+                config_params['url'] = server.url
+                config_params['headers'] = {
                     "Authorization": f"Bearer {self.device_token}",
                     **(server.headers if hasattr(server, 'headers') and server.headers else {}),
-                }  # type: ignore
+                }
             
-            config.mcp_servers[server.name] = mcp_config
+            # Build the config with all parameters
+            mcp_config = MCPServerConfig(**config_params)
+            
+            # Use local instance name if exists (to preserve user-renamed instances)
+            # Otherwise use the package name from remote
+            instance_name = local_oap_names.get(server.id, server.name)
+            config.mcp_servers[instance_name] = mcp_config
         return config
 
     async def _send_api_request[T](
@@ -138,24 +214,100 @@ class MCPServerManagerPlugin:
     async def revoke_device_token(self) -> None:
         """Revoke the device token."""
         await self._send_api_request("/api/v1/user/devices/self", "delete")
+    
+    async def _ensure_package_installed(
+        self, name: str, version: str, download_url: str
+    ) -> Path:
+        """Ensure MCP package is installed, download if necessary."""
+        # Create packages directory if not exists
+        MCP_PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
+        
+        # Check if already installed
+        install_dir = MCP_PACKAGES_DIR / f"{name}@{version}"
+        package_json = install_dir / "package.json"
+        
+        if package_json.exists():
+            logger.debug(f"Package {name}@{version} already installed at {install_dir}")
+            return install_dir
+        
+        # Download and extract
+        logger.info(f"Downloading {name}@{version} from {download_url}...")
+        
+        with tempfile.NamedTemporaryFile(suffix='.tar.gz', delete=False) as temp_file:
+            temp_path = Path(temp_file.name)
+            
+            try:
+                # Download file
+                async with httpx.AsyncClient(follow_redirects=True) as client:
+                    async with client.stream('GET', download_url) as response:
+                        response.raise_for_status()
+                        
+                        with open(temp_path, 'wb') as f:
+                            async for chunk in response.aiter_bytes():
+                                f.write(chunk)
+                
+                logger.info(f"Downloaded {name}@{version} to {temp_path}")
+                
+                # Extract tar.gz
+                logger.info(f"Extracting to {install_dir}...")
+                install_dir.mkdir(parents=True, exist_ok=True)
+                
+                with tarfile.open(temp_path, 'r:gz') as tar_ref:
+                    tar_ref.extractall(install_dir)
+                
+                logger.info(f"✓ Extracted {name}@{version} successfully")
+                
+                # Validate installation
+                if not package_json.exists():
+                    raise FileNotFoundError(f"Invalid package: missing package.json at {package_json}")
+                
+                logger.info(f"✅ {name}@{version} installed successfully at {install_dir}")
+                
+                return install_dir
+                
+            finally:
+                # Clean up temp file
+                if temp_path.exists():
+                    temp_path.unlink()
+                    
+        return install_dir
 
     async def _get_user_mcp_configs(
         self, refresh: bool = False
     ) -> list[UserMcpConfig] | None:
         """Get the user MCP configs."""
         url = "/api/v1/user/mcp/configs"
+        current_time = time.time()
+        
+        # Check if we're still in rate limit backoff period
+        if current_time < self._rate_limit_until:
+            remaining = int(self._rate_limit_until - current_time)
+            logger.debug("Rate limited, skipping request. Retry in %d seconds", remaining)
+            return self._user_mcp_configs or []
+        
         if (
             refresh
             or not self._user_mcp_configs
-            or time.time() - self._refresh_ts > MIN_REFRESH_INTERVAL
+            or current_time - self._refresh_ts > MIN_REFRESH_INTERVAL
         ):
             r, code = await self._send_api_request(url, "get", list[UserMcpConfig])
             
             if code == httpx.codes.OK:
-                # Success - update configs
-                self._refresh_ts = time.time()
+                # Success - update configs and clear rate limit
+                self._refresh_ts = current_time
                 self._user_mcp_configs = r
+                self._rate_limit_until = 0  # Clear any rate limit
                 logger.info("Successfully fetched %d MCP configs from OAP", len(r) if r else 0)
+            elif code == httpx.codes.TOO_MANY_REQUESTS:
+                # Rate limited - back off for longer period
+                self._rate_limit_until = current_time + RATE_LIMIT_BACKOFF
+                logger.warning(
+                    "Rate limited by OAP (HTTP 429). Backing off for %d seconds. "
+                    "Consider increasing MIN_REFRESH_INTERVAL or disabling OAP sync.",
+                    RATE_LIMIT_BACKOFF
+                )
+                if not self._user_mcp_configs:
+                    self._user_mcp_configs = []
             elif code in [httpx.codes.UNAUTHORIZED, httpx.codes.FORBIDDEN]:
                 # Auth error - don't update configs, keep existing ones
                 logger.error("OAP authentication failed (HTTP %d). Please check auth_key in oap_config.json", code)

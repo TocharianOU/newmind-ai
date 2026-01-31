@@ -138,6 +138,14 @@
     "jsonDesc": "Please enter or paste MCP Server Json in the field",
     "addArg": "Add Argument",
     "addEnv": "Add Environment Variable",
+    "packageInfo": "Package",
+    "authMode": "Authentication Mode",
+    "enterValue": "Enter value...",
+    "selectValue": "Select value...",
+    "tls": {
+      "verify": "Verify Certificate",
+      "skip": "Skip Verification"
+    },
     "jsonFormatError": {
       "addFormat": "Configuration format error, please check and correct the format",
       "format": "{{mcp}} configuration format error, please check and correct the format",
@@ -223,7 +231,9 @@
       "high_cost_title": "Enable Advanced Integration Tools",
       "high_cost_desc": "You have selected integration tools that may consume more resources. Please check if your plan usage is sufficient.",
       "headerBtn": "Integrations",
-      "headerBtnAlt": "Add / View Security Integrations"
+      "headerBtnAlt": "Add / View Security Integrations",
+      "edit_managed_notice": "This integration is managed by AttackTrace Hub. Configure the required settings below.",
+      "simplified_config": "Simplified Configuration"
     },
     "custom": {
       "headerBtn": "Add / Edit Config",
