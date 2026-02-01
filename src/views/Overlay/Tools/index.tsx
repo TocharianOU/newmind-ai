@@ -76,7 +76,6 @@ const Tools = () => {
   const [changingTool, setChangingTool] = useState<string>("")
   const [currentTool, setCurrentTool] = useState<string>("")
   const abortControllerRef = useRef<AbortController | null>(null)
-  const autoOpenTimerRef = useRef<NodeJS.Timeout | null>(null)
   const [toolLog, setToolLog] = useState<LogType[]>([])
   const [toolType, setToolType] = useState<"all" | "oap" | "custom">("all")
   const isLoggedInOAP = useAtomValue(isLoggedInOAPAtom)
@@ -299,12 +298,6 @@ const Tools = () => {
   }
 
   const handleCustomSubmit = async (newConfig: {mcpServers: MCPConfig} | null) => {
-    // Cancel any pending auto-open timer to prevent reopening after save
-    if (autoOpenTimerRef.current) {
-      clearTimeout(autoOpenTimerRef.current)
-      autoOpenTimerRef.current = null
-    }
-    
     // If config is null, it means we just need to refresh (e.g. OAP instance update)
     if (!newConfig) {
       setShowCustomEditPopup(false)
@@ -1108,34 +1101,34 @@ const Tools = () => {
           onIntegrationAdded={async (instanceName) => {
             console.log("[Tools] onIntegrationAdded called with:", instanceName)
             
-            // Close integration market first
+            try {
+              // Reload MCP config first to get the new instance
+              await loadMcpConfig()
+              // Then reload tools
+              await loadTools()
+              // Update cache
+              await updateToolsCache()
+              // Trigger resort to show new tool
+              setIsResort(true)
+              
+              console.log("[Tools] Data reloaded successfully")
+            } catch (error) {
+              console.error("[Tools] Failed to reload data:", error)
+            }
+            
+            // Close integration market
             setShowIntegrationMarket(false)
             
-            // Reload MCP config first to get the new instance
-            await loadMcpConfig()
-            // Then reload tools
-            await loadTools()
-            // Update cache
-            await updateToolsCache()
-            // Trigger resort to show new tool
-            setIsResort(true)
-            
-            // Open config page for the newly added tool
+            // Open config page for the newly added tool immediately
+            // Don't use timer - just set both states directly
             if (instanceName) {
-              // Clear any previous auto-open timer
-              if (autoOpenTimerRef.current) {
-                clearTimeout(autoOpenTimerRef.current)
-                autoOpenTimerRef.current = null
-              }
-              
-              console.log("[Tools] Setting currentTool to:", instanceName)
+              console.log("[Tools] Opening config for:", instanceName)
               setCurrentTool(instanceName)
               
-              autoOpenTimerRef.current = setTimeout(() => {
-                console.log("[Tools] Opening CustomEdit popup")
+              // Use requestAnimationFrame to ensure state updates in next frame
+              requestAnimationFrame(() => {
                 setShowCustomEditPopup(true)
-                autoOpenTimerRef.current = null
-              }, 500)  // Increased delay to ensure state updates
+              })
             }
           }}
         />

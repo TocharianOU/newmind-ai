@@ -326,12 +326,16 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
         )
         
         // Notify parent to refresh tools and open config
+        // Important: Don't close the market here, let the parent handle it
+        // This prevents a flash of the tools list before the config page opens
         console.log("[IntegrationMarket] Calling onIntegrationAdded with:", data.instance.instance_name)
         if (onIntegrationAdded) {
-          await onIntegrationAdded(data.instance.instance_name)
+          // Use setTimeout to ensure DOM has finished updating
+          setTimeout(async () => {
+            await onIntegrationAdded(data.instance.instance_name)
+          }, 100)
         } else {
           console.log("[IntegrationMarket] No onIntegrationAdded callback, closing market")
-          // Close the integration market if no callback
           onClose()
         }
       } else {

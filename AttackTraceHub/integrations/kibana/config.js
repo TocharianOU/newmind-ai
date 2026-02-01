@@ -19,8 +19,7 @@ export default {
     KIBANA_API_KEY: '',
     KIBANA_USERNAME: '',
     KIBANA_PASSWORD: '',
-    KIBANA_DEFAULT_SPACE: 'default',
-    NODE_TLS_REJECT_UNAUTHORIZED: '0'
+    KIBANA_DEFAULT_SPACE: 'default'
   },
   
   planRequired: 'BASE',
@@ -78,7 +77,7 @@ Comprehensive Kibana management with full API coverage for dashboards, visualiza
   
   configSchema: {
     type: 'object',
-    required: ['url', 'tlsVerification'],
+    required: ['url', 'NODE_TLS_REJECT_UNAUTHORIZED'],
     properties: {
       url: {
         type: 'string',
@@ -115,12 +114,17 @@ Comprehensive Kibana management with full API coverage for dashboards, visualiza
         description: 'Default Kibana space to operate in',
         default: 'default'
       },
-      tlsVerification: {
+      NODE_TLS_REJECT_UNAUTHORIZED: {
         type: 'string',
         title: 'SSL/TLS Verification',
         description: 'Choose how to verify SSL/TLS certificates',
-        enum: ['skip', 'default', 'ca-cert'],
-        default: 'default'
+        enum: ['0', '1', 'ca-cert'],
+        default: '1',
+        enumLabels: {
+          '0': 'Skip Verification (Insecure)',
+          '1': 'Default Verification',
+          'ca-cert': 'Custom CA Certificate'
+        }
       },
       caCert: {
         type: 'string',
@@ -160,17 +164,17 @@ Comprehensive Kibana management with full API coverage for dashboards, visualiza
       }
     ],
     dependencies: {
-      tlsVerification: {
+      NODE_TLS_REJECT_UNAUTHORIZED: {
         oneOf: [
           {
             properties: {
-              tlsVerification: { enum: ['ca-cert'] }
+              NODE_TLS_REJECT_UNAUTHORIZED: { enum: ['ca-cert'] }
             },
             required: ['caCert']
           },
           {
             properties: {
-              tlsVerification: { enum: ['skip', 'default'] }
+              NODE_TLS_REJECT_UNAUTHORIZED: { enum: ['0', '1'] }
             }
           }
         ]

@@ -64,7 +64,15 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
     const fields = new Set<string>(Object.keys(schema.properties || {}))
     
     // Handle conditional field visibility based on dependencies
-    // For example, only show caCert when tlsVerification is 'ca-cert'
+    // For example, only show caCert when NODE_TLS_REJECT_UNAUTHORIZED is 'ca-cert'
+    if (schema.dependencies?.NODE_TLS_REJECT_UNAUTHORIZED) {
+      const tlsValue = formData['NODE_TLS_REJECT_UNAUTHORIZED']
+      if (tlsValue !== 'ca-cert') {
+        fields.delete('caCert')
+      }
+    }
+    
+    // Legacy support for tlsVerification field name
     if (schema.dependencies?.tlsVerification) {
       const tlsValue = formData['tlsVerification']
       if (tlsValue !== 'ca-cert') {
@@ -232,11 +240,21 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
 
     // Select/Enum
     if (fieldSchema.enum) {
-        // Special handling for TLS verification mode
-        const enumLabels: Record<string, string> = {
-          'skip': t('tools.tls.skip') || 'Skip Verification (Insecure)',
-          'default': t('tools.tls.verify') || 'Default Verification',
-          'ca-cert': t('tools.tls.caCert') || 'Custom CA Certificate'
+        // Use custom enumLabels if provided, otherwise use default i18n labels
+        const getEnumLabel = (opt: string): string => {
+          // First check if schema has custom enumLabels
+          if (fieldSchema.enumLabels && fieldSchema.enumLabels[opt]) {
+            return fieldSchema.enumLabels[opt]
+          }
+          
+          // Fallback to i18n for common cases
+          const defaultLabels: Record<string, string> = {
+            '0': t('tools.tls.skip') || 'Skip Verification (Insecure)',
+            '1': t('tools.tls.verify') || 'Default Verification',
+            'ca-cert': t('tools.tls.caCert') || 'Custom CA Certificate'
+          }
+          
+          return defaultLabels[opt] || opt
         }
         
         return (
@@ -251,7 +269,7 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
                 </label>
                 <Select
                     options={fieldSchema.enum.map((opt: string) => ({ 
-                        label: enumLabels[opt] || opt, 
+                        label: getEnumLabel(opt), 
                         value: opt 
                     }))}
                     value={value}

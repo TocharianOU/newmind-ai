@@ -19,7 +19,6 @@ export default {
     ES_API_KEY: '',
     ES_USERNAME: '',
     ES_PASSWORD: '',
-    NODE_TLS_REJECT_UNAUTHORIZED: '0',
     MAX_TOKEN_CALL: '8000'
   },
   
@@ -74,7 +73,7 @@ Full version support for Elasticsearch (5.x-9.x) with comprehensive API access.
   
   configSchema: {
     type: 'object',
-    required: ['url', 'tlsVerification'],
+    required: ['url', 'NODE_TLS_REJECT_UNAUTHORIZED'],
     properties: {
       url: {
         type: 'string',
@@ -99,12 +98,17 @@ Full version support for Elasticsearch (5.x-9.x) with comprehensive API access.
         description: 'Password for basic authentication',
         sensitive: true
       },
-      tlsVerification: {
+      NODE_TLS_REJECT_UNAUTHORIZED: {
         type: 'string',
         title: 'SSL/TLS Verification',
         description: 'Choose how to verify SSL/TLS certificates',
-        enum: ['skip', 'default', 'ca-cert'],
-        default: 'default'
+        enum: ['0', '1', 'ca-cert'],
+        default: '1',
+        enumLabels: {
+          '0': 'Skip Verification (Insecure)',
+          '1': 'Default Verification',
+          'ca-cert': 'Custom CA Certificate'
+        }
       },
       caCert: {
         type: 'string',
@@ -124,17 +128,17 @@ Full version support for Elasticsearch (5.x-9.x) with comprehensive API access.
       }
     ],
     dependencies: {
-      tlsVerification: {
+      NODE_TLS_REJECT_UNAUTHORIZED: {
         oneOf: [
           {
             properties: {
-              tlsVerification: { enum: ['ca-cert'] }
+              NODE_TLS_REJECT_UNAUTHORIZED: { enum: ['ca-cert'] }
             },
             required: ['caCert']
           },
           {
             properties: {
-              tlsVerification: { enum: ['skip', 'default'] }
+              NODE_TLS_REJECT_UNAUTHORIZED: { enum: ['0', '1'] }
             }
           }
         ]
