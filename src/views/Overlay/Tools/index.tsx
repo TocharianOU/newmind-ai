@@ -76,6 +76,7 @@ const Tools = () => {
   const [changingTool, setChangingTool] = useState<string>("")
   const [currentTool, setCurrentTool] = useState<string>("")
   const abortControllerRef = useRef<AbortController | null>(null)
+  const autoOpenTimerRef = useRef<NodeJS.Timeout | null>(null)
   const [toolLog, setToolLog] = useState<LogType[]>([])
   const [toolType, setToolType] = useState<"all" | "oap" | "custom">("all")
   const isLoggedInOAP = useAtomValue(isLoggedInOAPAtom)
@@ -298,6 +299,12 @@ const Tools = () => {
   }
 
   const handleCustomSubmit = async (newConfig: {mcpServers: MCPConfig} | null) => {
+    // Cancel any pending auto-open timer to prevent reopening after save
+    if (autoOpenTimerRef.current) {
+      clearTimeout(autoOpenTimerRef.current)
+      autoOpenTimerRef.current = null
+    }
+    
     // If config is null, it means we just need to refresh (e.g. OAP instance update)
     if (!newConfig) {
       setShowCustomEditPopup(false)
@@ -1113,9 +1120,15 @@ const Tools = () => {
             
             // Open config page for the newly added tool
             if (instanceName) {
-              setTimeout(() => {
-                setCurrentTool(instanceName)
+              // Clear any previous auto-open timer
+              if (autoOpenTimerRef.current) {
+                clearTimeout(autoOpenTimerRef.current)
+              }
+              
+              setCurrentTool(instanceName)
+              autoOpenTimerRef.current = setTimeout(() => {
                 setShowCustomEditPopup(true)
+                autoOpenTimerRef.current = null
               }, 300)
             }
           }}

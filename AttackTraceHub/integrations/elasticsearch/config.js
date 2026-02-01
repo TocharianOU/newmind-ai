@@ -106,16 +106,20 @@ Full version support for Elasticsearch (5.x-9.x) with comprehensive API access.
         format: 'file'
       }
     },
-    dependencies: {
-      username: {
-        required: ['password'],
-        errorMessage: 'Password is required when username is provided'
+    oneOf: [
+      {
+        required: ['url', 'apiKey'],
+        title: 'API Key Authentication'
       },
-      password: {
-        required: ['username'],
-        errorMessage: 'Username is required when password is provided'
+      {
+        required: ['url', 'username', 'password'],
+        title: 'Basic Authentication'
+      },
+      {
+        required: ['url'],
+        title: 'No Authentication (Local Development)'
       }
-    }
+    ]
   },
   
   tokenCost: 0.1,

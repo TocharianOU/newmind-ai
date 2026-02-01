@@ -58,20 +58,9 @@ export const DEF_MCP_SERVER_CONFIG = {
       "args": [
         path.join(scriptsDir, "mcp-server-echo", "dist", "index.js")
       ]
-    },
-    "kibana": {
-      "enabled": false,
-      "command": "node",
-      "args": [
-        path.join(scriptsDir, "mcp-server-kibana", "dist", "index.js")
-      ],
-      "env": {
-        "KIBANA_URL": "",
-        "KIBANA_USERNAME": "",
-        "KIBANA_PASSWORD": "",
-        "MAX_TOKEN_CALL": "8000"
-      }
     }
+    // Note: Kibana and Elasticsearch are now available through IntegrationMarket
+    // No need for hardcoded defaults - users can install from the hub
   }
 }
 
