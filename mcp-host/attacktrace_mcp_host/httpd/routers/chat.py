@@ -6,17 +6,17 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from attacktrace_mcp_host.httpd.database.models import Chat, ChatMessage, QueryInput
-from attacktrace_mcp_host.httpd.dependencies import get_app, get_dive_user
+from attacktrace_mcp_host.httpd.dependencies import get_app, get_attacktrace_user
 from attacktrace_mcp_host.httpd.routers.models import ResultResponse, SortBy, UserInputError
 from attacktrace_mcp_host.httpd.routers.utils import (
     ChatProcessor,
     EventStreamContextManager,
     get_filename_remove_url,
 )
-from attacktrace_mcp_host.httpd.server import DiveHostAPI
+from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 
 if TYPE_CHECKING:
-    from attacktrace_mcp_host.httpd.middlewares.general import DiveUser
+    from attacktrace_mcp_host.httpd.middlewares.general import AttackTraceUser
 
 chat = APIRouter(tags=["chat"])
 
@@ -38,15 +38,15 @@ class ChatList(BaseModel):
 
 @chat.get("/list")
 async def list_chat(
-    app: DiveHostAPI = Depends(get_app),
-    dive_user: "DiveUser" = Depends(get_dive_user),
+    app: AttackTraceHostAPI = Depends(get_app),
+    dive_user: "AttackTraceUser" = Depends(get_attacktrace_user),
     sort_by: SortBy = SortBy.CHAT,
 ) -> DataResult[ChatList]:
     """List all available chats.
 
     Args:
-        app (DiveHostAPI): The DiveHostAPI instance.
-        dive_user (DiveUser): The DiveUser instance.
+        app (AttackTraceHostAPI): The AttackTraceHostAPI instance.
+        dive_user (AttackTraceUser): The AttackTraceUser instance.
         sort_by (SortBy):
             - 'chat': Sort by chat creation time.
             - 'msg': Sort by message creation time.
@@ -73,7 +73,7 @@ async def list_chat(
 @chat.post("")
 async def create_chat(  # noqa: PLR0913
     request: Request,
-    app: DiveHostAPI = Depends(get_app),
+    app: AttackTraceHostAPI = Depends(get_app),
     chat_id: Annotated[str | None, Form(alias="chatId")] = None,
     message: Annotated[str | None, Form()] = None,
     files: Annotated[list[UploadFile] | None, File()] = None,
@@ -83,7 +83,7 @@ async def create_chat(  # noqa: PLR0913
 
     Args:
         request (Request): The request object.
-        app (DiveHostAPI): The DiveHostAPI instance.
+        app (AttackTraceHostAPI): The AttackTraceHostAPI instance.
         chat_id (str | None): The ID of the chat to create.
         message (str | None): The message to send.
         files (list[UploadFile] | None): The files to upload.
@@ -113,8 +113,8 @@ async def create_chat(  # noqa: PLR0913
 @chat.patch("/{chat_id}")
 async def patch_chat(
     chat_id: str,
-    dive_user: "DiveUser" = Depends(get_dive_user),
-    app: DiveHostAPI = Depends(get_app),
+    dive_user: "AttackTraceUser" = Depends(get_attacktrace_user),
+    app: AttackTraceHostAPI = Depends(get_app),
     title: Annotated[str | None, Body()] = None,
     star: Annotated[bool | None, Body()] = None,
 ) -> ResultResponse:
@@ -124,8 +124,8 @@ async def patch_chat(
         chat_id (str): The ID of the chat to edit.
         title (str | None): The new title for this chat if provided.
         star (bool | None): New star status for this chat if provided.
-        dive_user: DiveUser: The current Dive user.
-        app (DiveHostAPI): The DiveHostAPI instance.
+        dive_user: AttackTraceUser: The current AttackTrace user.
+        app (AttackTraceHostAPI): The AttackTraceHostAPI instance.
     """
     async with app.db_sessionmaker() as session:
         chat = await app.msg_store(session).patch_chat(
@@ -149,7 +149,7 @@ ERROR_MSG_ID = "0"
 @chat.post("/edit")
 async def edit_chat(  # noqa: PLR0913
     request: Request,
-    app: DiveHostAPI = Depends(get_app),
+    app: AttackTraceHostAPI = Depends(get_app),
     chat_id: Annotated[str | None, Form(alias="chatId")] = None,
     message_id: Annotated[str | None, Form(alias="messageId")] = None,
     content: Annotated[str | None, Form()] = None,
@@ -160,7 +160,7 @@ async def edit_chat(  # noqa: PLR0913
 
     Args:
         request (Request): The request object.
-        app (DiveHostAPI): The DiveHostAPI instance.
+        app (AttackTraceHostAPI): The AttackTraceHostAPI instance.
         chat_id (str | None): The ID of the chat to edit.
         message_id (str | None): The ID of the message to edit.
         content (str | None): The content to send.
@@ -198,7 +198,7 @@ async def edit_chat(  # noqa: PLR0913
 @chat.post("/retry")
 async def retry_chat(
     request: Request,
-    app: DiveHostAPI = Depends(get_app),
+    app: AttackTraceHostAPI = Depends(get_app),
     chat_id: Annotated[str | None, Body(alias="chatId")] = None,
     message_id: Annotated[str | None, Body(alias="messageId")] = None,
 ) -> StreamingResponse:
@@ -206,7 +206,7 @@ async def retry_chat(
 
     Args:
         request (Request): The request object.
-        app (DiveHostAPI): The DiveHostAPI instance.
+        app (AttackTraceHostAPI): The AttackTraceHostAPI instance.
         chat_id (str | None): The ID of the chat to retry.
         message_id (str | None): The ID of the message to retry.
     """
@@ -228,15 +228,15 @@ async def retry_chat(
 @chat.get("/{chat_id}")
 async def get_chat(
     chat_id: str,
-    app: DiveHostAPI = Depends(get_app),
-    dive_user: "DiveUser" = Depends(get_dive_user),
+    app: AttackTraceHostAPI = Depends(get_app),
+    dive_user: "AttackTraceUser" = Depends(get_attacktrace_user),
 ) -> DataResult[ChatMessage]:
     """Get a specific chat by ID with its messages.
 
     Args:
         chat_id (str): The ID of the chat to retrieve.
-        app (DiveHostAPI): The DiveHostAPI instance.
-        dive_user (DiveUser): The DiveUser instance.
+        app (AttackTraceHostAPI): The AttackTraceHostAPI instance.
+        dive_user (AttackTraceUser): The AttackTraceUser instance.
 
     Returns:
         DataResult[ChatMessage]: The chat and its messages.
@@ -254,15 +254,15 @@ async def get_chat(
 @chat.delete("/{chat_id}")
 async def delete_chat(
     chat_id: str,
-    app: DiveHostAPI = Depends(get_app),
-    dive_user: "DiveUser" = Depends(get_dive_user),
+    app: AttackTraceHostAPI = Depends(get_app),
+    dive_user: "AttackTraceUser" = Depends(get_attacktrace_user),
 ) -> ResultResponse:
     """Delete a specific chat by ID.
 
     Args:
         chat_id (str): The ID of the chat to delete.
-        app (DiveHostAPI): The DiveHostAPI instance.
-        dive_user (DiveUser): The DiveUser instance.
+        app (AttackTraceHostAPI): The AttackTraceHostAPI instance.
+        dive_user (AttackTraceUser): The AttackTraceUser instance.
 
     Returns:
         ResultResponse: Result of the delete operation.
@@ -273,20 +273,20 @@ async def delete_chat(
             user_id=dive_user["user_id"],
         )
         await session.commit()
-    await app.dive_host["default"].delete_thread(chat_id)
+    await app.attacktrace_host["default"].delete_thread(chat_id)
     return ResultResponse(success=True, message=None)
 
 
 @chat.post("/{chat_id}/abort")
 async def abort_chat(
     chat_id: str,
-    app: DiveHostAPI = Depends(get_app),
+    app: AttackTraceHostAPI = Depends(get_app),
 ) -> ResultResponse:
     """Abort an ongoing chat operation.
 
     Args:
         chat_id (str): The ID of the chat to abort.
-        app (DiveHostAPI): The DiveHostAPI instance.
+        app (AttackTraceHostAPI): The AttackTraceHostAPI instance.
 
     Returns:
         ResultResponse: Result of the abort operation.

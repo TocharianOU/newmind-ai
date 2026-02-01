@@ -86,7 +86,7 @@ model UserPreferences {
 
 model McpServer {
   id           String   @id @default(uuid())
-  name         String
+  name         String   @unique
   description  String?
   tags         Json?
   transport    String   @default("stdio")  // stdio, http, sse, streamable
@@ -104,6 +104,11 @@ model McpServer {
   tokenPriceUnit String? @default("request") // Pricing unit
   popular      Boolean  @default(false)      // Popular flag
   new          Boolean  @default(false)      // New flag
+  version        String?  @db.VarChar(50)    // Version e.g. "0.6.2"
+  downloadUrl    String?  @db.VarChar(1000)  // GitHub Release download URL
+  configSchema   Json?                       // Configuration schema for frontend form generation
+  descriptionI18n Json?                      // Multi-language descriptions {"en": "...", "zh": "..."}
+  documentI18n    Json?                      // Multi-language documentation {"en": "...", "zh": "..."}
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

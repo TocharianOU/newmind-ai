@@ -15,7 +15,7 @@ from attacktrace_mcp_host.httpd.routers.models import (
 from tests import helper
 
 if TYPE_CHECKING:
-    from attacktrace_mcp_host.httpd.server import DiveHostAPI
+    from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 
 # Mock data
 MOCK_MCP_CONFIG = {
@@ -216,7 +216,7 @@ def test_post_mcp_server(test_client):
     )
 
 
-def test_post_mcp_server_with_force(test_client: tuple[TestClient, "DiveHostAPI"]):
+def test_post_mcp_server_with_force(test_client: tuple[TestClient, "AttackTraceHostAPI"]):
     """Test the /api/config/mcpserver POST endpoint."""
     client, _ = test_client
     # Prepare request data - convert McpServerConfig objects to dict
@@ -298,9 +298,9 @@ def test_get_model(test_client):
     )
 
 
-def test_post_model(test_client: tuple[TestClient, "DiveHostAPI"]):
+def test_post_model(test_client: tuple[TestClient, "AttackTraceHostAPI"]):
     """Test the /api/config/model POST endpoint."""
-    app: DiveHostAPI
+    app: AttackTraceHostAPI
     client, app = test_client
     # Prepare request data
     model_settings = SaveModelSettingsRequest.model_validate(
@@ -327,7 +327,7 @@ def test_post_model(test_client: tuple[TestClient, "DiveHostAPI"]):
         "/api/config/model",
         content=model_settings.model_dump_json(by_alias=True).encode("utf-8"),
     )
-    assert app.dive_host["default"].model._llm_type == "openai-chat"
+    assert app.attacktrace_host["default"].model._llm_type == "openai-chat"
 
     # Verify response status code
     assert response.status_code == SUCCESS_CODE
@@ -407,8 +407,8 @@ def test_post_model(test_client: tuple[TestClient, "DiveHostAPI"]):
 
     from langchain_ollama import ChatOllama
 
-    assert app.dive_host["default"].model._llm_type == "chat-ollama"
-    assert cast(ChatOllama, app.dive_host["default"].model).num_ctx == 999
+    assert app.attacktrace_host["default"].model._llm_type == "chat-ollama"
+    assert cast(ChatOllama, app.attacktrace_host["default"].model).num_ctx == 999
 
     # Verify response status code
     assert response.status_code == SUCCESS_CODE
@@ -476,7 +476,7 @@ def test_post_model_embedding(test_client):
 
 def test_post_model_replace_all(test_client):
     """Test the /api/config/model/replaceAll POST endpoint."""
-    app: DiveHostAPI
+    app: AttackTraceHostAPI
     client, app = test_client
     model_config_data = MOCK_MODEL_CONFIG.model_dump_json(by_alias=True).encode("utf-8")
 
@@ -485,7 +485,7 @@ def test_post_model_replace_all(test_client):
         content=model_config_data,
     )
 
-    assert app.dive_host["default"].model._llm_type == "openai-chat"
+    assert app.attacktrace_host["default"].model._llm_type == "openai-chat"
 
     assert response.status_code == SUCCESS_CODE
 
@@ -529,7 +529,7 @@ def test_post_model_replace_all(test_client):
 
 def test_post_model_replace_all_with_none_provider(test_client):
     """Test the /api/config/model/replaceAll POST endpoint."""
-    app: DiveHostAPI
+    app: AttackTraceHostAPI
     client, app = test_client
     model_config_data = MOCK_MODEL_CONFIG_WITH_NONE_PROVIDER.model_dump_json(
         by_alias=True
@@ -540,7 +540,7 @@ def test_post_model_replace_all_with_none_provider(test_client):
         content=model_config_data,
     )
 
-    assert app.dive_host["default"].model._llm_type == "fake-model"
+    assert app.attacktrace_host["default"].model._llm_type == "fake-model"
 
     assert response.status_code == SUCCESS_CODE
 

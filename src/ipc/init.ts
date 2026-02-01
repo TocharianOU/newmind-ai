@@ -104,7 +104,7 @@ async function initElectronFetch(port: number) {
         ...init,
         headers: {
           ...init?.headers,
-          "X-Requested-With": "dive-desktop",
+          "X-Requested-With": "attacktrace-desktop",
         },
       })
     }
@@ -112,7 +112,7 @@ async function initElectronFetch(port: number) {
       ...init,
       headers: {
         ...init?.headers,
-        "X-Requested-With": "dive-desktop",
+        "X-Requested-With": "attacktrace-desktop",
       },
     })
   }
@@ -125,7 +125,7 @@ async function initTauriFetch(port: number) {
       ...init,
       headers: {
         ...init?.headers,
-        "X-Requested-With": "dive-desktop",
+        "X-Requested-With": "attacktrace-desktop",
       },
     })
   }

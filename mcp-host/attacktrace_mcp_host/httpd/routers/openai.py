@@ -12,7 +12,7 @@ from attacktrace_mcp_host.httpd.conf.prompt import PromptKey
 from attacktrace_mcp_host.httpd.dependencies import get_app
 from attacktrace_mcp_host.httpd.routers.models import ResultResponse, StreamMessage
 from attacktrace_mcp_host.httpd.routers.utils import ChatProcessor, EventStreamContextManager
-from attacktrace_mcp_host.httpd.server import DiveHostAPI
+from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 
 openai = APIRouter(tags=["openai"])
 
@@ -127,16 +127,16 @@ class CompletionEventStreamContextManager(EventStreamContextManager):
 
 @openai.get("/")
 async def get_openai() -> ResultResponse:
-    """Returns a welcome message for the Dive Compatible API.
+    """Returns a welcome message for the AttackTrace Compatible API.
 
     Returns:
         ResultResponse: A success response with welcome message.
     """
-    return ResultResponse(success=True, message="Welcome to Dive Compatible API! 🚀")
+    return ResultResponse(success=True, message="Welcome to AttackTrace Compatible API! 🚀")
 
 
 @openai.get("/models")
-async def list_models(app: DiveHostAPI = Depends(get_app)) -> ModelsResult:
+async def list_models(app: AttackTraceHostAPI = Depends(get_app)) -> ModelsResult:
     """Lists all available OpenAI compatible models.
 
     Returns:
@@ -150,7 +150,7 @@ async def list_models(app: DiveHostAPI = Depends(get_app)) -> ModelsResult:
                 type="model",
                 owned_by=m.config.llm.model_provider,
             )
-            for m in app.dive_host.values()
+            for m in app.attacktrace_host.values()
         ],
     )
 
@@ -159,7 +159,7 @@ async def list_models(app: DiveHostAPI = Depends(get_app)) -> ModelsResult:
 async def create_chat_completion(
     request: Request,
     params: CompletionsArgs,
-    app: DiveHostAPI = Depends(get_app),
+    app: AttackTraceHostAPI = Depends(get_app),
 ) -> object:  # idk what this actual do...
     """Creates a chat completion using the OpenAI compatible API.
 
@@ -195,7 +195,7 @@ async def create_chat_completion(
                 SystemMessage(content=system_prompt),
             )
 
-    dive_host = app.dive_host["default"]
+    dive_host = app.attacktrace_host["default"]
 
     chat_id = str(uuid.uuid4())
     model_name = dive_host._config.llm.model  # noqa: SLF001

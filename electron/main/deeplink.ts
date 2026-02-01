@@ -6,11 +6,11 @@ import { oapClient } from "./oap"
 import { serviceStatus, setServiceUpCallback } from "./service"
 import { createWindow } from "."
 
-const DESKTOP_FILE_NAME = "oaphub-dive.desktop"
+const DESKTOP_FILE_NAME = "oaphub-attacktrace.desktop"
 type DeepLinkType = "login" | "refresh" | "mcp.install" | "unknown"
 
 function getDeepLinkTypeFromUrl(url: string): DeepLinkType {
-  if (url.startsWith("dive://signin/")) {
+  if (url.startsWith("attacktrace://signin/")) {
     return "login"
   }
 
@@ -125,7 +125,7 @@ Name=Dive
 Exec=${escapePathForExec(appPath)} %U
 Terminal=false
 Type=Application
-MimeType=x-scheme-handler/dive;
+MimeType=x-scheme-handler/attacktrace;
 NoDisplay=true
 `
 

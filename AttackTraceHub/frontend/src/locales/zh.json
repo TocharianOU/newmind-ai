@@ -236,13 +236,13 @@
     "emailNotifications": "邮件通知"
   },
   "home": {
-    "heroTitle": "欢迎使用 NewmindChat",
+    "heroTitle": "欢迎使用 AttackTrace",
     "heroSubtitle": "您的 AI 智能对话助手",
     "heroDescription": "体验无缝的 AI 交互，强大的功能和直观的设计",
     "getStarted": "开始使用",
     "signIn": "登录",
-    "whyChoose": "为什么选择 NewmindChat？",
-    "feature1Title": "Newmind 专属模型",
+    "whyChoose": "为什么选择 AttackTrace？",
+    "feature1Title": "AttackTrace 专属模型",
     "feature1Desc": "访问面向不同领域微调的专属模型，性价比更高，仅在我们平台提供",
     "feature2Title": "自定义模型接入",
     "feature2Desc": "支持接入您自己的模型，包括 Qwen、DeepSeek 等开源模型，配置灵活",
@@ -250,7 +250,7 @@
     "feature3Desc": "通过模型上下文协议工具扩展 AI 能力，提升工作效率",
     "feature4Title": "灵活部署",
     "feature4Desc": "支持云端和本地部署两种方式，确保数据隐私和安全性",
-    "downloadTitle": "下载 NewmindChat",
+    "downloadTitle": "下载 AttackTrace",
     "downloadSubtitle": "选择您的平台",
     "loadingDownloads": "正在加载下载选项...",
     "recommended": "推荐",
@@ -262,6 +262,6 @@
     "intelMac": "Intel Mac",
     "linuxX64": "Linux x64",
     "linuxArm64": "Linux ARM64",
-    "copyright": "© 2025 NewmindChat. 保留所有权利。"
+    "copyright": "© 2025 AttackTrace. 保留所有权利。"
   }
 }

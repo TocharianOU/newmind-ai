@@ -29,10 +29,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class DiveMcpHost(ContextProtocol):
+class AttackTraceMcpHost(ContextProtocol):
     """The Model Context Protocol (MCP) Host.
 
-    The DiveMcpHost class provides an async context manager interface for managing
+    The AttackTraceMcpHost class provides an async context manager interface for managing
     and interacting with language models through the Model Context Protocol (MCP).
     It handles initialization and cleanup of model instances, manages server
     connections, and provides a unified interface for agent chats.
@@ -44,7 +44,7 @@ class DiveMcpHost(ContextProtocol):
         # Initialize host with configuration
         config = HostConfig(...)
         chat_id = ""
-        async with DiveMcpHost(config) as host:
+        async with AttackTraceMcpHost(config) as host:
             # Send a message and get response
             async with host.chat() as chat:
                 while query := input("Enter a message: "):
@@ -57,7 +57,7 @@ class DiveMcpHost(ContextProtocol):
                         print(response)
         ...
         # Resume chat
-        async with DiveMcpHost(config) as host:
+        async with AttackTraceMcpHost(config) as host:
             # pass the chat_id to resume the chat
             async with host.chat(chat_id=chat_id) as chat:
                 ...

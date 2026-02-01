@@ -1,4 +1,4 @@
-"""Dive MCP Host CLI types."""
+"""AttackTrace MCP Host CLI types."""
 
 from dataclasses import dataclass
 

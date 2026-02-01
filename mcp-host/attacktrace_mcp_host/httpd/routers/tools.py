@@ -17,7 +17,7 @@ from attacktrace_mcp_host.httpd.routers.utils import (
     EventStreamContextManager,
     LogStreamHandler,
 )
-from attacktrace_mcp_host.httpd.server import DiveHostAPI
+from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 from attacktrace_mcp_host.httpd.store.cache import CacheKeys
 
 logger = getLogger(__name__)
@@ -32,19 +32,19 @@ class ToolsResult(ResultResponse):
 
 @tools.get("/initialized")
 async def initialized(
-    app: DiveHostAPI = Depends(get_app),
+    app: AttackTraceHostAPI = Depends(get_app),
 ) -> ResultResponse:
     """Check if initial setup is complete.
 
     Only useful on initial startup, not when reloading.
     """
-    await app.dive_host["default"].tools_initialized_event.wait()
+    await app.attacktrace_host["default"].tools_initialized_event.wait()
     return ResultResponse(success=True, message=None)
 
 
 @tools.get("/")
 async def list_tools(  # noqa: PLR0912, C901
-    app: DiveHostAPI = Depends(get_app),
+    app: AttackTraceHostAPI = Depends(get_app),
 ) -> ToolsResult:
     """Lists all available MCP tools.
 
@@ -60,7 +60,7 @@ async def list_tools(  # noqa: PLR0912, C901
         all_server_configs = Config()
 
     # get tools from dive host
-    for server_name, server_info in app.dive_host["default"].mcp_server_info.items():
+    for server_name, server_info in app.attacktrace_host["default"].mcp_server_info.items():
         result[server_name] = McpTool(
             name=server_name,
             tools=[
@@ -131,7 +131,7 @@ async def stream_server_logs(
     stream_until: ClientState | None = None,
     stop_on_notfound: bool = True,
     max_retries: int = 10,
-    app: DiveHostAPI = Depends(get_app),
+    app: AttackTraceHostAPI = Depends(get_app),
 ) -> StreamingResponse:
     """Stream logs from a specific MCP server.
 
@@ -140,13 +140,13 @@ async def stream_server_logs(
         stream_until (ClientState | None): stream until client state is reached.
         stop_on_notfound (bool): If True, stop streaming if the server is not found.
         max_retries (int): The maximum number of retries to stream logs.
-        app (DiveHostAPI): The DiveHostAPI instance.
+        app (AttackTraceHostAPI): The AttackTraceHostAPI instance.
 
     Returns:
         StreamingResponse: A streaming response of the server logs.
         Keep streaming until client disconnects.
     """
-    log_manager = app.dive_host["default"].log_manager
+    log_manager = app.attacktrace_host["default"].log_manager
     stream = EventStreamContextManager()
     response = stream.get_response()
 

@@ -1,4 +1,4 @@
-name: Deploy NewmindHub
+name: Deploy AttackTraceHub
 # Trigger deployment: 2026-01-18 (retry after Docker installation)
 
 on:
@@ -7,7 +7,7 @@ on:
       - main          # 推送到 main 分支时部署到生产环境
       - dev           # 推送到 dev 分支时部署到测试环境
     paths:
-      - 'NewmindHub/**'
+      - 'AttackTraceHub/**'
       - '.github/workflows/deploy-hub.yml'
   workflow_dispatch:  # 允许手动触发
     inputs:
@@ -78,8 +78,8 @@ jobs:
       - name: Build and push backend image
         uses: docker/build-push-action@v5
         with:
-          context: ./NewmindHub
-          file: ./NewmindHub/Dockerfile
+          context: ./AttackTraceHub
+          file: ./AttackTraceHub/Dockerfile
           push: true
           tags: ${{ steps.meta-backend.outputs.tags }}
           labels: ${{ steps.meta-backend.outputs.labels }}
@@ -100,8 +100,8 @@ jobs:
       - name: Build and push frontend image
         uses: docker/build-push-action@v5
         with:
-          context: ./NewmindHub/frontend
-          file: ./NewmindHub/frontend/Dockerfile
+          context: ./AttackTraceHub/frontend
+          file: ./AttackTraceHub/frontend/Dockerfile
           push: true
           tags: ${{ steps.meta-frontend.outputs.tags }}
           labels: ${{ steps.meta-frontend.outputs.labels }}

@@ -57,7 +57,7 @@ export function getAppImageDesktopFile() {
   const desktopFile = path.join(process.env.VITE_PUBLIC, "linux", "attacktrace.desktop")
   const content = fse.existsSync(desktopFile) ? fse.readFileSync(desktopFile, "utf-8") : `[Desktop Entry]
 Type=Application
-Name=Newmind AI
+Name=AttackTrace AI
 Exec=%EXEC%
 Icon=%ICON%
 StartupNotify=false

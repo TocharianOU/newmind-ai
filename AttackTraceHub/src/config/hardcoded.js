@@ -9,7 +9,7 @@
 export const HARDCODED_CONFIG = {
   // ==================== 邀请码配置 ====================
   // 是否启用邀请码功能
-  INVITE_CODE_ENABLED: true,
+  INVITE_CODE_ENABLED: false,
   
   // 有效的邀请码列表
   VALID_INVITE_CODES: [

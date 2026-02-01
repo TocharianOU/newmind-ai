@@ -16,7 +16,7 @@ from mcp.types import Tool
 
 from attacktrace_mcp_host.host.conf import HostConfig, LogConfig, ProxyUrl
 from attacktrace_mcp_host.host.conf.llm import LLMConfig
-from attacktrace_mcp_host.host.host import DiveMcpHost
+from attacktrace_mcp_host.host.host import AttackTraceMcpHost
 from attacktrace_mcp_host.host.tools import McpServer, McpServerInfo, ServerConfig, ToolManager
 from attacktrace_mcp_host.host.tools.mcp_server import McpTool
 from attacktrace_mcp_host.host.tools.model_types import ClientState
@@ -563,7 +563,7 @@ async def test_host_with_tools(echo_tool_stdio_config: dict[str, ServerConfig]) 
         ),
         mcp_servers=echo_tool_stdio_config,
     )
-    async with DiveMcpHost(config) as mcp_host:
+    async with AttackTraceMcpHost(config) as mcp_host:
         await mcp_host._tool_manager.initialized_event.wait()
         fake_responses = [
             AIMessage(
@@ -610,7 +610,7 @@ async def test_mcp_server_info(echo_tool_stdio_config: dict[str, ServerConfig]) 
     )
     import attacktrace_mcp_host.host.tools.echo as echo_tool
 
-    async with DiveMcpHost(config) as mcp_host:
+    async with AttackTraceMcpHost(config) as mcp_host:
         await mcp_host._tool_manager.initialized_event.wait()
         assert list(mcp_host.mcp_server_info.keys()) == ["echo"]
         assert isinstance(mcp_host.mcp_server_info["echo"], McpServerInfo)
@@ -634,7 +634,7 @@ async def test_mcp_server_info_no_such_file(
         ),
         mcp_servers=no_such_file_mcp_server,
     )
-    async with DiveMcpHost(config) as mcp_host:
+    async with AttackTraceMcpHost(config) as mcp_host:
         await mcp_host._tool_manager.initialized_event.wait()
         assert list(mcp_host.mcp_server_info.keys()) == [
             "no_such_file",

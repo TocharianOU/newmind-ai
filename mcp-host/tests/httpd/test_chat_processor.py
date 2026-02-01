@@ -13,7 +13,7 @@ from attacktrace_mcp_host.httpd.conf.httpd_service import ServiceManager
 from attacktrace_mcp_host.httpd.conf.mcp_servers import Config
 from attacktrace_mcp_host.httpd.conf.prompt import PromptKey
 from attacktrace_mcp_host.httpd.routers.utils import ChatProcessor, ContentHandler
-from attacktrace_mcp_host.httpd.server import DiveHostAPI
+from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 from attacktrace_mcp_host.httpd.store.manager import StoreManager
 from tests.httpd.routers.conftest import config_files  # noqa: F401
 
@@ -22,18 +22,18 @@ if TYPE_CHECKING:
 
 
 @pytest_asyncio.fixture
-async def server(config_files) -> AsyncGenerator[DiveHostAPI, None]:  # noqa: F811
+async def server(config_files) -> AsyncGenerator[AttackTraceHostAPI, None]:  # noqa: F811
     """Create a server for testing."""
     service_config_manager = ServiceManager(config_files.service_config_file)
     service_config_manager.initialize()
-    server = DiveHostAPI(service_config_manager)
+    server = AttackTraceHostAPI(service_config_manager)
     await server.mcp_server_config_manager.update_all_configs(Config(mcpServers={}))
     async with server.prepare():
         yield server
 
 
 @pytest_asyncio.fixture
-async def processor(server: DiveHostAPI) -> ChatProcessor:
+async def processor(server: AttackTraceHostAPI) -> ChatProcessor:
     """Create a processor for testing."""
 
     class State:
@@ -69,7 +69,7 @@ async def test_prompt(processor: ChatProcessor, monkeypatch: pytest.MonkeyPatch)
         if system_prompt := kwargs.get("system_prompt"):
             assert system_prompt == prompt
 
-    monkeypatch.setattr(server.dive_host["default"], "chat", mock_chat)
+    monkeypatch.setattr(server.attacktrace_host["default"], "chat", mock_chat)
 
     chat_id = str(uuid.uuid4())
     user_message = HumanMessage(content="Hello, how are you?")
@@ -105,7 +105,7 @@ def test_strip_title():
 @pytest.mark.asyncio
 async def test_generate_title(processor: ChatProcessor):
     """Test the title function."""
-    model = cast("FakeMessageToolModel", processor.dive_host.model)
+    model = cast("FakeMessageToolModel", processor.attacktrace_host.model)
     model.responses = [
         AIMessage(
             content="Simple Greeting",

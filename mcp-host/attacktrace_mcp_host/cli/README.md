@@ -2,10 +2,10 @@
 
 ```system
 # 一般對話
-dive_cli "Hello"
+attacktrace_cli "Hello"
 
 #恢復某個 thread 的對話
-dive_cli -c THREADID "How are you?"
+attacktrace_cli -c THREADID "How are you?"
 ```
 
 migrate.py:

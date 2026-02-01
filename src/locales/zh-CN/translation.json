@@ -146,6 +146,44 @@
       "verify": "验证证书",
       "skip": "跳过验证"
     },
+    "viewJsonConfig": "查看底层 JSON 配置",
+    "copyJsonConfig": "复制配置",
+    "managePackages": "管理包",
+    "marketplace": {
+      "title": "集成市场",
+      "search": "搜索集成...",
+      "installed": "已安装",
+      "addButton": "添加集成",
+      "adding": "添加中...",
+      "configure": "配置集成",
+      "available": "可用",
+      "installing": "正在安装集成",
+      "downloading": "正在下载包...",
+      "ready": "准备就绪",
+      "preparing": "准备安装..."
+    },
+    "packages": {
+      "title": "包管理",
+      "name": "名称",
+      "version": "版本",
+      "path": "路径",
+      "status": "状态",
+      "actions": "操作",
+      "inUse": "使用中",
+      "idle": "闲置",
+      "delete": "删除",
+      "deleted": "包已删除",
+      "deleteFailed": "删除失败",
+      "deleteConfirm": "确定删除 {{name}}@{{version}}？",
+      "cannotDelete": "该包正在被实例使用，无法删除",
+      "empty": "未安装任何包"
+    },
+    "instance": {
+      "created": "实例创建成功",
+      "createFailed": "创建实例失败",
+      "deleted": "实例已删除",
+      "updated": "实例配置已更新"
+    },
     "jsonFormatError": {
       "addFormat": "设置格式错误，请检查并修正格式",
       "format": "{{mcp}} 设置格式错误，请检查并修正格式",
@@ -232,6 +270,8 @@
       "high_cost_desc": "您选择的集成工具可能消耗更多资源。请检查您的计划用量是否充足。",
       "headerBtn": "集成工具",
       "headerBtnAlt": "新增 / 查看安全集成工具",
+      "marketplace": "浏览集成",
+      "marketplaceAlt": "浏览云端可用的集成工具",
       "edit_managed_notice": "此集成由 AttackTrace Hub 管理。请在下方配置所需设置。",
       "simplified_config": "简化配置"
     },

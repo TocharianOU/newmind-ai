@@ -702,6 +702,63 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
         || tmpCustom.isError.isError || tmpCustom.isRangeError?.isError)
         return
 
+      setIsSubmitting(true)
+
+      // Check if current editing target is an OAP instance
+      const currentMcp = type.includes("add") ? tmpCustom : customList[currentIndex]
+      const isOap = currentMcp?.mcpServers?.extraData?.oap
+      const originalName = _toolName // Original name from when edit started
+      const hasNameChanged = isOap && !type.includes("add") && currentMcp.name !== originalName
+      
+      if (isOap && !type.includes("add") && !hasNameChanged) {
+        // OAP instance with no name change: use PATCH API for quick update
+        const envObj: Record<string, string> = {}
+        
+        if (Array.isArray(currentMcp.mcpServers.env)) {
+          currentMcp.mcpServers.env.forEach(([key, value]) => {
+            if (key) {
+              envObj[key] = String(value)
+            }
+          })
+        }
+        
+        console.log('[handleSubmit] OAP instance update (no rename):', {
+          instanceName: currentMcp.name,
+          env: envObj
+        })
+        
+        const res = await fetch(`/api/plugins/oap-platform/instances/${currentMcp.name}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            env: envObj,
+            enabled: true  // Auto-enable after successful configuration
+          }),
+        })
+        
+        if (!res.ok) {
+          throw new Error("Failed to update instance")
+        }
+        
+        showToast({
+          message: t("tools.instance.updated") || "Instance updated successfully",
+          type: "success"
+        })
+        
+      // Reload MCP config to reflect changes
+      await onSubmit(null as any)
+      return
+    }
+    
+    // If OAP instance name changed, fall through to full config update below
+    if (hasNameChanged) {
+      console.log('[handleSubmit] OAP instance renamed:', {
+        oldName: originalName,
+        newName: currentMcp.name
+      })
+    }
+
+      // Custom MCP or adding new: use traditional full config update
       const newConfig: {mcpServers: MCPConfig} = { mcpServers: {} }
       if(tmpCustom.jsonString !== "") {
         let processedJsonString = tmpCustom.jsonString.trim()
@@ -739,10 +796,19 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
       // add oap servers to newConfig only if they are missing (to avoid overwriting edited ones)
       const oapServers = Object.keys(_config.mcpServers).filter((mcp: string) => _config.mcpServers[mcp].extraData?.oap)
       for(const oap of oapServers) {
-        const oapId = _config.mcpServers[oap].extraData?.oap?.id
-        // Check if this OAP server already exists in newConfig (by checking oap.id)
+        const oapInstanceId = _config.mcpServers[oap].extraData?.oap?.instanceId
+        const oapToolId = _config.mcpServers[oap].extraData?.oap?.id
+        
+        // Check if this OAP instance already exists in newConfig
         const alreadyExists = Object.values(newConfig.mcpServers).some(
-          (v: any) => v.extraData?.oap?.id === oapId
+          (v: any) => {
+            const vInstanceId = v.extraData?.oap?.instanceId
+            const vToolId = v.extraData?.oap?.id
+            
+            // Match by instanceId if available, otherwise by toolId (backward compat)
+            return (oapInstanceId && vInstanceId === oapInstanceId) ||
+                   (!oapInstanceId && !vInstanceId && vToolId === oapToolId)
+          }
         )
         // Only add if it doesn't exist (user hasn't renamed/edited it)
         if (!alreadyExists && !newConfig.mcpServers[oap]) {
@@ -752,7 +818,6 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
 
       console.log('[handleSubmit] FINAL newConfig:', JSON.stringify(newConfig, null, 2))
       
-      setIsSubmitting(true)
       await onSubmit(newConfig)
     } catch (err) {
       if (err instanceof SyntaxError) {
@@ -1035,12 +1100,58 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
               
               {/* Schema Form for ENV configuration */}
               {configSchema ? (
-                <SchemaForm
-                  schema={configSchema}
-                  config={envConfig}
-                  onChange={handleEnvChange}
-                  disabled={false}
-                />
+                <>
+                  <SchemaForm
+                    schema={configSchema}
+                    config={envConfig}
+                    onChange={handleEnvChange}
+                    disabled={false}
+                  />
+                  
+                  {/* JSON Configuration Preview - ONLY for custom MCPs, not OAP integrations */}
+                  {!currentMcp?.mcpServers?.extraData?.oap && (
+                    <details className="oap-json-preview">
+                      <summary className="oap-json-preview-summary">
+                        <svg className="chevron-icon" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                          <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <span>{t("tools.viewJsonConfig")}</span>
+                      </summary>
+                      <div className="oap-json-preview-content">
+                        <pre className="json-code">
+                          {JSON.stringify({
+                            mcpServers: {
+                              [currentMcp.name]: decodeMcpServers(currentMcp.mcpServers)
+                            }
+                          }, null, 2)}
+                        </pre>
+                        <div className="oap-json-preview-actions">
+                          <button
+                            className="copy-json-button"
+                            onClick={() => {
+                              const jsonConfig = JSON.stringify({
+                                mcpServers: {
+                                  [currentMcp.name]: decodeMcpServers(currentMcp.mcpServers)
+                                }
+                              }, null, 2);
+                              navigator.clipboard.writeText(jsonConfig);
+                              showToast({
+                                message: t("tools.jsonCopied"),
+                                type: "success"
+                              });
+                            }}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                              <path d="M10.5 13.5H1.5V3.5H7.5L10.5 6.5V13.5Z" stroke="currentColor" strokeWidth="1.2"/>
+                              <path d="M5.5 1.5H14.5V10.5" stroke="currentColor" strokeWidth="1.2"/>
+                            </svg>
+                            {t("tools.copyJsonConfig")}
+                          </button>
+                        </div>
+                      </div>
+                    </details>
+                  )}
+                </>
               ) : (
                 // Fallback: manual ENV editing if no schema
                 <div className="field-item">

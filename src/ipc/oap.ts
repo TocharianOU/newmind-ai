@@ -24,10 +24,10 @@ export function openOapLoginPage(regist: boolean) {
         VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL
     });
     
-    // 临时硬编码 URL 以确保功能正常
+    // Fallback URL using environment variable or default
     const fallbackUrl = regist 
-        ? 'http://localhost:5174/register'
-        : 'http://localhost:5174/login';
+        ? 'http://localhost:23001/register'
+        : 'http://localhost:23001/login';
     
     const finalUrl = hubUrl || fallbackUrl;
     console.log('🔗 Final URL:', finalUrl);

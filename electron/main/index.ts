@@ -14,6 +14,7 @@ import log from "electron-log/main"
 import { deeplinkHandler, refreshConfig, setOAPTokenToHost, setupAppImageDeepLink } from "./deeplink"
 import { oapClient } from "./oap"
 import electronDl from "electron-dl"
+import "./ipc/mcp.js"  // Import MCP IPC handlers
 
 log.initialize()
 log.transports.file.resolvePathFn = () => path.join(logDir, "main-electron.log")
@@ -53,10 +54,10 @@ app.on("open-url", (event, url) => {
 // Settings deeplink scheme
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient("dive", process.execPath, [path.resolve(process.argv[1])])
+    app.setAsDefaultProtocolClient("attacktrace", process.execPath, [path.resolve(process.argv[1])])
   }
 } else {
-  app.setAsDefaultProtocolClient("dive")
+  app.setAsDefaultProtocolClient("attacktrace")
 }
 
 let win: BrowserWindow | null = null
@@ -109,7 +110,7 @@ async function onReady() {
 
 export async function createWindow() {
   win = new BrowserWindow({
-    title: "Newmind Agent",
+    title: "AttackTrace Agent",
     icon: path.join(process.env.VITE_PUBLIC, "favicon.ico"),
     width: 1280,
     height: 720,

@@ -13,7 +13,7 @@ from attacktrace_mcp_host.host.tools.model_types import ClientState
 from attacktrace_mcp_host.httpd.conf.mcp_servers import MCPServerConfig
 from attacktrace_mcp_host.httpd.routers.models import SimpleToolInfo
 from attacktrace_mcp_host.httpd.routers.tools import McpTool, ToolsResult, list_tools
-from attacktrace_mcp_host.httpd.server import DiveHostAPI
+from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 from tests import helper
 
 
@@ -78,7 +78,7 @@ def test_list_tools_no_mock(test_client):
 
 
 @patch(
-    "attacktrace_mcp_host.httpd.server.DiveHostAPI.local_file_cache", new_callable=PropertyMock
+    "attacktrace_mcp_host.httpd.server.AttackTraceHostAPI.local_file_cache", new_callable=PropertyMock
 )
 @patch(
     "attacktrace_mcp_host.host.tools.ToolManager.mcp_server_info", new_callable=PropertyMock
@@ -374,7 +374,7 @@ def test_tools_cache_after_update(test_client):
     assert first_time == confirm
 
 
-def test_stream_logs_notfound(test_client: tuple[TestClient, DiveHostAPI]):
+def test_stream_logs_notfound(test_client: tuple[TestClient, AttackTraceHostAPI]):
     """Test stream_logs function with not found server."""
     client, _ = test_client
     response = client.get(
@@ -391,7 +391,7 @@ def test_stream_logs_notfound(test_client: tuple[TestClient, DiveHostAPI]):
         assert data.mcp_server_name == "missing_server"
 
 
-def test_stream_logs_notfound_wait(test_client: tuple[TestClient, DiveHostAPI]):
+def test_stream_logs_notfound_wait(test_client: tuple[TestClient, AttackTraceHostAPI]):
     """Test stream_logs before log buffer is registered."""
     client, _ = test_client
 
@@ -446,7 +446,7 @@ def test_stream_logs_notfound_wait(test_client: tuple[TestClient, DiveHostAPI]):
         assert responses[-1].client_state == ClientState.RUNNING
 
 
-def test_stream_logs_name_with_slash(test_client: tuple[TestClient, DiveHostAPI]):
+def test_stream_logs_name_with_slash(test_client: tuple[TestClient, AttackTraceHostAPI]):
     """Test stream_logs before log buffer is registered."""
     client, _ = test_client
 

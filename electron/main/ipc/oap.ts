@@ -11,7 +11,7 @@ const REGISTER_URL = `${OAP_ROOT_URL}/signup`
 
 export function ipcOapHandler(_win: BrowserWindow) {
   ipcMain.handle("oap:login", async (_, regist: boolean) => {
-    const url = `${regist ? REGISTER_URL : LOGIN_URL}?client=dive&name=${os.hostname()}&system=${process.platform}`
+    const url = `${regist ? REGISTER_URL : LOGIN_URL}?client=attacktrace&name=${os.hostname()}&system=${process.platform}`
     shell.openExternal(url)
   })
 
@@ -78,7 +78,7 @@ export function ipcOapHandler(_win: BrowserWindow) {
   // OAuth Login - 启动OAuth登录流程
   ipcMain.handle("oap:loginWithOAuth", async (_, provider: string) => {
     try {
-      const url = `${OAP_ROOT_URL}/api/auth/${provider}?client=dive&platform=${process.platform}&hostname=${os.hostname()}`
+      const url = `${OAP_ROOT_URL}/api/auth/${provider}?client=attacktrace&platform=${process.platform}&hostname=${os.hostname()}`
       console.log(`Starting OAuth login with ${provider}:`, url)
       await shell.openExternal(url)
       return { success: true }

@@ -13,13 +13,13 @@ from attacktrace_mcp_host.httpd.routers.memory import router as memory_router
 from attacktrace_mcp_host.httpd.routers.model_verify import model_verify
 from attacktrace_mcp_host.httpd.routers.openai import openai
 from attacktrace_mcp_host.httpd.routers.tools import tools
-from attacktrace_mcp_host.httpd.server import DiveHostAPI
+from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 
 logger = getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: DiveHostAPI) -> AsyncGenerator[None, None]:
+async def lifespan(app: AttackTraceHostAPI) -> AsyncGenerator[None, None]:
     """Lifespan for the FastAPI app."""
     try:
         async with app.prepare():
@@ -35,9 +35,9 @@ async def lifespan(app: DiveHostAPI) -> AsyncGenerator[None, None]:
 
 def create_app(
     service_config_manager: ServiceManager,
-) -> DiveHostAPI:
+) -> AttackTraceHostAPI:
     """Create the FastAPI app."""
-    app = DiveHostAPI(
+    app = AttackTraceHostAPI(
         lifespan=lifespan,
         service_config_manager=service_config_manager,
     )

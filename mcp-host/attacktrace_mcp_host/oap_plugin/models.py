@@ -8,9 +8,9 @@ class OAPConfig(BaseModel):
     """OAP Config."""
 
     auth_key: str | None = None
-    # 使用环境变量 HUB_BACKEND_URL，默认指向 NewmindHub 后端
-    store_url: str = os.getenv("HUB_BACKEND_URL", "http://xiaopenges.tocharian.eu:23000")
-    oap_root_url: str = os.getenv("HUB_BACKEND_URL", "http://xiaopenges.tocharian.eu:23000")
+    # Use environment variable VITE_API_BASE_URL or HUB_BACKEND_URL, defaults to localhost
+    store_url: str = os.getenv("VITE_API_BASE_URL") or os.getenv("HUB_BACKEND_URL", "http://localhost:23000")
+    oap_root_url: str = os.getenv("VITE_API_BASE_URL") or os.getenv("HUB_BACKEND_URL", "http://localhost:23000")
     verify_ssl: bool = False
 
 
@@ -19,6 +19,7 @@ class UserMcpConfig(BaseModel):
     """User MCP Config."""
 
     id: str
+    instanceId: str | None = None
     name: str
     description: str | None = None
     transport: Literal["stdio", "sse", "streamable", "http"]
@@ -30,6 +31,9 @@ class UserMcpConfig(BaseModel):
     plan: str
     banner: str | None = None
     document: str | None = None
+    version: str | None = None
+    downloadUrl: str | None = None
+    configSchema: dict | None = None
     token_cost: float | None = None
     token_required: float | None = None
     token_price_unit: str | None = None

@@ -16,11 +16,11 @@ from pydantic.alias_generators import to_camel
 from attacktrace_mcp_host.host.conf import HostConfig, LogConfig
 from attacktrace_mcp_host.host.conf.llm import LLMConfigTypes
 from attacktrace_mcp_host.host.errors import ThreadQueryError
-from attacktrace_mcp_host.host.host import DiveMcpHost
+from attacktrace_mcp_host.host.host import AttackTraceMcpHost
 from attacktrace_mcp_host.host.tools.misc import TestTool
 from attacktrace_mcp_host.httpd.dependencies import get_app
 from attacktrace_mcp_host.httpd.routers.utils import EventStreamContextManager
-from attacktrace_mcp_host.httpd.server import DiveHostAPI
+from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 
 logger = getLogger(__name__)
 
@@ -210,7 +210,7 @@ class ModelVerifyService:
         else:
             log_config = LogConfig(log_dir=Path.cwd() / "logs")
 
-        host = DiveMcpHost(
+        host = AttackTraceMcpHost(
             HostConfig(
                 llm=llm_config,
                 mcp_servers={},
@@ -295,7 +295,7 @@ class ModelVerifyService:
             )
 
     async def _check_connection(
-        self, host: DiveMcpHost
+        self, host: AttackTraceMcpHost
     ) -> tuple[bool, str | None, ConnectionVerifyState]:
         """Check if the model is connected."""
         logger.debug("Checking connection, llm: %s", host.config.llm)
@@ -319,7 +319,7 @@ class ModelVerifyService:
             return False, str(e), ConnectionVerifyState.ERROR
 
     async def _check_tools(
-        self, host: DiveMcpHost
+        self, host: AttackTraceMcpHost
     ) -> tuple[bool, str | None, ToolVerifyState | None]:
         """Check if the model supports tools."""
         logger.debug("Checking tools, llm: %s", host.config.llm)
@@ -357,7 +357,7 @@ class ModelVerifyService:
             return False, str(e), ToolVerifyState.ERROR
 
     async def _check_tools_in_prompt(
-        self, host: DiveMcpHost
+        self, host: AttackTraceMcpHost
     ) -> tuple[bool, str | None, ToolVerifyState | None]:
         """Check if the model supports tools in prompt."""
         logger.debug("Checking tools in prompt, llm: %s", host.config.llm)
@@ -413,7 +413,7 @@ def get_verify_subjects(llm_config: LLMConfigTypes) -> list[VERIFY_SUBJECTS]:
 
 @model_verify.post("")
 async def do_verify_model(
-    app: DiveHostAPI = Depends(get_app),
+    app: AttackTraceHostAPI = Depends(get_app),
     settings: ModelVerifyRequest | None = None,
 ) -> ModelVerifyResult:
     """Verify if a model supports streaming capabilities.
@@ -421,7 +421,7 @@ async def do_verify_model(
     Returns:
         ModelVerifyResult
     """
-    dive_host = app.dive_host["default"]
+    dive_host = app.attacktrace_host["default"]
 
     llm_config = settings.model_settings if settings else None
 
@@ -438,7 +438,7 @@ async def do_verify_model(
 @model_verify.post("/streaming")
 async def verify_model(
     request: Request,
-    app: DiveHostAPI = Depends(get_app),
+    app: AttackTraceHostAPI = Depends(get_app),
     settings: dict[str, list[LLMConfigTypes]] | None = None,
 ) -> StreamingResponse:
     """Verify if a model supports streaming capabilities.
@@ -446,7 +446,7 @@ async def verify_model(
     Returns:
         CompletionEventStreamContextManager
     """
-    dive_host = app.dive_host["default"]
+    dive_host = app.attacktrace_host["default"]
 
     llm_configs = settings.get("modelSettings") if settings else None
     if not llm_configs:

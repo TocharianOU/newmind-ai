@@ -41,7 +41,7 @@ export const PROVIDER_LABELS: Record<ModelProvider, string> = {
   perplexity: "Perplexity",
   oap: "OAP",
   azure_openai: "Azure OpenAI",
-  newmind: "Newmind",
+  newmind: "AttackTrace",
   default: "Default",
 }
 
@@ -451,13 +451,13 @@ export const defaultInterface: Record<ModelProvider, InterfaceDefinition> = {
   perplexity: openaiCompatibleTemplate("https://api.perplexity.ai"),
   newmind: openaiCompatibleTemplate(`${OAP_PROXY_URL}/api/newmind`, {
     apiKey: {
-      // The API key is the user's OAP/NewmindHub JWT token.
+      // The API key is the user's OAP/AttackTraceHub JWT token.
       // This function retrieves the token when the provider is selected.
       getValue: async () => {
         try {
           const token = await oapGetToken();
           if (!token) {
-            console.warn("Newmind provider requires login, but no token was found.");
+            console.warn("AttackTrace provider requires login, but no token was found.");
             // We return a placeholder value here. The subsequent API call to fetch
             // the model list will fail gracefully, and the UI will show an error,
             // which is the correct behavior if the user is not logged in.
@@ -465,7 +465,7 @@ export const defaultInterface: Record<ModelProvider, InterfaceDefinition> = {
           }
           return token;
         } catch (error) {
-          console.error("Failed to get OAP token for Newmind provider:", error);
+          console.error("Failed to get OAP token for AttackTrace provider:", error);
           return "not_logged_in";
         }
       }

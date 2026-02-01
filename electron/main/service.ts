@@ -315,58 +315,6 @@ async function migratePrebuiltScripts() {
     }
   }
 
-  // copy mcp-server-elasticsearch-sl if exists (完整独立复制，包含所有依赖)
-  const esSourcePath = path.join(rebuiltScriptsPath, "mcp-server-elasticsearch-sl")
-  const esTargetPath = path.join(scriptsDir, "mcp-server-elasticsearch-sl")
-  if (await fse.pathExists(esSourcePath)) {
-    console.log("Processing mcp-server-elasticsearch-sl...")
-    
-    // 1. 检查源目录是否有必要的文件
-    const hasNodeModules = await fse.pathExists(path.join(esSourcePath, "node_modules"))
-    const hasDist = await fse.pathExists(path.join(esSourcePath, "dist"))
-    
-    if (!hasNodeModules || !hasDist) {
-      console.warn("⚠️  Warning: mcp-server-elasticsearch-sl is missing node_modules or dist directory")
-      console.warn("Please run: npm run build:mcp-elasticsearch && npm run prepare:mcp-elasticsearch")
-    }
-    
-    // 2. 只在需要时删除和复制（比较版本或时间戳）
-    let needsCopy = true
-    if (await fse.pathExists(esTargetPath)) {
-      const sourcePackageJson = await fse.readJSON(path.join(esSourcePath, "package.json")).catch(() => ({}))
-      const targetPackageJson = await fse.readJSON(path.join(esTargetPath, "package.json")).catch(() => ({}))
-      
-      if (sourcePackageJson.version === targetPackageJson.version) {
-        console.log(`mcp-server-elasticsearch-sl v${sourcePackageJson.version} already exists, skipping copy`)
-        needsCopy = false
-      } else {
-        console.log(`Updating mcp-server-elasticsearch-sl from v${targetPackageJson.version} to v${sourcePackageJson.version}`)
-        await fse.remove(esTargetPath)
-      }
-    }
-    
-    // 3. 完整复制，解析所有符号链接为真实文件
-    if (needsCopy) {
-      console.log("Copying mcp-server-elasticsearch-sl (complete with all dependencies)...")
-      await fse.copy(esSourcePath, esTargetPath, {
-        dereference: true,  // 解析符号链接，复制真实文件
-        filter: (src) => {
-          // 排除不必要的文件
-          const relativePath = path.relative(esSourcePath, src)
-          if (relativePath.includes('.git') || 
-              relativePath.includes('tsconfig.json') ||
-              relativePath.startsWith('src/') ||
-              relativePath === 'index.ts' ||
-              relativePath === 'catalog-info.yaml' ||
-              relativePath === 'renovate.json') {
-            return false
-          }
-          return true
-        }
-      })
-      console.log("✓ Copied mcp-server-elasticsearch-sl successfully (complete independent package)")
-    }
-  }
 }
 
 async function startHostService() {

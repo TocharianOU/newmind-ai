@@ -6,6 +6,7 @@ export interface MCPServerResponse {
 
 export interface OAPMCPServer {
   id: string
+  instanceId?: string
   name: string
   plan: string
   description: string
@@ -13,6 +14,11 @@ export interface OAPMCPServer {
   transport: string
   url: string
   headers: Record<string, string> | null
+  version: string | null
+  downloadUrl?: string | null
+  configSchema: Record<string, any> | null
+  command?: string | null
+  args?: string[] | null
 }
 
 export interface OAPModelDescription {
@@ -94,4 +100,42 @@ export type OAPCoupon = {
   mcp: number
   total: number
   limit: number
+}
+
+export interface InstanceInfo {
+  instance_id: string
+  instance_name: string
+  tool_id: string
+  tool_name: string
+  enabled: boolean
+  version: string | null
+  env?: Record<string, string> | null
+}
+
+export interface PackageInfo {
+  name: string
+  version: string
+  path: string
+  package_json: any
+}
+
+export interface CreateInstanceRequest {
+  tool_id: string
+  tool_name: string
+  instance_name?: string
+  transport: string
+  command?: string
+  args?: string[]
+  url?: string
+  env?: Record<string, string>
+  version?: string
+  download_url?: string
+  config_schema?: Record<string, any>
+  plan_tag?: string
+  description?: string
+}
+
+export interface UpdateInstanceRequest {
+  env?: Record<string, string>
+  enabled?: boolean
 }

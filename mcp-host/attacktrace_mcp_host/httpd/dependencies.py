@@ -6,19 +6,19 @@ from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
-    from attacktrace_mcp_host.httpd.middlewares.general import DiveUser
-    from attacktrace_mcp_host.httpd.server import DiveHostAPI
+    from attacktrace_mcp_host.httpd.middlewares.general import AttackTraceUser
+    from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 
 
-def get_app(request: Request) -> "DiveHostAPI":
-    """Get the DiveHostAPI instance."""
+def get_app(request: Request) -> "AttackTraceHostAPI":
+    """Get the AttackTraceHostAPI instance."""
     return request.app
 
 
-def get_dive_user(
+def get_attacktrace_user(
     request: Request,
-) -> "DiveUser":
-    """Get the DiveUser instance."""
+) -> "AttackTraceUser":
+    """Get the AttackTraceUser instance."""
     return request.state.dive_user
 
 
@@ -28,6 +28,6 @@ async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession, None]
     Yields:
         AsyncSession instance.
     """
-    app: "DiveHostAPI" = request.app
+    app: "AttackTraceHostAPI" = request.app
     async with app._db_sessionmaker() as session:
         yield session

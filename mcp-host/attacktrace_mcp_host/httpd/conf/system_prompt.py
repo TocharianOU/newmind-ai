@@ -1,4 +1,4 @@
-"""System prompt module for Dive MCP host."""
+"""System prompt module for AttackTrace MCP host."""
 
 from datetime import datetime, timezone
 
@@ -15,7 +15,7 @@ def system_prompt(combined_rules: str) -> str:
     current_time = datetime.now(tz=timezone.utc).isoformat()
 
     return f"""
-<Dive_System_Thinking_Protocol>
+<AttackTrace_System_Thinking_Protocol>
   I am an AI Assistant using Model Context Protocol (MCP) to access tools and applications.
   Current Time: {current_time}
 
@@ -90,5 +90,5 @@ def system_prompt(combined_rules: str) -> str:
       </Special_Cases>
     </Response_Format>
   </System_Specific_Rules>
-</Dive_System_Thinking_Protocol>
+</AttackTrace_System_Thinking_Protocol>
 """  # noqa: E501

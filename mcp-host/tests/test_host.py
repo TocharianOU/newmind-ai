@@ -24,7 +24,7 @@ from attacktrace_mcp_host.host.conf import CheckpointerConfig, HostConfig
 from attacktrace_mcp_host.host.conf.llm import LLMConfig
 from attacktrace_mcp_host.host.custom_events import ToolCallProgress
 from attacktrace_mcp_host.host.errors import ThreadNotFoundError, ThreadQueryError
-from attacktrace_mcp_host.host.host import DiveMcpHost
+from attacktrace_mcp_host.host.host import AttackTraceMcpHost
 from attacktrace_mcp_host.host.tools import ServerConfig
 from attacktrace_mcp_host.models.fake import FakeMessageToolModel, default_responses
 
@@ -59,7 +59,7 @@ async def test_host_context() -> None:
     # prompt = ChatPromptTemplate.from_messages(
     #     [("system", "You are a helpful assistant."), ("placeholder", "{messages}")],
     # )
-    async with DiveMcpHost(config) as mcp_host:
+    async with AttackTraceMcpHost(config) as mcp_host:
         chat = mcp_host.chat()
         async with chat:
             responses = [
@@ -96,7 +96,7 @@ async def test_query_two_messages() -> None:
         ),
         mcp_servers={},
     )
-    async with DiveMcpHost(config) as mcp_host, mcp_host.chat() as chat:
+    async with AttackTraceMcpHost(config) as mcp_host, mcp_host.chat() as chat:
         responses = [
             response
             async for response in chat.query(
@@ -133,7 +133,7 @@ async def test_get_messages(
         checkpointer=CheckpointerConfig(uri=AnyUrl(sqlite_uri)),
     )
 
-    async with DiveMcpHost(config) as mcp_host:
+    async with AttackTraceMcpHost(config) as mcp_host:
         fake_responses = [
             AIMessage(
                 content="Call echo tool",
@@ -211,7 +211,7 @@ async def test_callable_system_prompt() -> None:
     mock_system_prompt = MagicMock(return_value=msgs)
 
     async with (
-        DiveMcpHost(config) as mcp_host,
+        AttackTraceMcpHost(config) as mcp_host,
         mcp_host.chat(system_prompt=mock_system_prompt, volatile=True) as chat,
     ):
         assert mcp_host.model is not None
@@ -255,7 +255,7 @@ async def test_abort_chat() -> None:
         AIMessage(content="This is a long running response that should be aborted"),
     ]
 
-    async with DiveMcpHost(config) as mcp_host:
+    async with AttackTraceMcpHost(config) as mcp_host:
         model = cast("FakeMessageToolModel", mcp_host.model)
         model.responses = fake_responses
         model.sleep = 2.0  # 2 seconds sleep to simulate long running query
@@ -334,7 +334,7 @@ async def test_resend_message(sqlite_uri: str) -> None:
         checkpointer=CheckpointerConfig(uri=AnyUrl(sqlite_uri)),
     )
 
-    async with DiveMcpHost(config) as mcp_host:
+    async with AttackTraceMcpHost(config) as mcp_host:
         chat = mcp_host.chat()
         model = cast("FakeMessageToolModel", mcp_host.model)
         async with chat:
@@ -421,7 +421,7 @@ async def test_host_reload(echo_tool_stdio_config: dict[str, ServerConfig]) -> N
         reloader_called = True
 
     # Test reload functionality
-    async with DiveMcpHost(initial_config) as host:
+    async with AttackTraceMcpHost(initial_config) as host:
         await host.tools_initialized_event.wait()
 
         # Verify initial state
@@ -476,7 +476,7 @@ async def test_thread_query_error_with_state(sqlite_uri: str) -> None:
         os.environ["DEBUG"] = "1"
         delete_debug = True
 
-    async with DiveMcpHost(config) as mcp_host:
+    async with AttackTraceMcpHost(config) as mcp_host:
         chat = mcp_host.chat()
         chat_id = chat.chat_id
         model = cast("FakeMessageToolModel", mcp_host.model)
@@ -522,7 +522,7 @@ async def test_custom_event_streamable(
     """Test the custom event."""
     async with (
         echo_tool_streamable_server as (_, configs),
-        DiveMcpHost(
+        AttackTraceMcpHost(
             HostConfig(
                 llm=LLMConfig(
                     model="fake",
@@ -575,7 +575,7 @@ async def test_custom_event(
     """Test the custom event."""
     async with (
         echo_tool_sse_server as (_, configs),
-        DiveMcpHost(
+        AttackTraceMcpHost(
             HostConfig(
                 llm=LLMConfig(
                     model="fake",
@@ -632,7 +632,7 @@ async def test_resend_after_abort(  # noqa: C901
         mcp_servers=echo_tool_stdio_config,
     )
 
-    async with DiveMcpHost(config) as mcp_host:
+    async with AttackTraceMcpHost(config) as mcp_host:
         mcp_host._checkpointer = InMemorySaver()
         fake_responses = [
             AIMessage(

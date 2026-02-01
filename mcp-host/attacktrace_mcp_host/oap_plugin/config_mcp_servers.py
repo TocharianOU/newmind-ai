@@ -6,6 +6,7 @@ import os
 import subprocess
 import tarfile
 import tempfile
+import uuid
 from pathlib import Path
 from typing import Any, Literal
 
@@ -19,6 +20,7 @@ from attacktrace_mcp_host.httpd.conf.mcp_servers import (
     MCPServerManager,
 )
 from attacktrace_mcp_host.oap_plugin.models import BaseResponse, OAPConfig, UserMcpConfig
+from attacktrace_mcp_host.oap_plugin.migration import migrate_to_instance_model
 
 CONFIG_FILE = Path(ATTACKTRACE_CONFIG_DIR, "oap_config.json")
 logger = logging.getLogger("OAP_PLUGIN")
@@ -55,15 +57,48 @@ class MCPServerManagerPlugin:
         update_oap_token(self.device_token)
         await self.refresh(mcp_server_manager)
 
-    async def refresh(self, mcp_server_manager: MCPServerManager) -> None:
-        """Refresh the MCP server configs."""
+    async def refresh(self, mcp_server_manager: MCPServerManager, instances: list[dict] | None = None) -> None:
+        """Refresh the MCP server configs.
+        
+        Args:
+            mcp_server_manager: The MCP server manager
+            instances: Optional list of {id: str, instanceId: str} for creating multiple instances
+        """
         # Clear local cache first
         self._user_mcp_configs = None
         self._refresh_ts = 0
         logger.info("Cleared local MCP config cache")
         
         # Force refresh from remote
-        await self._get_user_mcp_configs(refresh=True)
+        mcp_servers = await self._get_user_mcp_configs(refresh=True)
+        
+        # If instances provided, duplicate servers for multi-instance support
+        if instances and mcp_servers:
+            instance_map = {}  # instanceId -> toolId
+            for inst in instances:
+                instance_map[inst["instanceId"]] = inst["id"]
+            
+            # Create server entries for each instance
+            expanded_servers = []
+            for server in mcp_servers:
+                matching_instances = [
+                    inst_id for inst_id, tool_id in instance_map.items()
+                    if tool_id == server.id
+                ]
+                
+                if matching_instances:
+                    # Create a server entry for each instance
+                    for inst_id in matching_instances:
+                        from copy import deepcopy
+                        server_copy = deepcopy(server)
+                        server_copy.instanceId = inst_id
+                        expanded_servers.append(server_copy)
+                else:
+                    # Keep original server if no instance info
+                    expanded_servers.append(server)
+            
+            self._user_mcp_configs = expanded_servers
+        
         cfg = await mcp_server_manager.get_current_config()
         # we already merged the configuration in callback function
         assert cfg is not None
@@ -76,122 +111,16 @@ class MCPServerManagerPlugin:
 
     async def current_config_callback(self, config: Config) -> Config:
         """Callback function for getting current config."""
-        mcp_servers = await self._get_user_mcp_configs()
-
-        # oap id and is enable or not
-        mcp_enabled = {}
-        # Backup local env configurations and instance names for OAP tools (indexed by oap.id)
-        local_oap_envs = {}
-        local_oap_names = {}  # Track custom instance names
+        # Run migration (add instanceId to existing OAP instances)
+        try:
+            migration_result = migrate_to_instance_model(config)
+            if migration_result:
+                logger.info("Applied migration: added instanceId to existing OAP instances")
+        except Exception as e:
+            logger.error(f"Migration failed: {e}")
         
-        for server_name, server in config.mcp_servers.items():
-            if oap := (server.extra_data or {}).get("oap"):
-                oap_id = oap["id"]
-                mcp_enabled[oap_id] = server.enabled
-                # Store the local env configuration indexed by oap.id
-                if server.env:
-                    local_oap_envs[oap_id] = server.env.copy()
-                # Store the custom instance name indexed by oap.id
-                local_oap_names[oap_id] = server_name
-
-        # remove oap mcp servers
-        if mcp_servers is None or len(mcp_servers) > 0:
-            for key in config.mcp_servers.copy():
-                value = config.mcp_servers[key]
-                if value.extra_data and value.extra_data.get("oap"):
-                    config.mcp_servers.pop(key)
-
-        if mcp_servers is None:
-            return config
-
-        for server in mcp_servers:
-            # Check if package needs to be downloaded
-            install_path = None
-            if hasattr(server, 'downloadUrl') and server.downloadUrl and hasattr(server, 'version') and server.version:
-                try:
-                    install_path = await self._ensure_package_installed(
-                        server.name,
-                        server.version,
-                        server.downloadUrl
-                    )
-                    logger.info(f"Package {server.name}@{server.version} installed at {install_path}")
-                except Exception as e:
-                    logger.error(f"Failed to install package {server.name}@{server.version}: {e}")
-                    # Continue without the package
-            
-            # Prepare config parameters based on transport type
-            # Check enabled status (preserve existing, default to True for new)
-            should_enable = mcp_enabled.get(server.id, True)
-            
-            # For new tools (not in current config), auto-disable if they have empty env vars
-            # This prevents startup crashes for tools that require configuration (like Elasticsearch)
-            is_new_tool = server.id not in mcp_enabled
-            
-            # Merge local env with remote env
-            merged_env = {}
-            if hasattr(server, 'env') and isinstance(server.env, dict):
-                merged_env.update(server.env)
-            
-            # Override with local env if exists (user input takes precedence)
-            # Use oap.id to find local env, not server.name
-            if server.id in local_oap_envs:
-                merged_env.update(local_oap_envs[server.id])
-            
-            if is_new_tool and merged_env:
-                if any(v == "" or v is None for v in merged_env.values()):
-                    logger.info(f"Auto-disabling new tool {server.name} due to missing environment variables")
-                    should_enable = False
-
-            config_params = {
-                "enabled": should_enable,
-                "transport": server.transport,
-                "version": getattr(server, 'version', None),
-                "configSchema": getattr(server, 'configSchema', None),
-                "extraData": {
-                    "oap": {
-                        "id": server.id,
-                        "name": server.name,
-                        "planTag": server.plan.lower(),
-                        "description": server.description,
-                        "version": getattr(server, 'version', None),
-                        "downloadUrl": getattr(server, 'downloadUrl', None),
-                        "configSchema": getattr(server, 'configSchema', None),
-                    }
-                },
-            }
-            
-            # Handle stdio transport (command-based)
-            if server.transport == "stdio":
-                if hasattr(server, 'command') and server.command:
-                    config_params['command'] = server.command
-                if hasattr(server, 'args') and server.args:
-                    # Replace {{install_path}} placeholder with actual install path
-                    if install_path and isinstance(server.args, list):
-                        config_params['args'] = [
-                            arg.replace('{{install_path}}', str(install_path))
-                            for arg in server.args
-                        ]
-                    else:
-                        config_params['args'] = server.args if isinstance(server.args, list) else []
-                
-                # Apply merged env
-                if merged_env:
-                    config_params['env'] = merged_env
-            # Handle http/sse/streamable transport (URL-based)
-            else:
-                config_params['url'] = server.url
-                config_params['headers'] = {
-                    "Authorization": f"Bearer {self.device_token}",
-                    **(server.headers if hasattr(server, 'headers') and server.headers else {}),
-                }
-            
-            # Build the config with all parameters
-            mcp_config = MCPServerConfig(**config_params)
-            
-            # Use local instance name if exists (to preserve user-renamed instances)
-            # Otherwise use the package name from remote
-            instance_name = local_oap_names.get(server.id, server.name)
-            config.mcp_servers[instance_name] = mcp_config
+        # Return config immediately without fetching from OAP or modifying config.mcp_servers
+        # This prevents overwriting local instance deletions/changes with stale data from OAP backend
         return config
 
     async def _send_api_request[T](

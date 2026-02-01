@@ -1,4 +1,4 @@
-"""Dive MCP Host CLI."""
+"""AttackTrace MCP Host CLI."""
 
 import argparse
 from pathlib import Path
@@ -8,7 +8,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 from attacktrace_mcp_host.cli.cli_types import CLIArgs
 from attacktrace_mcp_host.host.conf import HostConfig
-from attacktrace_mcp_host.host.host import DiveMcpHost
+from attacktrace_mcp_host.host.host import AttackTraceMcpHost
 
 
 def parse_query(args: type[CLIArgs]) -> HumanMessage:
@@ -19,7 +19,7 @@ def parse_query(args: type[CLIArgs]) -> HumanMessage:
 
 def setup_argument_parser() -> type[CLIArgs]:
     """Setup the argument parser."""
-    parser = argparse.ArgumentParser(description="Dive MCP Host CLI")
+    parser = argparse.ArgumentParser(description="AttackTrace MCP Host CLI")
     parser.add_argument(
         "query",
         nargs="*",
@@ -69,7 +69,7 @@ async def run() -> None:
             system_prompt = f.read()
 
     output_parser = StrOutputParser()
-    async with DiveMcpHost(config) as mcp_host:
+    async with AttackTraceMcpHost(config) as mcp_host:
         print("Waiting for tools to initialize...")
         await mcp_host.tools_initialized_event.wait()
         print("Tools initialized")

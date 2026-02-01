@@ -1,4 +1,4 @@
-"""Dive MCP Host HTTPD.
+"""AttackTrace MCP Host HTTPD.
 
 Support Restful API and websocket.
 """
@@ -16,7 +16,7 @@ from attacktrace_mcp_host.httpd.conf.httpd_service import ConfigLocation, Servic
 
 
 def main() -> None:
-    """Dive MCP Host HTTPD entrypoint."""
+    """AttackTrace MCP Host HTTPD entrypoint."""
     args = Arguments.parse_args()
 
     service_config_manager = ServiceManager(str(args.httpd_config))
@@ -56,7 +56,7 @@ def main() -> None:
         log_dir.mkdir(parents=True, exist_ok=True)
         service_config_manager.current_setting.logging_config["handlers"]["rotate"] = {
             "class": "logging.handlers.RotatingFileHandler",
-            "filename": log_dir.joinpath("dive_httpd.log"),
+            "filename": log_dir.joinpath("attacktrace_httpd.log"),
             "maxBytes": 1048576,
             "backupCount": 5,
         }

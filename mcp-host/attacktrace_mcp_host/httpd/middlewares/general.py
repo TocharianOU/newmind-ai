@@ -34,7 +34,7 @@ async def error_handler(_: Request, exc: Exception) -> Response:
     )
 
 
-class DiveUser(TypedDict):
+class AttackTraceUser(TypedDict):
     """User-related state storage.
 
     This state can be accessed by all middlewares and handlers.
@@ -53,7 +53,7 @@ class DiveUser(TypedDict):
 
 async def default_state(request: Request, call_next: Callable) -> Response:
     """Prefill default state."""
-    request.state.dive_user = DiveUser(
+    request.state.dive_user = AttackTraceUser(
         user_id=None,
         user_name=None,
         user_type=None,

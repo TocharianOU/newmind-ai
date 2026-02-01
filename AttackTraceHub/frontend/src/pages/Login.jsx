@@ -24,7 +24,7 @@ const Login = () => {
       setError(decodeURIComponent(errorParam));
     }
 
-    // Check if this is an app redirect from SSO (e.g., from NewmindChat)
+    // Check if this is an app redirect from SSO (e.g., from AttackTrace)
     const appRedirect = searchParams.get('appRedirect');
     const token = searchParams.get('token');
 
@@ -35,7 +35,7 @@ const Login = () => {
       showAppRedirect
     });
 
-    if (appRedirect === 'dive' && (token || user)) {
+    if (appRedirect === 'attacktrace' && (token || user)) {
       console.log('✅ SSO app redirect detected - showing success UI');
 
       // User has completed SSO login and should return to app
@@ -47,9 +47,9 @@ const Login = () => {
         const authToken = token || localStorage.getItem('authToken');
         if (authToken) {
           console.log('🚀 Auto-triggering deep link to return to app...');
-          console.log('🔗 Deep link URL: dive://signin/[token]');
-          // Use custom URL scheme to automatically open in NewmindChat
-          window.location.href = `dive://signin/${authToken}`;
+          console.log('🔗 Deep link URL: attacktrace://signin/[token]');
+          // Use custom URL scheme to automatically open in AttackTrace
+          window.location.href = `attacktrace://signin/${authToken}`;
         } else {
           console.error('❌ No auth token found for deep link');
         }
@@ -67,7 +67,7 @@ const Login = () => {
 
       // Check if we should redirect to app
       const appRedirect = searchParams.get('appRedirect');
-      if (appRedirect === 'dive') {
+      if (appRedirect === 'attacktrace') {
         setShowAppRedirect(true);
       } else {
         navigate('/dashboard');
@@ -89,8 +89,8 @@ const Login = () => {
   const handleContinueInApp = () => {
     const token = localStorage.getItem('authToken');
     if (token) {
-      // Use custom URL scheme to open in NewmindChat
-      window.location.href = `dive://signin/${token}`;
+      // Use custom URL scheme to open in AttackTrace
+      window.location.href = `attacktrace://signin/${token}`;
     }
   };
 
@@ -98,7 +98,7 @@ const Login = () => {
     // Get API base URL from environment or use default
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
-    // Check if there's an appRedirect parameter (from NewmindChat)
+    // Check if there's an appRedirect parameter (from AttackTrace)
     const appRedirect = searchParams.get('appRedirect');
     const ssoUrl = `${apiBaseUrl}/api/auth/sso/${provider}/start${appRedirect ? `?appRedirect=${appRedirect}` : ''}`;
 

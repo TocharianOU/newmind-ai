@@ -32,9 +32,15 @@ export function initProtocol() {
   })
 
   protocol.handle("img", (req) => {
-    // Remove 'img://'
-    const url = req.url.substring(6)
+    // Remove 'img://' and parse robustly
+    const url = req.url.replace("img://", "")
     const assetPath = path.join(process.env.VITE_PUBLIC, "image", url)
-    return net.fetch(`file://${assetPath}`)
+    
+    // Convert to file URL
+    const fileUrl = process.platform === "win32" 
+      ? `file:///${assetPath.replace(/\\/g, "/")}` 
+      : `file://${assetPath}`
+      
+    return net.fetch(fileUrl)
   })
 }

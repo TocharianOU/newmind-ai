@@ -60,7 +60,7 @@ def test_get_openai(test_client):
         response_data,
         {
             "success": True,
-            "message": "Welcome to Dive Compatible API! 🚀",
+            "message": "Welcome to AttackTrace Compatible API! 🚀",
         },
     )
 

@@ -34,7 +34,7 @@ setInterval(() => {
 router.get('/:provider/start', async (req, res) => {
   try {
     const { provider } = req.params;
-    const { appRedirect } = req.query; // Optional: 'dive' for NewmindChat
+    const { appRedirect } = req.query; // 'attacktrace' for AttackTrace
 
     logger.info(`SSO login start requested for provider: ${provider}`);
 
@@ -144,7 +144,7 @@ router.get('/:provider/callback', async (req, res) => {
     const hubFrontendUrl = process.env.HUB_FRONTEND_URL || 'http://localhost:23001';
     let redirectUrl = `${hubFrontendUrl}/login?token=${accessToken}`;
 
-    // Add appRedirect parameter if specified (for NewmindChat)
+    // Add appRedirect parameter if specified (for AttackTrace)
     if (stateData.appRedirect) {
       redirectUrl += `&appRedirect=${encodeURIComponent(stateData.appRedirect)}`;
     }

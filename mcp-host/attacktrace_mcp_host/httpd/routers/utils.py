@@ -53,12 +53,12 @@ from attacktrace_mcp_host.httpd.routers.models import (
     ToolCallsContent,
     ToolResultContent,
 )
-from attacktrace_mcp_host.httpd.server import DiveHostAPI
+from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 from attacktrace_mcp_host.log import TRACE
 
 if TYPE_CHECKING:
-    from attacktrace_mcp_host.host.host import DiveMcpHost
-    from attacktrace_mcp_host.httpd.middlewares.general import DiveUser
+    from attacktrace_mcp_host.host.host import AttackTraceMcpHost
+    from attacktrace_mcp_host.httpd.middlewares.general import AttackTraceUser
 
 title_prompt = """You are a title generator from the user input.
 Your only task is to generate a short title based on the user input.
@@ -69,8 +69,7 @@ IMPORTANT:
 - NO thinking, reasoning, explanations, quotes, or extra text
 - NO punctuation at the end
 - If the input is URL only, output the description of the URL, for example, "the URL of xxx website"
-- If the input contains Traditional Chinese characters, use Traditional Chinese for the title.
-- For all other languages, generate the title in the same language as the input."""  # noqa: E501
+- Generate the title in the same language as the input."""  # noqa: E501
 
 
 logger = logging.getLogger(__name__)
@@ -269,7 +268,7 @@ class ChatProcessor:
 
     def __init__(
         self,
-        app: DiveHostAPI,
+        app: AttackTraceHostAPI,
         request_state: State,
         stream: EventStreamContextManager,
     ) -> None:
@@ -278,7 +277,7 @@ class ChatProcessor:
         self.request_state = request_state
         self.stream = stream
         self.store: StoreManagerProtocol = app.store
-        self.dive_host: DiveMcpHost = app.dive_host["default"]
+        self.attacktrace_host: AttackTraceMcpHost = app.attacktrace_host["default"]
         self._str_output_parser = StrOutputParser()
         self._content_handler = ContentHandler(self.store)
         self.disable_dive_system_prompt = (
@@ -304,7 +303,7 @@ class ChatProcessor:
             
             try:
                 # Try to create LLM-based entity extractor with model
-                self._entity_extractor = EntityExtractor(self.dive_host.model)
+                self._entity_extractor = EntityExtractor(self.attacktrace_host.model)
                 logger.info("LLM entity extractor initialized")
             except Exception as e:
                 logger.warning(f"Failed to initialize LLM entity extractor: {e}")
@@ -325,7 +324,7 @@ class ChatProcessor:
         )
 
         chat_id = chat_id if chat_id else str(uuid4())
-        dive_user: DiveUser = self.request_state.dive_user
+        dive_user: AttackTraceUser = self.request_state.dive_user
         title = "New Chat"
         title_await = None
         result = ""
@@ -580,7 +579,7 @@ class ChatProcessor:
             else:
                 messages.append(query_input)
 
-        dive_user: DiveUser = self.request_state.dive_user
+        dive_user: AttackTraceUser = self.request_state.dive_user
         
         # ===== Memory Retrieval: Inject relevant memories into context =====
         memory_context = ""
@@ -646,7 +645,7 @@ class ChatProcessor:
             if memory_context:
                 prompt = memory_context
 
-        chat = self.dive_host.chat(
+        chat = self.attacktrace_host.chat(
             chat_id=chat_id,
             user_id=dive_user.get("user_id") or "default",
             tools=tools,
@@ -803,7 +802,7 @@ class ChatProcessor:
 
     async def _generate_title(self, query: str) -> str:
         """Generate title."""
-        chat = self.dive_host.chat(
+        chat = self.attacktrace_host.chat(
             tools=[],  # do not use tools
             system_prompt=title_prompt,
             volatile=True,
@@ -906,7 +905,7 @@ class ChatProcessor:
         self, chat_id: str, message_id: str
     ) -> BaseMessage:
         """Get the last user input message from history."""
-        dive_user: DiveUser = self.request_state.dive_user
+        dive_user: AttackTraceUser = self.request_state.dive_user
         async with self.app.db_sessionmaker() as session:
             db = self.app.msg_store(session)
             chat = await db.get_chat_with_messages(chat_id, dive_user["user_id"])

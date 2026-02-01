@@ -10,7 +10,7 @@ from pydantic import AnyUrl
 
 from attacktrace_mcp_host.host.conf import CheckpointerConfig
 from attacktrace_mcp_host.host.conf.llm import LLMConfiguration
-from attacktrace_mcp_host.httpd.app import DiveHostAPI, create_app
+from attacktrace_mcp_host.httpd.app import AttackTraceHostAPI, create_app
 from attacktrace_mcp_host.httpd.conf.httpd_service import (
     ConfigLocation,
     DBConfig,
@@ -123,10 +123,10 @@ def config_files() -> Generator[ConfigFileNames, None, None]:
 @pytest_asyncio.fixture
 async def test_client(
     config_files: ConfigFileNames,
-) -> AsyncGenerator[tuple[TestClient, DiveHostAPI], None]:
+) -> AsyncGenerator[tuple[TestClient, AttackTraceHostAPI], None]:
     """Create a test client with fake model.
 
-    This fixture creates a test client with a DiveHostAPI instance. The DiveHostAPI
+    This fixture creates a test client with a AttackTraceHostAPI instance. The AttackTraceHostAPI
     instance can be used to mock methods and test router endpoints.
     The fixture yields both the test client and app instance to allow access to both
     during testing.

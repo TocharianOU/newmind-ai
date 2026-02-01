@@ -37,6 +37,8 @@ class MCPServerConfig(BaseModel):
     args: list[str] | None = Field(default_factory=list)
     env: dict[str, str] | None = Field(default_factory=dict)
     url: str | None = None
+    version: str | None = None
+    config_schema: dict[str, Any] | None = Field(default=None, alias="configSchema")
     extra_data: dict[str, Any] | None = Field(default=None, alias="extraData")
     proxy: ProxyUrl | None = None
     headers: dict[str, SecretStr] | None = Field(default_factory=dict)

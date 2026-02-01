@@ -146,6 +146,44 @@
       "verify": "Verify Certificate",
       "skip": "Skip Verification"
     },
+    "viewJsonConfig": "View Underlying JSON Configuration",
+    "copyJsonConfig": "Copy Configuration",
+    "managePackages": "Manage Packages",
+    "marketplace": {
+      "title": "Integration Marketplace",
+      "search": "Search integrations...",
+      "installed": "Installed",
+      "addButton": "Add Integration",
+      "adding": "Adding...",
+      "configure": "Configure Integration",
+      "available": "Available",
+      "installing": "Installing Integration",
+      "downloading": "Downloading package...",
+      "ready": "Ready",
+      "preparing": "Preparing installation..."
+    },
+    "packages": {
+      "title": "Package Manager",
+      "name": "Name",
+      "version": "Version",
+      "path": "Path",
+      "status": "Status",
+      "actions": "Actions",
+      "inUse": "In Use",
+      "idle": "Idle",
+      "delete": "Delete",
+      "deleted": "Package deleted",
+      "deleteFailed": "Delete failed",
+      "deleteConfirm": "Delete {{name}}@{{version}}?",
+      "cannotDelete": "Package is in use by instances",
+      "empty": "No packages installed"
+    },
+    "instance": {
+      "created": "Instance created successfully",
+      "createFailed": "Failed to create instance",
+      "deleted": "Instance deleted",
+      "updated": "Instance configuration updated"
+    },
     "jsonFormatError": {
       "addFormat": "Configuration format error, please check and correct the format",
       "format": "{{mcp}} configuration format error, please check and correct the format",
@@ -232,6 +270,8 @@
       "high_cost_desc": "You have selected integration tools that may consume more resources. Please check if your plan usage is sufficient.",
       "headerBtn": "Integrations",
       "headerBtnAlt": "Add / View Security Integrations",
+      "marketplace": "Browse Integrations",
+      "marketplaceAlt": "Browse available integrations from the cloud",
       "edit_managed_notice": "This integration is managed by AttackTrace Hub. Configure the required settings below.",
       "simplified_config": "Simplified Configuration"
     },

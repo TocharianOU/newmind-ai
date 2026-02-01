@@ -20,7 +20,7 @@ from attacktrace_mcp_host.host.conf.llm import (
     LLMOapConfig,
     LLMOapConfiguration,
 )
-from attacktrace_mcp_host.host.host import DiveMcpHost
+from attacktrace_mcp_host.host.host import AttackTraceMcpHost
 from attacktrace_mcp_host.host.tools import ServerConfig
 from tests import helper
 
@@ -35,7 +35,7 @@ async def _run_the_test(
         "args": {"delay_ms": 10, "message": "helloXXX"},
     }
     async with (
-        DiveMcpHost(config) as mcp_host,
+        AttackTraceMcpHost(config) as mcp_host,
     ):
         await mcp_host.tools_initialized_event.wait()
         async with mcp_host.chat() as chat:

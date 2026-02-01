@@ -46,12 +46,12 @@ const PublicRoute = ({ children }) => {
     );
   }
 
-  // Check if this is an app redirect (e.g., from NewmindChat)
+  // Check if this is an app redirect (e.g., from AttackTrace)
   // If so, don't auto-redirect to dashboard - let the Login page handle deep linking
   const urlParams = new URLSearchParams(window.location.search);
   const appRedirect = urlParams.get('appRedirect');
 
-  if (user && appRedirect !== 'dive') {
+  if (user && appRedirect !== 'attacktrace') {
     return <Navigate to="/dashboard" replace />;
   }
 

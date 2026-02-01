@@ -21,7 +21,7 @@ MCP Host 提供三种使用方式：
 ```bash
 cd mcp-host
 source .venv/bin/activate
-dive_httpd
+attacktrace_httpd
 ```
 
 ### 服务信息
@@ -35,7 +35,7 @@ dive_httpd
 ```bash
 # 使用环境变量
 export MCP_HOST_PORT=8080
-dive_httpd
+attacktrace_httpd
 
 # 或在 .env 文件中配置
 MCP_HOST_PORT=8080
@@ -45,10 +45,10 @@ MCP_HOST_PORT=8080
 
 ```bash
 # 查看服务状态
-ps aux | grep dive_httpd
+ps aux | grep attacktrace_httpd
 
 # 停止服务
-pkill -f dive_httpd
+pkill -f attacktrace_httpd
 ```
 
 ## 方式 2：命令行工具
@@ -57,36 +57,36 @@ pkill -f dive_httpd
 
 ```bash
 # 简单对话
-dive_cli "你好，请介绍一下自己"
+attacktrace_cli "你好，请介绍一下自己"
 
 # 查看帮助
-dive_cli --help
+attacktrace_cli --help
 ```
 
 ### 会话管理
 
 ```bash
 # 开始新会话
-dive_cli "什么是 MCP？"
+attacktrace_cli "什么是 MCP？"
 
 # 继续会话（使用返回的 chat_id）
-dive_cli -c CHAT_ID "请详细说明"
+attacktrace_cli -c CHAT_ID "请详细说明"
 
 # 指定用户
-dive_cli -u user123 "你好"
+attacktrace_cli -u user123 "你好"
 ```
 
 ### 高级选项
 
 ```bash
 # 指定模型
-dive_cli -m newmind-medium "分析这段代码"
+attacktrace_cli -m newmind-medium "分析这段代码"
 
 # 流式输出
-dive_cli --stream "讲一个故事"
+attacktrace_cli --stream "讲一个故事"
 
 # 调试模式
-dive_cli --debug "测试消息"
+attacktrace_cli --debug "测试消息"
 ```
 
 ## 方式 3：作为 Python 库
@@ -95,7 +95,7 @@ dive_cli --debug "测试消息"
 
 ```python
 from attacktrace_mcp_host.host.conf import HostConfig
-from attacktrace_mcp_host.host import NewmindMcpHost
+from attacktrace_mcp_host.host import AttackTraceMcpHost
 
 # 初始化配置
 config = HostConfig(
@@ -104,7 +104,7 @@ config = HostConfig(
 )
 
 # 使用 async 上下文管理器
-async with NewmindMcpHost(config) as host:
+async with AttackTraceMcpHost(config) as host:
     # 开始或恢复对话
     async with host.chat(thread_id="123") as chat:
         # 发送查询并获取响应
@@ -114,7 +114,7 @@ async with NewmindMcpHost(config) as host:
 
 ### 完整示例
 
-查看 `doc/dive_httpd.md` 获取更多示例。
+查看 `doc/attacktrace_httpd.md` 获取更多示例。
 
 ## HTTP API 使用
 
@@ -231,7 +231,7 @@ grep ERROR logs/mcp_host.log
 
 ```bash
 export MCP_HOST_PORT=8080
-dive_httpd
+attacktrace_httpd
 ```
 
 ### 数据库连接失败
@@ -258,7 +258,7 @@ ls -la *.db
 
 ```bash
 source .venv/bin/activate
-which dive_httpd
+which attacktrace_httpd
 ```
 
 ## 监控和调试
@@ -276,7 +276,7 @@ curl http://localhost:61990/health
 ### 调试模式
 
 ```bash
-LOG_LEVEL=DEBUG dive_httpd
+LOG_LEVEL=DEBUG attacktrace_httpd
 ```
 
 ## 停止服务
@@ -286,7 +286,7 @@ LOG_LEVEL=DEBUG dive_httpd
 ```bash
 # 在终端按 Ctrl+C
 # 或
-pkill -f dive_httpd
+pkill -f attacktrace_httpd
 ```
 
 ### 清理资源
@@ -314,6 +314,6 @@ rm -rf __pycache__
 
 - 查看 [BUILD.md](./BUILD.md) 了解构建配置
 - 查看 [README.md](./README.md) 了解项目架构
-- 查看 `doc/dive_httpd.md` 了解详细 API 文档
+- 查看 `doc/attacktrace_httpd.md` 了解详细 API 文档
 
 

@@ -9,7 +9,6 @@ import Tooltip from "../../../components/Tooltip"
 import PopupConfirm from "../../../components/PopupConfirm"
 import Dropdown from "../../../components/DropDown"
 import { imgPrefix } from "../../../ipc"
-import OAPServerList from "./Popup/OAPServerList"
 import Tabs from "../../../components/Tabs"
 import { OAPMCPServer } from "../../../types/oap"
 import { isLoggedInOAPAtom, loadOapToolsAtom, oapToolsAtom } from "../../../atoms/oapState"
@@ -20,6 +19,7 @@ import cloneDeep from "lodash/cloneDeep"
 import { ClickOutside } from "../../../components/ClickOutside"
 import Button from "../../../components/Button"
 import CustomEdit from "./Popup/CustomEdit"
+import IntegrationMarket from "./Popup/IntegrationMarket"
 import "../../../styles/overlay/_Tools.scss"
 
 interface ToolsCache {
@@ -56,6 +56,8 @@ export interface mcpServersProps {
   url?: string
   transport?: string
   initialTimeout?: number
+  version?: string
+  configSchema?: Record<string, any>
 }
 
 const Tools = () => {
@@ -69,7 +71,7 @@ const Tools = () => {
   const loadTools = useSetAtom(loadToolsAtom)
   const [showDeletePopup, setShowDeletePopup] = useState(false)
   const [showCustomEditPopup, setShowCustomEditPopup] = useState(false)
-  const [showOapMcpPopup, setShowOapMcpPopup] = useState(false)
+  const [showIntegrationMarket, setShowIntegrationMarket] = useState(false)
   const [showUnsavedSubtoolsPopup, setShowUnsavedSubtoolsPopup] = useState(false)
   const [changingTool, setChangingTool] = useState<string>("")
   const [currentTool, setCurrentTool] = useState<string>("")
@@ -120,9 +122,18 @@ const Tools = () => {
 
   useEffect(() => {
     (async () => {
-      const cachedTools = localStorage.getItem("toolsCache")
-      if (cachedTools) {
-        toolsCacheRef.current = JSON.parse(cachedTools)
+      // Check if we should clear cache (useful after OAP integration)
+      const shouldClearCache = sessionStorage.getItem("clearToolsCache")
+      if (shouldClearCache === "true") {
+        console.log('🧹 Clearing stale tool cache...')
+        localStorage.removeItem("toolsCache")
+        sessionStorage.removeItem("clearToolsCache")
+        toolsCacheRef.current = {}
+      } else {
+        const cachedTools = localStorage.getItem("toolsCache")
+        if (cachedTools) {
+          toolsCacheRef.current = JSON.parse(cachedTools)
+        }
       }
 
       await updateToolsCache()
@@ -136,7 +147,10 @@ const Tools = () => {
   }, [showCustomEditPopup])
 
   const isOapTool = (toolName: string) => {
-    return oapTools?.find(oapTool => oapTool.name === toolName) ? true : false
+    // Check by extraData.oap metadata, not by name matching
+    // This allows users to rename instances without losing OAP features
+    const mcpServer = mcpConfig.mcpServers?.[toolName]
+    return !!mcpServer?.extraData?.oap
   }
 
   const updateToolsCache = async () => {
@@ -153,9 +167,14 @@ const Tools = () => {
     const newCache: ToolsCache = {}
     setTools(prevTools => {
       prevTools.forEach((tool: Tool) => {
+        // Check if tool is OAP by extraData, not by name matching
+        const mcpServer = _mcpConfig.mcpServers?.[tool.name]
+        const isOap = !!mcpServer?.extraData?.oap
+        const oapData = mcpServer?.extraData?.oap
+        
         newCache[tool.name] = {
-          type: _oapTools && _oapTools.find(oapTool => oapTool.name === tool.name) ? "oap" : "custom",
-          plan: _oapTools && _oapTools.find(oapTool => oapTool.name === tool.name)?.plan,
+          type: isOap ? "oap" : "custom",
+          plan: isOap ? oapData?.planTag : undefined,
           description: tool.description || "",
           icon: tool.icon,
           subTools: tool.tools?.map(subTool => ({
@@ -278,7 +297,16 @@ const Tools = () => {
     }
   }
 
-  const handleCustomSubmit = async (newConfig: {mcpServers: MCPConfig}) => {
+  const handleCustomSubmit = async (newConfig: {mcpServers: MCPConfig} | null) => {
+    // If config is null, it means we just need to refresh (e.g. OAP instance update)
+    if (!newConfig) {
+      setShowCustomEditPopup(false)
+      await loadMcpConfig()
+      await updateToolsCache()
+      setIsResort(true)
+      return
+    }
+
     setIsLoading(true)
     try {
       // const filledConfig = await window.ipcRenderer.fillPathToConfig(JSON.stringify(newConfig))
@@ -339,20 +367,58 @@ const Tools = () => {
 
   const deleteTool = async (toolName: string) => {
     setIsLoading(true)
-    if(isOapTool(toolName)) {
-      await oapApplyMCPServer(oapTools.filter(oapTool => oapTool.name !== toolName).map(oapTool => oapTool.id))
+    
+    try {
+      if (isOapTool(toolName)) {
+        // Delete OAP instance via new instance API
+        const res = await fetch(`/api/plugins/oap-platform/instances/${toolName}`, {
+          method: "DELETE",
+        })
+        
+        if (!res.ok) {
+          throw new Error("Failed to delete instance")
+        }
+        
+        showToast({
+          message: t("tools.instance.deleted") || "Instance deleted successfully",
+          type: "success"
+        })
+        
+        // Force immediate UI refresh by removing from local state first (Optimistic UI)
+        setMcpConfig(prev => {
+          const newConfig = { ...prev, mcpServers: { ...prev.mcpServers } }
+          delete newConfig.mcpServers[toolName]
+          return newConfig
+        })
+        
+        // Reload all configs and tools after deletion - AWAIT to ensure state updates
+        await loadMcpConfig()
+        loadOapTools()
+        loadTools()
+        updateToolsCache()
+        
+        // Force immediate UI refresh
+        setMcpConfig(prev => ({...prev}))
+      } else {
+        // Delete custom MCP (old logic)
+        const newConfig = JSON.parse(JSON.stringify(mcpConfig))
+        delete newConfig.mcpServers[toolName]
+        await updateMCPConfig(newConfig)
+        setMcpConfig(newConfig)
+        loadTools()
+        updateToolsCache()
+      }
+      
+      setIsResort(true)
+    } catch (error) {
+      console.error("Error deleting tool:", error)
+      showToast({
+        message: t("tools.deleteFailed") || "Failed to delete",
+        type: "error"
+      })
+    } finally {
+      setIsLoading(false)
     }
-    const newConfig = JSON.parse(JSON.stringify(mcpConfig))
-    delete newConfig.mcpServers[toolName]
-    await fetch("/api/plugins/oap-platform/config/refresh", {
-      method: "POST",
-    })
-    await loadOapTools()
-    await updateToolsCache()
-    await updateMCPConfig(newConfig)
-    setMcpConfig(newConfig)
-    setIsResort(true)
-    setIsLoading(false)
   }
 
   const toggleTool = async (tool: Tool) => {
@@ -523,48 +589,112 @@ const Tools = () => {
   }
   // SubTool end //
 
-  const handleReloadMCPServers = async () => {
+  const handleReloadMCPServers = async (toolsNeedingConfig?: string[]) => {
     setIsLoading(true)
-    await fetch("/api/plugins/oap-platform/config/refresh", {
-      method: "POST",
-    })
-    await updateMCPConfig(mcpConfig, true)
-    const mcpServers = (mcpConfig.mcpServers as Record<string, any>)
-    const disabledTools = Object.keys(toolsCacheRef.current).filter(tool => toolsCacheRef.current[tool]?.disabled && mcpServers[tool]?.enabled)
-    const newDisabledTools = Object.keys(toolsCacheRef.current).filter(tool => toolsCacheRef.current[tool]?.disabled && mcpServers[tool]?.enabled)
-    const hasToolsEnabled = disabledTools.some(tool => !newDisabledTools.includes(tool))
-
-    if (hasToolsEnabled) {
-      showToast({
-        message: t("tools.saveSuccess"),
-        type: "success"
+    
+    // Clear tool cache to prevent duplicates
+    console.log('🧹 Clearing tool cache...')
+    localStorage.removeItem("toolsCache")
+    toolsCacheRef.current = {}
+    
+    try {
+      await fetch("/api/plugins/oap-platform/config/refresh", {
+        method: "POST",
       })
-    }
+      
+      // Reload everything fresh
+      await loadMcpConfig()
+      await updateMCPConfig(mcpConfig, true)
+      await loadOapTools()
+      await loadTools()
+      await updateToolsCache()
+      
+      const mcpServers = (mcpConfig.mcpServers as Record<string, any>)
+      const disabledTools = Object.keys(toolsCacheRef.current).filter(tool => toolsCacheRef.current[tool]?.disabled && mcpServers[tool]?.enabled)
+      const newDisabledTools = Object.keys(toolsCacheRef.current).filter(tool => toolsCacheRef.current[tool]?.disabled && mcpServers[tool]?.enabled)
+      const hasToolsEnabled = disabledTools.some(tool => !newDisabledTools.includes(tool))
 
-    if (newDisabledTools.length > 0) {
-      if(newDisabledTools.length === 1) {
+      if (hasToolsEnabled) {
         showToast({
-          message: t("tools.reloadFailed", { toolName: newDisabledTools[0] }),
-          type: "error",
-          closable: true
-        })
-      } else {
-        showToast({
-          message: t("tools.reloadAllFailed", { number: newDisabledTools.length }),
-          type: "error",
-          closable: true
+          message: t("tools.saveSuccess"),
+          type: "success"
         })
       }
+
+      if (newDisabledTools.length > 0) {
+        if(newDisabledTools.length === 1) {
+          showToast({
+            message: t("tools.reloadFailed", { toolName: newDisabledTools[0] }),
+            type: "error",
+            closable: true
+          })
+        } else {
+          showToast({
+            message: t("tools.reloadAllFailed", { number: newDisabledTools.length }),
+            type: "error",
+            closable: true
+          })
+        }
+      }
+    } catch (error) {
+      console.error("Error reloading MCP servers:", error)
+      // Even if reload fails, we might still want to show the config popup if we know which tool was added
+      showToast({
+        message: "Some tools failed to start (likely missing config). Please configure them.",
+        type: "warning",
+      })
+    } finally {
+      setIsResort(true)
+      setIsLoading(false)
+      
+      // CRITICAL: Always check if we need to configure tools, even if the refresh above failed.
+      // The tool entry might exist in the file system even if the process crashed.
+      console.log('🔧 Checking tools needing config (finally block):', toolsNeedingConfig);
+      
+      if (toolsNeedingConfig && toolsNeedingConfig.length > 0) {
+        // Ensure we have the latest config loaded if possible, or at least try to edit
+        // We use a small timeout to let the UI settle
+        setTimeout(() => {
+          console.log('🔧 Opening CustomEdit for:', toolsNeedingConfig[0]);
+          setCurrentTool(toolsNeedingConfig[0])
+          setShowCustomEditPopup(true)
+          
+          showToast({
+            message: t("tools.oap.config_needed") || `Please configure environment variables for ${toolsNeedingConfig[0]}`,
+            type: "info",
+            closable: true,
+            duration: 10000 // Show longer
+          })
+        }, 500)
+      }
     }
-    await loadOapTools()
-    await loadMcpConfig()
-    await updateToolsCache()
-    setIsResort(true)
-    setIsLoading(false)
   }
 
   const sortedTools = useMemo(() => {
-    const configOrder = mcpConfig.mcpServers ? Object.keys(mcpConfig.mcpServers) : []
+    // Remove duplicates from config order (case-insensitive deduplication)
+    const configOrder = mcpConfig.mcpServers 
+      ? Object.keys(mcpConfig.mcpServers) 
+      : []
+    
+    // Group by lower case name to find duplicates, prioritizing OAP tools
+    const uniqueNamesMap = new Map<string, string>();
+    configOrder.forEach(name => {
+      const lowerName = name.toLowerCase();
+      if (!uniqueNamesMap.has(lowerName)) {
+        uniqueNamesMap.set(lowerName, name);
+      } else {
+        // If collision, check if the current one is an OAP tool while the existing one isn't
+        const existingName = uniqueNamesMap.get(lowerName)!;
+        const currentIsOap = isOapTool(name);
+        const existingIsOap = isOapTool(existingName);
+        if (currentIsOap && !existingIsOap) {
+          uniqueNamesMap.set(lowerName, name);
+        }
+      }
+    });
+    
+    const deduplicatedConfigOrder = Array.from(uniqueNamesMap.values());
+
     const toolSort = (a: string, b: string) => {
       const aIsOap = oapTools?.find(oapTool => oapTool.name === a)
       const aEnabled = tools.find(tool => tool.name === a)?.enabled
@@ -584,7 +714,7 @@ const Tools = () => {
       return 0
     }
 
-    const sortedConfigOrder = configOrder.sort(toolSort)
+    const sortedConfigOrder = deduplicatedConfigOrder.sort(toolSort)
     if(isResort) {
       sortedConfigOrderRef.current = sortedConfigOrder
     }
@@ -689,7 +819,7 @@ const Tools = () => {
           setCurrentTool(tool.name)
           setShowCustomEditPopup(true)
         },
-        active: !isOapTool(tool.name)
+        active: true
       },
       { label:
           <div className="tool-edit-menu-item">
@@ -723,22 +853,24 @@ const Tools = () => {
         <div className="tools-header">
           <div>{t("tools.title")}</div>
           <div className="header-actions">
-            {isLoggedInOAP &&
-              <Tooltip content={t("tools.oap.headerBtnAlt")}>
+            {isLoggedInOAP && (
+              <Tooltip content={t("tools.oap.marketplaceAlt") || "Browse available integrations from the cloud"}>
                 <Button
-                  onClick={() => {
-                    setShowOapMcpPopup(true)
-                  }}
+                  onClick={() => setShowIntegrationMarket(true)}
                   color="blue"
                   size="fit"
                   padding="xs"
                 >
-                  <img className="oap-logo" src={`${imgPrefix}icon.png`} alt="info" />
-                  {t("tools.oap.headerBtn")}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="3" y1="9" x2="21" y2="9"/>
+                    <line x1="9" y1="21" x2="9" y2="9"/>
+                  </svg>
+                  {t("tools.oap.marketplace") || "Browse Integrations"}
                 </Button>
               </Tooltip>
-            }
-
+            )}
+            
             <Tooltip content={t("tools.custom.headerBtnAlt")}>
               <Button
                 onClick={() => {
@@ -750,28 +882,6 @@ const Tools = () => {
                 padding="xs"
               >
                 {t("tools.custom.headerBtn")}
-              </Button>
-            </Tooltip>
-
-            <Tooltip content={t("tools.reload.headerBtnAlt")}>
-              <Button
-                className="reload-btn"
-                onClick={() => handleReloadMCPServers()}
-                color="white"
-                size="fit"
-              >
-                <svg width="16" height="16" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <g clipPath="url(#clip0_6_586)">
-                    <path d="M11 5C9.41775 5 7.87103 5.46919 6.55544 6.34824C5.23985 7.22729 4.21446 8.47672 3.60896 9.93853C3.00346 11.4003 2.84504 13.0089 3.15372 14.5607C3.4624 16.1126 4.22433 17.538 5.34315 18.6569C6.46197 19.7757 7.88743 20.5376 9.43928 20.8463C10.9911 21.155 12.5997 20.9965 14.0615 20.391C15.5233 19.7855 16.7727 18.7602 17.6518 17.4446C18.5308 16.129 19 14.5823 19 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none"/>
-                    <path d="M16.4382 5.40544C16.7147 5.20587 16.7147 4.79413 16.4382 4.59456L11.7926 1.24188C11.4619 1.00323 11 1.23952 11 1.64733L11 8.35267C11 8.76048 11.4619 8.99676 11.7926 8.75812L16.4382 5.40544Z" fill="currentColor"/>
-                  </g>
-                  <defs>
-                  <clipPath id="clip0_6_586">
-                    <rect width="22" height="22" fill="currentColor" transform="matrix(-1 0 0 1 22 0)"/>
-                  </clipPath>
-                  </defs>
-                </svg>
-                {t("tools.reload.headerBtn")}
               </Button>
             </Tooltip>
           </div>
@@ -961,11 +1071,11 @@ const Tools = () => {
           footerType="center"
           zIndex={1000}
           onCancel={() => setShowDeletePopup(false)}
-          onConfirm={() => {
-            deleteTool(currentTool)
+          onConfirm={async () => {
             setShowDeletePopup(false)
-            setCurrentTool("")
             setShowCustomEditPopup(false)
+            await deleteTool(currentTool)
+            setCurrentTool("")
           }}
         />
       )}
@@ -985,12 +1095,29 @@ const Tools = () => {
         />
       )}
 
-      {showOapMcpPopup && (
-        <OAPServerList
-          oapTools={oapTools ?? []}
-          onConfirm={handleReloadMCPServers}
-          onCancel={() => {
-            setShowOapMcpPopup(false)
+      {showIntegrationMarket && (
+        <IntegrationMarket
+          onClose={() => setShowIntegrationMarket(false)}
+          onIntegrationAdded={async (instanceName) => {
+            // Reload MCP config first to get the new instance
+            await loadMcpConfig()
+            // Then reload tools
+            await loadTools()
+            // Update cache
+            await updateToolsCache()
+            // Trigger resort to show new tool
+            setIsResort(true)
+            
+            // Close integration market
+            setShowIntegrationMarket(false)
+            
+            // Open config page for the newly added tool
+            if (instanceName) {
+              setTimeout(() => {
+                setCurrentTool(instanceName)
+                setShowCustomEditPopup(true)
+              }, 300)
+            }
           }}
         />
       )}

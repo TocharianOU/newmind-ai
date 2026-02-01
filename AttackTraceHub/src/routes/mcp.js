@@ -32,26 +32,38 @@ router.get('/user/mcp/configs', authenticateToken, async (req, res) => {
       }
     });
 
-    const configs = userConfigs.map(config => ({
-      id: config.mcpServer.id,
-      name: config.mcpServer.name,
-      plan: config.mcpServer.planRequired.toLowerCase(),
-      description: config.mcpServer.description || '',
-      tags: safeParseJSON(config.mcpServer.tags, []),
-      transport: config.mcpServer.transport || 'stdio',
-      command: config.mcpServer.command || null,
-      args: safeParseJSON(config.mcpServer.args, []),
-      url: config.mcpServer.url || null,
-      env: safeParseJSON(config.mcpServer.env, {}),
-      headers: safeParseJSON(config.mcpServer.headers, {}),
-      banner: config.mcpServer.banner || null,
-      document: config.mcpServer.document || '',
-      token_cost: config.mcpServer.tokenCost || 0,
-      token_required: config.mcpServer.tokenRequired || 0,
-      token_price_unit: config.mcpServer.tokenPriceUnit || 'request',
-      popular: config.mcpServer.popular || false,
-      new: config.mcpServer.new || false
-    }));
+    // Get language from Accept-Language header
+    const acceptLanguage = req.headers['accept-language'];
+    const lang = acceptLanguage?.split(',')[0]?.split('-')[0] || 'en';
+
+    const configs = userConfigs.map(config => {
+      const descriptionI18n = safeParseJSON(config.mcpServer.descriptionI18n, {});
+      const documentI18n = safeParseJSON(config.mcpServer.documentI18n, {});
+      
+      return {
+        id: config.mcpServer.id,
+        name: config.mcpServer.name,
+        plan: config.mcpServer.planRequired.toLowerCase(),
+        description: descriptionI18n[lang] || config.mcpServer.description || '',
+        tags: safeParseJSON(config.mcpServer.tags, []),
+        transport: config.mcpServer.transport || 'stdio',
+        command: config.mcpServer.command || null,
+        args: safeParseJSON(config.mcpServer.args, []),
+        url: config.mcpServer.url || null,
+        env: safeParseJSON(config.mcpServer.env, {}),
+        headers: safeParseJSON(config.mcpServer.headers, {}),
+        banner: config.mcpServer.banner || null,
+        document: documentI18n[lang] || config.mcpServer.document || '',
+        version: config.mcpServer.version || null,
+        downloadUrl: config.mcpServer.downloadUrl || null,
+        configSchema: safeParseJSON(config.mcpServer.configSchema, null),
+        token_cost: config.mcpServer.tokenCost || 0,
+        token_required: config.mcpServer.tokenRequired || 0,
+        token_price_unit: config.mcpServer.tokenPriceUnit || 'request',
+        popular: config.mcpServer.popular || false,
+        new: config.mcpServer.new || false
+      };
+    });
 
     res.json(createResponse(configs));
   } catch (error) {
@@ -86,26 +98,38 @@ router.post('/user/mcp/search', authenticateToken, async (req, res) => {
 
     const servers = await prisma.mcpServer.findMany({ where });
 
-    const results = servers.map(server => ({
-      id: server.id,
-      name: server.name,
-      plan: server.planRequired.toLowerCase(),
-      description: server.description || '',
-      tags: safeParseJSON(server.tags, []),
-      transport: server.transport || 'stdio',
-      command: server.command || null,
-      args: safeParseJSON(server.args, []),
-      url: server.url || null,
-      env: safeParseJSON(server.env, {}),
-      headers: safeParseJSON(server.headers, {}),
-      banner: server.banner || null,
-      document: server.document || '',
-      token_cost: server.tokenCost || 0,
-      token_required: server.tokenRequired || 0,
-      token_price_unit: server.tokenPriceUnit || 'request',
-      popular: server.popular || false,
-      new: server.new || false
-    }));
+    // Get language from Accept-Language header
+    const acceptLanguage = req.headers['accept-language'];
+    const lang = acceptLanguage?.split(',')[0]?.split('-')[0] || 'en';
+
+    const results = servers.map(server => {
+      const descriptionI18n = safeParseJSON(server.descriptionI18n, {});
+      const documentI18n = safeParseJSON(server.documentI18n, {});
+      
+      return {
+        id: server.id,
+        name: server.name,
+        plan: server.planRequired.toLowerCase(),
+        description: descriptionI18n[lang] || server.description || '',
+        tags: safeParseJSON(server.tags, []),
+        transport: server.transport || 'stdio',
+        command: server.command || null,
+        args: safeParseJSON(server.args, []),
+        url: server.url || null,
+        env: safeParseJSON(server.env, {}),
+        headers: safeParseJSON(server.headers, {}),
+        banner: server.banner || null,
+        document: documentI18n[lang] || server.document || '',
+        version: server.version || null,
+        downloadUrl: server.downloadUrl || null,
+        configSchema: safeParseJSON(server.configSchema, null),
+        token_cost: server.tokenCost || 0,
+        token_required: server.tokenRequired || 0,
+        token_price_unit: server.tokenPriceUnit || 'request',
+        popular: server.popular || false,
+        new: server.new || false
+      };
+    });
 
     res.json(createResponse(results));
   } catch (error) {

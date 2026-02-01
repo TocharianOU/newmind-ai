@@ -12,10 +12,10 @@ from langchain_core.messages import AIMessage, AIMessageChunk, ToolCall
 
 from attacktrace_mcp_host.httpd.routers.chat import ERROR_MSG_ID, DataResult
 from attacktrace_mcp_host.httpd.routers.models import SortBy
-from attacktrace_mcp_host.httpd.server import DiveHostAPI
+from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 
 if TYPE_CHECKING:
-    from attacktrace_mcp_host.host.host import DiveMcpHost
+    from attacktrace_mcp_host.host.host import AttackTraceMcpHost
 
 from attacktrace_mcp_host.httpd.database.models import Chat, ChatMessage, Message
 from attacktrace_mcp_host.models.fake import FakeMessageToolModel
@@ -36,7 +36,7 @@ class ChatWithMessages:
     messages: list[Message]
 
 
-def test_list_chat_with_sort_by(test_client: tuple[TestClient, DiveHostAPI]):
+def test_list_chat_with_sort_by(test_client: tuple[TestClient, AttackTraceHostAPI]):
     """Test the /api/chat/list endpoint with sort by."""
     client, app = test_client
 
@@ -202,7 +202,7 @@ def test_abort_chat(test_client):
     """Test the /api/chat/{chat_id}/abort endpoint."""
     client, app = test_client
     # fake model sleep few seconds
-    app.dive_host["default"]._model.sleep = 3  # type: ignore
+    app.attacktrace_host["default"]._model.sleep = 3  # type: ignore
 
     # abort a non-existent chat
     response = client.post("/api/chat/00000000-0000-0000-0000-000000000000/abort")
@@ -281,7 +281,7 @@ def test_create_chat(test_client):
     assert has_message_info
 
 
-def test_edit_chat_none_existing_msg(test_client: tuple[TestClient, DiveHostAPI]):
+def test_edit_chat_none_existing_msg(test_client: tuple[TestClient, AttackTraceHostAPI]):
     """Test if editing none existing message is handeled correctly.
 
     It sould still work, just turns update into insert
@@ -383,7 +383,7 @@ def test_edit_chat(test_client):
         AIMessage(content="message 1"),
         AIMessage(content="message 2"),
     ]
-    host = cast("dict[str, DiveMcpHost]", app.dive_host)["default"]
+    host = cast("dict[str, AttackTraceMcpHost]", app.attacktrace_host)["default"]
     host.model.responses = ai_messages  # type: ignore
     response = client.post(
         "/api/chat/edit",
@@ -458,7 +458,7 @@ def test_retry_chat(test_client):  # noqa: C901, PLR0915
     response_data = response.json()
     message_id = response_data["data"]["messages"][0]["messageId"]  # type: ignore
 
-    host = cast("dict[str, DiveMcpHost]", app.dive_host)["default"]
+    host = cast("dict[str, AttackTraceMcpHost]", app.attacktrace_host)["default"]
     model = cast(FakeMessageToolModel, host.model)
     model.responses = [
         AIMessage(content="retry response"),
@@ -594,7 +594,7 @@ def test_retry_chat_with_files(test_client):
                 assert user_message_id
                 assert ai_message_id
 
-    host = cast("dict[str, DiveMcpHost]", app.dive_host)["default"]
+    host = cast("dict[str, AttackTraceMcpHost]", app.attacktrace_host)["default"]
     model = cast(FakeMessageToolModel, host.model)
     model.responses = [
         AIMessage(content="retry response"),
@@ -1173,7 +1173,7 @@ def test_chat_error(test_client, monkeypatch):
 
 
 def test_chat_with_tool_progress(
-    test_client: tuple[TestClient, DiveHostAPI], monkeypatch
+    test_client: tuple[TestClient, AttackTraceHostAPI], monkeypatch
 ):
     """I can get the progress message."""
     client, app = test_client
@@ -1194,7 +1194,7 @@ def test_chat_with_tool_progress(
             content="msg 2",
         ),
     ]
-    model = cast(FakeMessageToolModel, app.dive_host["default"].model)
+    model = cast(FakeMessageToolModel, app.attacktrace_host["default"].model)
     model.responses = fake_responses
 
     response = client.post(

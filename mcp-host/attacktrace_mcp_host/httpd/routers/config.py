@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 from attacktrace_mcp_host.httpd.conf.mcp_servers import Config as McpServers
 from attacktrace_mcp_host.httpd.dependencies import get_app
-from attacktrace_mcp_host.httpd.server import DiveHostAPI
+from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 
 from .models import (
     EmbedConfig,
@@ -56,7 +56,7 @@ class SaveModelSettingsRequest(BaseModel):
 
 @config.get("/mcpserver")
 async def get_mcp_server(
-    app: DiveHostAPI = Depends(get_app),
+    app: AttackTraceHostAPI = Depends(get_app),
 ) -> ConfigResult[McpServers]:
     """Get MCP server configurations.
 
@@ -84,14 +84,14 @@ async def get_mcp_server(
 @config.post("/mcpserver")
 async def post_mcp_server(
     new_config: McpServers,
-    app: DiveHostAPI = Depends(get_app),
+    app: AttackTraceHostAPI = Depends(get_app),
     force: bool = False,
 ) -> SaveConfigResult:
     """Save MCP server configurations.
 
     Args:
         new_config (McpServers): The server configurations to save.
-        app (DiveHostAPI): The DiveHostAPI instance.
+        app (AttackTraceHostAPI): The AttackTraceHostAPI instance.
         force (bool): If True, reload all mcp servers even if they are not changed.
 
     Returns:
@@ -103,11 +103,11 @@ async def post_mcp_server(
 
     # Reload host
     host_config = await app.load_host_config()
-    await app.dive_host["default"].reload(new_config=host_config, force_mcp=force)
+    await app.attacktrace_host["default"].reload(new_config=host_config, force_mcp=force)
 
     # Get failed MCP servers
     failed_servers: list[McpServerError] = []
-    for server_name, server_info in app.dive_host["default"].mcp_server_info.items():
+    for server_name, server_info in app.attacktrace_host["default"].mcp_server_info.items():
         if server_info.error is not None:
             failed_servers.append(
                 McpServerError(
@@ -124,7 +124,7 @@ async def post_mcp_server(
 
 @config.get("/model")
 async def get_model(
-    app: DiveHostAPI = Depends(get_app),
+    app: AttackTraceHostAPI = Depends(get_app),
 ) -> ConfigResult["ModelFullConfigs"]:
     """Get current model configuration.
 
@@ -144,13 +144,13 @@ async def get_model(
 @config.post("/model")
 async def post_model(
     model_settings: SaveModelSettingsRequest,
-    app: DiveHostAPI = Depends(get_app),
+    app: AttackTraceHostAPI = Depends(get_app),
 ) -> ResultResponse:
     """Save model settings for a specific provider.
 
     Args:
         model_settings (SaveModelSettingsRequest): The model settings to save.
-        app (DiveHostAPI): The DiveHostAPI instance.
+        app (AttackTraceHostAPI): The AttackTraceHostAPI instance.
 
     Returns:
         ResultResponse: Result of the save operation.
@@ -167,7 +167,7 @@ async def post_model(
 
     # Reload host
     host_config = await app.load_host_config()
-    await app.dive_host["default"].reload(new_config=host_config)
+    await app.attacktrace_host["default"].reload(new_config=host_config)
 
     return ResultResponse(success=True)
 
@@ -175,13 +175,13 @@ async def post_model(
 @config.post("/model-embedding")
 async def post_model_embedding(
     embed_config: EmbedConfig,
-    app: DiveHostAPI = Depends(get_app),
+    app: AttackTraceHostAPI = Depends(get_app),
 ) -> ResultResponse:
     """Save embedding model settings.
 
     Args:
         embed_config (EmbedConfig): The embedding model settings to save.
-        app (DiveHostAPI): The DiveHostAPI instance.
+        app (AttackTraceHostAPI): The AttackTraceHostAPI instance.
 
     Returns:
         ResultResponse: Result of the save operation.
@@ -194,7 +194,7 @@ async def post_model_embedding(
 
     # Reload host
     host_config = await app.load_host_config()
-    await app.dive_host["default"].reload(new_config=host_config)
+    await app.attacktrace_host["default"].reload(new_config=host_config)
 
     return ResultResponse(success=True)
 
@@ -202,13 +202,13 @@ async def post_model_embedding(
 @config.post("/model/replaceAll")
 async def post_model_replace_all(
     model_config: "ModelFullConfigs",
-    app: DiveHostAPI = Depends(get_app),
+    app: AttackTraceHostAPI = Depends(get_app),
 ) -> ResultResponse:
     """Replace all model configurations.
 
     Args:
         model_config (ModelConfig): The complete model configuration to use.
-        app (DiveHostAPI): The DiveHostAPI instance.
+        app (AttackTraceHostAPI): The AttackTraceHostAPI instance.
 
     Returns:
         ResultResponse: Result of the replace operation.
@@ -219,7 +219,7 @@ async def post_model_replace_all(
 
     # Reload host
     host_config = await app.load_host_config()
-    await app.dive_host["default"].reload(new_config=host_config)
+    await app.attacktrace_host["default"].reload(new_config=host_config)
 
     return ResultResponse(success=True)
 
@@ -268,7 +268,7 @@ async def get_model_interface() -> InterfaceResult:
 
 
 @config.get("/customrules")
-async def get_custom_rules(app: DiveHostAPI = Depends(get_app)) -> RulesResult:
+async def get_custom_rules(app: AttackTraceHostAPI = Depends(get_app)) -> RulesResult:
     """Get custom rules configuration.
 
     Returns:
@@ -281,7 +281,7 @@ async def get_custom_rules(app: DiveHostAPI = Depends(get_app)) -> RulesResult:
 @config.post("/customrules")
 async def post_custom_rules(
     request: Request,
-    app: DiveHostAPI = Depends(get_app),
+    app: AttackTraceHostAPI = Depends(get_app),
 ) -> ResultResponse:
     """Save custom rules configuration.
 

@@ -25,7 +25,7 @@ export const LanguageProvider = ({ children }) => {
       try {
         let translationPromise;
         
-        // Only support English and Chinese
+        // Load appropriate translation file
         if (language === 'zh') {
           translationPromise = import('../locales/zh.json');
         } else {

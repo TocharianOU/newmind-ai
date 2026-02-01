@@ -42,9 +42,9 @@ const wss = new WebSocketServer({
 
 // CORS configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) || [
+  'http://localhost:23001',
+  'http://localhost:23000',
   'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:5175',
   'http://localhost:3000',
   'http://localhost:3001'
 ];
@@ -55,23 +55,36 @@ if (process.env.HUB_FRONTEND_URL) {
 }
 
 // Middleware
-// 配置 helmet 以兼容 Tor 浏览器和现代前端框架
+// Configure helmet for compatibility with Tor browser and modern frontend frameworks
+// Build CSP connectSrc list with custom URLs from environment variables
+const cspConnectSrc = ["'self'", "http://localhost:23000", "https:", "http:", "ws:", "wss:"];
+
+// Add custom LM Studio URL if configured
+if (process.env.CUSTOM_LMSTUDIO_URL) {
+  cspConnectSrc.push(process.env.CUSTOM_LMSTUDIO_URL);
+}
+
+// Add frontend URL if configured
+if (process.env.HUB_FRONTEND_URL) {
+  cspConnectSrc.push(process.env.HUB_FRONTEND_URL);
+}
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // 允许 inline scripts 和 eval（Vite 需要）
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"], // 允许 inline styles
-      imgSrc: ["'self'", "data:", "blob:", "https:", "http:"], // 允许各种来源的图片
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Allow inline scripts and eval (required by Vite)
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"], // Allow inline styles
+      imgSrc: ["'self'", "data:", "blob:", "https:", "http:"], // Allow images from various sources
       fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
-      connectSrc: ["'self'", "http://xiaopenges.tocharian.eu:11234", "http://xiaopenges.tocharian.eu:23000", "http://localhost:23000", "https:", "http:"], // 允许 API 连接
+      connectSrc: cspConnectSrc, // Use dynamically built connection source list
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
       frameSrc: ["'self'"]
     }
   },
-  crossOriginEmbedderPolicy: false, // 关闭以避免下载问题
-  crossOriginResourcePolicy: { policy: "cross-origin" } // 允许跨域资源
+  crossOriginEmbedderPolicy: false, // Disable to avoid download issues
+  crossOriginResourcePolicy: { policy: "cross-origin" } // Allow cross-origin resources
 }));
 
 // CORS 配置 - 允许下载地址域名
@@ -105,7 +118,7 @@ app.use('/api/', rateLimiter);
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok',
-    service: 'NewmindHub',
+    service: 'AttackTraceHub',
     timestamp: new Date().toISOString()
   });
 });
@@ -185,7 +198,7 @@ initializeSSOProviders();
 // Start server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  logger.info(`🚀 NewmindHub server running on port ${PORT}`);
+  logger.info(`🚀 AttackTraceHub server running on port ${PORT}`);
   logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
   logger.info(`🌐 CORS origins: ${allowedOrigins.join(',')}`);
   

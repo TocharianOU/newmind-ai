@@ -6,7 +6,7 @@ AttackTrace Agent MCP Host is a language model host service based on the Model C
 
 AttackTrace Agent MCP Host offers the following features:
 
-- A unified language model interaction interface, supporting multiple models (such as OpenAI, NewmindAI, Google, etc.)
+- A unified language model interaction interface, supporting multiple models (such as OpenAI, AttackTrace, Google, etc.)
 - Conversation management and persistent storage
 - HTTP API and WebSocket support
 - Command-line tools for quick testing and interaction
@@ -44,7 +44,7 @@ source .venv/bin/activate
 Use the following command to start the HTTP service:
 
 ```bash
-dive_httpd
+attacktrace_httpd
 ```
 
 The server will start on:
@@ -58,23 +58,23 @@ You can use the command line tool for quick testing:
 
 ```bash
 # General chat
-dive_cli "Hello"
+attacktrace_cli "Hello"
 
 # Resume a chat with a specific thread
-dive_cli -c CHATID "How are you?"
+attacktrace_cli -c CHATID "How are you?"
 ```
 
 ### Using in Code
 
 ```python
 from attacktrace_mcp_host.host.conf import HostConfig
-from attacktrace_mcp_host.host import NewmindMcpHost
+from attacktrace_mcp_host.host import AttackTraceMcpHost
 
 # Initialize configuration
 config = HostConfig(...)
 
 # Use async context manager
-async with NewmindMcpHost(config) as host:
+async with AttackTraceMcpHost(config) as host:
     # Start or resume a conversation
     async with host.chat(thread_id="123") as chat:
         # Send a query and get a response

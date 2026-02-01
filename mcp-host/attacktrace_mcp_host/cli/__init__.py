@@ -1,4 +1,4 @@
-"""Dive MCP Host CLI."""
+"""AttackTrace MCP Host CLI."""
 
 import asyncio
 

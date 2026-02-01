@@ -9,6 +9,8 @@ export interface MCP {
   enabled?: boolean
   error?: string
   env?: Record<string, unknown>
+  version?: string
+  configSchema?: Record<string, any>
 }
 
 export interface MCPConfig {
@@ -65,7 +67,21 @@ export const loadToolsAtom = atom(
           return mcpserver ? tool : null
         })
       }
-      set(toolsAtom, tools)
+      
+      // Deduplicate tools by name (case-insensitive)
+      const seenNames = new Map<string, Tool>();
+      const deduplicatedTools = tools.filter((tool: Tool) => {
+        const lowerName = tool.name.toLowerCase();
+        if (!seenNames.has(lowerName)) {
+          seenNames.set(lowerName, tool);
+          return true;
+        }
+        // If duplicate, log it for debugging
+        console.warn(`Duplicate tool found and removed: ${tool.name}`);
+        return false;
+      });
+      
+      set(toolsAtom, deduplicatedTools)
     }
 
     return data

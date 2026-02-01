@@ -236,13 +236,13 @@
     "emailNotifications": "Email Notifications"
   },
   "home": {
-    "heroTitle": "Welcome to NewmindChat",
+    "heroTitle": "Welcome to AttackTrace",
     "heroSubtitle": "Your AI-Powered Conversation Assistant",
     "heroDescription": "Experience seamless AI interactions with powerful features and intuitive design",
     "getStarted": "Get Started",
     "signIn": "Sign In",
-    "whyChoose": "Why Choose NewmindChat?",
-    "feature1Title": "Newmind Exclusive Models",
+    "whyChoose": "Why Choose AttackTrace?",
+    "feature1Title": "AttackTrace Exclusive Models",
     "feature1Desc": "Access domain-specific fine-tuned models with better cost-performance ratio, exclusively available on our platform",
     "feature2Title": "Custom Model Integration",
     "feature2Desc": "Connect your own models including Qwen, DeepSeek, and other open-source models with flexible configuration",
@@ -250,7 +250,7 @@
     "feature3Desc": "Extend AI capabilities with Model Context Protocol tools for enhanced productivity",
     "feature4Title": "Flexible Deployment",
     "feature4Desc": "Support both cloud and local deployment options, ensuring data privacy and security",
-    "downloadTitle": "Download NewmindChat",
+    "downloadTitle": "Download AttackTrace",
     "downloadSubtitle": "Choose your platform",
     "loadingDownloads": "Loading download options...",
     "recommended": "Recommended",
@@ -262,6 +262,6 @@
     "intelMac": "Intel Mac",
     "linuxX64": "Linux x64",
     "linuxArm64": "Linux ARM64",
-    "copyright": "© 2025 NewmindChat. All rights reserved."
+    "copyright": "© 2025 AttackTrace. All rights reserved."
   }
 }

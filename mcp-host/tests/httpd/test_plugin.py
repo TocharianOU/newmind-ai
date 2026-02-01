@@ -9,13 +9,13 @@ from fastapi.testclient import TestClient
 
 from attacktrace_mcp_host.host.helpers.context import ContextProtocol
 from attacktrace_mcp_host.httpd.conf.httpd_service import ConfigLocation, ServiceManager
-from attacktrace_mcp_host.httpd.server import DiveHostAPI
+from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 from attacktrace_mcp_host.plugins.registry import Callbacks
 from tests.httpd.routers.conftest import ConfigFileNames, config_files  # noqa: F401
 
 
 @pytest_asyncio.fixture
-async def server(config_files: ConfigFileNames) -> AsyncGenerator[DiveHostAPI, None]:  # noqa: F811
+async def server(config_files: ConfigFileNames) -> AsyncGenerator[AttackTraceHostAPI, None]:  # noqa: F811
     """Create a server for testing."""
     with tempfile.NamedTemporaryFile(
         prefix="testPluginConfig_", suffix=".json"
@@ -41,7 +41,7 @@ async def server(config_files: ConfigFileNames) -> AsyncGenerator[DiveHostAPI, N
                 plugin_config_path=plugin_config_file.name,
             )
         )
-        server = DiveHostAPI(service_config_manager)
+        server = AttackTraceHostAPI(service_config_manager)
         async with server.prepare():
             yield server
 
@@ -97,7 +97,7 @@ def static_callbacks():
     }
 
 
-def test_plugin_middleware(server: DiveHostAPI):
+def test_plugin_middleware(server: AttackTraceHostAPI):
     """Test plugin middleware."""
     with TestClient(server) as client:
         response = client.get("/")
@@ -105,7 +105,7 @@ def test_plugin_middleware(server: DiveHostAPI):
         assert response.headers["X-Custom-Header"] == "header_plugin"
 
 
-def test_plugin_router(server: DiveHostAPI):
+def test_plugin_router(server: AttackTraceHostAPI):
     """Test plugin router."""
     with TestClient(server) as client:
         response = client.get("/api/plugins/test_plugin/")

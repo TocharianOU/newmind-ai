@@ -21,7 +21,7 @@ from langgraph.store.memory import InMemoryStore
 
 from attacktrace_mcp_host.host.conf import HostConfig, ServerConfig
 from attacktrace_mcp_host.host.conf.llm import LLMConfig
-from attacktrace_mcp_host.host.host import DiveMcpHost
+from attacktrace_mcp_host.host.host import AttackTraceMcpHost
 from attacktrace_mcp_host.host.store.base import StoreManagerProtocol
 from attacktrace_mcp_host.host.store.memory_store import LongTermMemoryStore
 from attacktrace_mcp_host.httpd.abort_controller import AbortController
@@ -43,20 +43,20 @@ logger = getLogger(__name__)
 
 
 class Listen(BaseModel):
-    """Listen of the DiveHostAPI."""
+    """Listen of the AttackTraceHostAPI."""
 
     ip: str | None = None
     port: int | None = None
 
 
 class Server(BaseModel):
-    """Server of the DiveHostAPI."""
+    """Server of the AttackTraceHostAPI."""
 
     listen: Listen = Field(default_factory=Listen)
 
 
 class Status(BaseModel):
-    """Status of the DiveHostAPI."""
+    """Status of the AttackTraceHostAPI."""
 
     state: Literal["UP", "FAILED"]
     last_error: str | None = None
@@ -64,17 +64,17 @@ class Status(BaseModel):
 
 
 class ReportStatus(BaseModel):
-    """Report the status of the DiveHostAPI."""
+    """Report the status of the AttackTraceHostAPI."""
 
     timestamp: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
     server: Server = Field(default_factory=Server)
     status: Status
 
 
-class DiveHostAPI(FastAPI):
-    """DiveHostAPI is a FastAPI application that is used to host the DiveHost API."""
+class AttackTraceHostAPI(FastAPI):
+    """AttackTraceHostAPI is a FastAPI application that is used to host the AttackTraceHost API."""
 
-    dive_host: dict[str, DiveMcpHost]  # shoud init "default" when preapre stage
+    attacktrace_host: dict[str, AttackTraceMcpHost]  # should init "default" when prepare stage
     long_term_memory_store: LongTermMemoryStore | None  # long-term memory store
 
     def __init__(
@@ -83,7 +83,7 @@ class DiveHostAPI(FastAPI):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        """Initialize the DiveHostAPI."""
+        """Initialize the AttackTraceHostAPI."""
         super().__init__(*args, **kwargs)
         self._service_config_manager = service_config_manager
 
@@ -144,7 +144,7 @@ class DiveHostAPI(FastAPI):
 
     @asynccontextmanager
     async def prepare(self) -> AsyncGenerator[None, None]:
-        """Setup the DiveHostAPI."""
+        """Setup the AttackTraceHostAPI."""
         logger.info("Server Prepare")
         self._load_configs()
 
@@ -196,15 +196,15 @@ class DiveHostAPI(FastAPI):
         )
 
         # ================================================
-        # Dive Host
+        # AttackTrace Host
         # ================================================
         config = await self.load_host_config()
         async with AsyncExitStack() as stack:
             await stack.enter_async_context(self._plugin_manager)
             await stack.enter_async_context(self._store)
-            default_host = DiveMcpHost(config, self._store)
+            default_host = AttackTraceMcpHost(config, self._store)
             await stack.enter_async_context(default_host)
-            self.dive_host = {"default": default_host}
+            self.attacktrace_host = {"default": default_host}
 
             # ================================================
             # Long-term Memory Store
@@ -282,7 +282,7 @@ class DiveHostAPI(FastAPI):
         )
 
     async def ready(self) -> bool:
-        """Ready the DiveHostAPI."""
+        """Ready the AttackTraceHostAPI."""
         try:
             # check db connection
             async with self._db_sessionmaker() as session:
@@ -293,7 +293,7 @@ class DiveHostAPI(FastAPI):
             return False
 
     async def cleanup(self) -> None:
-        """Cleanup the DiveHostAPI."""
+        """Cleanup the AttackTraceHostAPI."""
         logger.info("Server Cleanup")
         if self._engine:
             await self._engine.dispose()
@@ -315,7 +315,7 @@ class DiveHostAPI(FastAPI):
         self._listen_port = port
 
     def report_status(self, error: str | None = None) -> None:
-        """Report the status of the DiveHostAPI."""
+        """Report the status of the AttackTraceHostAPI."""
         if error:
             msg = ReportStatus(
                 status=Status(state="FAILED", last_error=error),

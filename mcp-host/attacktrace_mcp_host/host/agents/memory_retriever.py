@@ -36,7 +36,7 @@ class MemoryRetriever:
             "discussed",
             "talked about",
             "we said",
-            # Chinese
+            # Additional temporal references
             "之前",
             "以前",
             "上次",

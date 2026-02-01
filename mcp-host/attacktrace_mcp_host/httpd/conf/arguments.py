@@ -20,7 +20,7 @@ def _convert_path(x: str | None) -> StrPath | None:
 
 
 class Arguments(BaseModel):
-    """Command line arguments of dive_httpd."""
+    """Command line arguments of attacktrace_httpd."""
 
     httpd_config: Annotated[StrPath, AfterValidator(_convert_path)] = Field(
         alias="config",
@@ -128,7 +128,7 @@ class Arguments(BaseModel):
     @classmethod
     def parse_args(cls, args: list[str] | None = None) -> Self:
         """Create an argumentparser from the arguments model."""
-        parser = ArgumentParser(prog="dive_httpd", exit_on_error=False)
+        parser = ArgumentParser(prog="attacktrace_httpd", exit_on_error=False)
         for name, field in cls.model_fields.items():
             kw = {}
             if field.is_required():

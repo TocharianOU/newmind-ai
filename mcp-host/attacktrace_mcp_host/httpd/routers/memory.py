@@ -7,10 +7,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from attacktrace_mcp_host.httpd.dependencies import get_app, get_db_session, get_dive_user
-from attacktrace_mcp_host.httpd.middlewares.general import DiveUser
+from attacktrace_mcp_host.httpd.dependencies import get_app, get_db_session, get_attacktrace_user
+from attacktrace_mcp_host.httpd.middlewares.general import AttackTraceUser
 from attacktrace_mcp_host.httpd.routers.models import ResultResponse
-from attacktrace_mcp_host.httpd.server import DiveHostAPI
+from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 from attacktrace_mcp_host.host.store.memory_store import Entity, EntityType
 
 logger = logging.getLogger(__name__)
@@ -78,8 +78,8 @@ class MemoryStatsResponse(BaseModel):
 
 @router.get("/entities", response_model=DataResult[EntitiesListResponse])
 async def get_entities(
-    app: DiveHostAPI = Depends(get_app),
-    dive_user: DiveUser = Depends(get_dive_user),
+    app: AttackTraceHostAPI = Depends(get_app),
+    dive_user: AttackTraceUser = Depends(get_attacktrace_user),
     db_session: AsyncSession = Depends(get_db_session),
     entity_type: Annotated[EntityType | None, Query()] = None,
 ) -> DataResult[EntitiesListResponse]:
@@ -149,8 +149,8 @@ async def get_entities(
 
 @router.get("/search", response_model=DataResult[EntitiesListResponse])
 async def search_entities(
-    app: DiveHostAPI = Depends(get_app),
-    dive_user: DiveUser = Depends(get_dive_user),
+    app: AttackTraceHostAPI = Depends(get_app),
+    dive_user: AttackTraceUser = Depends(get_attacktrace_user),
     db_session: AsyncSession = Depends(get_db_session),
     q: Annotated[str, Query(min_length=1)] = "",
     entity_type: Annotated[EntityType | None, Query()] = None,
@@ -246,8 +246,8 @@ async def search_entities(
 @router.post("/entities", response_model=DataResult[EntityResponse])
 async def create_entity(
     request: EntityCreateRequest,
-    app: DiveHostAPI = Depends(get_app),
-    dive_user: DiveUser = Depends(get_dive_user),
+    app: AttackTraceHostAPI = Depends(get_app),
+    dive_user: AttackTraceUser = Depends(get_attacktrace_user),
     db_session: AsyncSession = Depends(get_db_session),
 ) -> DataResult[EntityResponse]:
     """Create a new entity.
@@ -320,8 +320,8 @@ async def update_entity(
     entity_type: EntityType,
     entity_name: str,
     request: EntityUpdateRequest,
-    app: DiveHostAPI = Depends(get_app),
-    dive_user: DiveUser = Depends(get_dive_user),
+    app: AttackTraceHostAPI = Depends(get_app),
+    dive_user: AttackTraceUser = Depends(get_attacktrace_user),
     db_session: AsyncSession = Depends(get_db_session),
 ) -> DataResult[EntityResponse]:
     """Update an existing entity.
@@ -397,8 +397,8 @@ async def update_entity(
 async def delete_entity(
     entity_type: EntityType,
     entity_name: str,
-    app: DiveHostAPI = Depends(get_app),
-    dive_user: DiveUser = Depends(get_dive_user),
+    app: AttackTraceHostAPI = Depends(get_app),
+    dive_user: AttackTraceUser = Depends(get_attacktrace_user),
     db_session: AsyncSession = Depends(get_db_session),
 ) -> DataResult[dict]:
     """Delete an entity.
@@ -453,8 +453,8 @@ async def delete_entity(
 
 @router.delete("/entities", response_model=DataResult[dict])
 async def delete_all_entities(
-    app: DiveHostAPI = Depends(get_app),
-    dive_user: DiveUser = Depends(get_dive_user),
+    app: AttackTraceHostAPI = Depends(get_app),
+    dive_user: AttackTraceUser = Depends(get_attacktrace_user),
     db_session: AsyncSession = Depends(get_db_session),
 ) -> DataResult[dict]:
     """Delete all entities for the current user.
@@ -500,8 +500,8 @@ async def delete_all_entities(
 
 @router.get("/stats", response_model=DataResult[MemoryStatsResponse])
 async def get_memory_stats(
-    app: DiveHostAPI = Depends(get_app),
-    dive_user: DiveUser = Depends(get_dive_user),
+    app: AttackTraceHostAPI = Depends(get_app),
+    dive_user: AttackTraceUser = Depends(get_attacktrace_user),
     db_session: AsyncSession = Depends(get_db_session),
 ) -> DataResult[MemoryStatsResponse]:
     """Get memory statistics for the current user.

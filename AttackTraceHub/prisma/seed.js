@@ -344,15 +344,32 @@ Comprehensive Kibana management with full API coverage for dashboards, visualiza
   ];
 
   for (const server of mcpServers) {
-    const existing = await prisma.mcpServer.findFirst({
-      where: { name: server.name }
+    await prisma.mcpServer.upsert({
+      where: { name: server.name },
+      update: {
+        description: server.description,
+        descriptionI18n: server.descriptionI18n,
+        tags: server.tags,
+        transport: server.transport,
+        command: server.command,
+        args: server.args,
+        env: server.env,
+        planRequired: server.planRequired,
+        banner: server.banner,
+        document: server.document,
+        documentI18n: server.documentI18n,
+        version: server.version,
+        downloadUrl: server.downloadUrl,
+        configSchema: server.configSchema,
+        tokenCost: server.tokenCost,
+        tokenRequired: server.tokenRequired,
+        tokenPriceUnit: server.tokenPriceUnit,
+        popular: server.popular,
+        new: server.new,
+        isActive: server.isActive
+      },
+      create: server
     });
-    
-    if (!existing) {
-      await prisma.mcpServer.create({
-        data: server
-      });
-    }
   }
 
   // Create model descriptions

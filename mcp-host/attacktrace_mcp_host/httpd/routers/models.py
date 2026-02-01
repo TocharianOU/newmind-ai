@@ -223,7 +223,7 @@ class ModelFullConfigs(BaseModel):
     embed_config: EmbedConfig | None = None
 
     disable_dive_system_prompt: bool = False
-    # If True, custom rules will be used directly without extra system prompt from Dive.
+    # If True, custom rules will be used directly without extra system prompt from AttackTrace.
 
     model_config = ConfigDict(
         alias_generator=to_camel,

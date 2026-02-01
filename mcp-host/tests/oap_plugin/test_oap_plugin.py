@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from attacktrace_mcp_host.httpd.app import create_app
 from attacktrace_mcp_host.httpd.conf.httpd_service import ConfigLocation, ServiceManager
-from attacktrace_mcp_host.httpd.server import DiveHostAPI
+from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 from attacktrace_mcp_host.oap_plugin.config_mcp_servers import MCPServerManagerPlugin
 from attacktrace_mcp_host.oap_plugin.models import UserMcpConfig
 from tests.httpd.routers.conftest import ConfigFileNames, config_files  # noqa: F401
@@ -17,7 +17,7 @@ from tests.httpd.routers.conftest import ConfigFileNames, config_files  # noqa: 
 @pytest_asyncio.fixture
 async def test_client(
     config_files: ConfigFileNames,  # noqa: F811
-) -> AsyncGenerator[tuple[TestClient, DiveHostAPI], None]:
+) -> AsyncGenerator[tuple[TestClient, AttackTraceHostAPI], None]:
     """Create a server for testing."""
     service_manager = ServiceManager(config_files.service_config_file)
     service_manager.initialize()
@@ -44,7 +44,7 @@ async def test_client(
 
 
 def test_oap_plugin(  # noqa: C901, PLR0915
-    test_client: tuple[TestClient, DiveHostAPI], monkeypatch: pytest.MonkeyPatch
+    test_client: tuple[TestClient, AttackTraceHostAPI], monkeypatch: pytest.MonkeyPatch
 ):
     """Test the OAP plugin."""
     oap_token = "fake-token"  # noqa: S105
