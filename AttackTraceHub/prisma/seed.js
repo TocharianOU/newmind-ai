@@ -63,91 +63,158 @@ async function main() {
     }
   });
 
-  // Create sample MCP servers
+  // Create MCP servers
   const mcpServers = [
     {
-      name: 'Elasticsearch Security MCP',
-      description: 'Professional security-focused Elasticsearch interaction with advanced threat detection, anomaly detection, and incident investigation capabilities',
-      tags: JSON.stringify(['elasticsearch', 'security', 'search', 'analytics', 'monitoring']),
+      name: 'Elasticsearch',
+      description: 'Full version support (ES 5.x-9.x) with comprehensive API access',
+      descriptionI18n: JSON.stringify({
+        en: 'Elasticsearch MCP Server with full version support (ES 5.x-9.x) and comprehensive API access',
+        zh: 'Elasticsearch MCP 服务器，支持完整版本（ES 5.x-9.x）和全面的 API 访问'
+      }),
+      tags: JSON.stringify(['Search', 'Database', 'Analytics']),
       transport: 'stdio',
-      command: 'npx',
-      args: JSON.stringify(['@tocharian/mcp-server-elasticsearch-sl']),
+      command: 'node',
+      args: JSON.stringify(['{{install_path}}/dist/index.js']),
       env: JSON.stringify({
-        ES_URL: process.env.PRODUCTION_ES_URL || 'https://localhost:9201',
-        ES_USERNAME: 'elastic',
-        ES_PASSWORD: 'tocharian!',
-        NODE_TLS_REJECT_UNAUTHORIZED: '0'
+        ES_URL: '',
+        ES_API_KEY: '',
+        ES_USERNAME: '',
+        ES_PASSWORD: '',
+        NODE_TLS_REJECT_UNAUTHORIZED: '0',
+        MAX_TOKEN_CALL: '8000'
       }),
       planRequired: 'BASE',
       banner: 'https://raw.githubusercontent.com/elastic/elasticsearch/main/docs/src/test/resources/logos/elastic-logo.svg',
-      document: `# Elasticsearch Security MCP Server
+      document: `# Elasticsearch MCP Server
 
-This is a professional security-focused solution for Elasticsearch interaction, specifically optimized for security analysis, threat detection, and incident investigation.
+Full version support for Elasticsearch (5.x-9.x) with comprehensive API access.
 
-## Key Features
-- Real-time threat detection and security monitoring
-- Advanced machine learning for anomaly detection
-- Root cause analysis and attack chain tracking
-- Security incident investigation and forensics
-- Compliance monitoring and audit reporting
+## Features
+- Support ES versions 5.x through 9.x
+- Comprehensive REST API coverage
+- Flexible authentication (API key, basic auth)
+- Token usage tracking
+- Connection pooling
 
-## Prerequisites
-- An Elasticsearch instance with valid license (trial, platinum, or enterprise)
-- Elasticsearch authentication credentials
-- MCP Client (e.g. Dive, Claude Desktop)
+## Configuration
+Set the following environment variables:
+- ES_URL: Elasticsearch endpoint
+- ES_API_KEY or ES_USERNAME/ES_PASSWORD: Authentication
+- NODE_TLS_REJECT_UNAUTHORIZED: Set to '0' for self-signed certs
 
-## Security Analysis Examples
-- **Threat Detection**: "Analyze brute force attack attempts in the past 24 hours"
-- **Root Cause Analysis**: "Trace the complete attack chain for security incidents"
-- **Threat Intelligence**: "Create ML models to detect zero-day attacks"
-- **Real-time Monitoring**: "Monitor active threats in the current system"`,
-      tokenCost: 0.05,
-      tokenRequired: 0.05,
-      tokenPriceUnit: 'query',
+## Usage Examples
+- Search documents
+- Create and manage indices
+- Execute aggregations
+- Bulk operations`,
+      documentI18n: JSON.stringify({
+        en: `# Elasticsearch MCP Server
+
+Full version support for Elasticsearch (5.x-9.x) with comprehensive API access.
+
+## Features
+- Support ES versions 5.x through 9.x
+- Comprehensive REST API coverage
+- Flexible authentication (API key, basic auth)
+- Token usage tracking
+- Connection pooling`,
+        zh: `# Elasticsearch MCP 服务器
+
+支持 Elasticsearch 完整版本（5.x-9.x）的全面 API 访问。
+
+## 功能特性
+- 支持 ES 5.x 到 9.x 版本
+- 全面的 REST API 覆盖
+- 灵活的认证方式（API 密钥、基础认证）
+- Token 使用量跟踪
+- 连接池管理`
+      }),
+      version: '0.6.3',
+      downloadUrl: 'https://github.com/TocharianOU/elasticsearch-mcp/releases/download/v0.6.3/elasticsearch-mcp-v0.6.3.tar.gz',
+      tokenCost: 0.1,
+      tokenRequired: 0.1,
+      tokenPriceUnit: 'request',
       popular: true,
-      new: true,
+      new: false,
       isActive: true
     },
     {
-      name: 'File System MCP',
-      description: 'Access and manage local file system',
-      tags: JSON.stringify(['filesystem', 'local', 'files']),
+      name: 'Kibana',
+      description: 'Comprehensive Kibana management and visualization tools',
+      descriptionI18n: JSON.stringify({
+        en: 'Kibana MCP Server with comprehensive API access for dashboards, visualizations, and data exploration',
+        zh: 'Kibana MCP 服务器，提供仪表板、可视化和数据探索的全面 API 访问'
+      }),
+      tags: JSON.stringify(['Visualization', 'Dashboard', 'Analytics', 'Monitoring']),
       transport: 'stdio',
-      command: 'npx',
-      args: JSON.stringify(['@modelcontextprotocol/server-filesystem']),
+      command: 'node',
+      args: JSON.stringify(['{{install_path}}/dist/index.js']),
+      env: JSON.stringify({
+        KIBANA_URL: '',
+        KIBANA_API_KEY: '',
+        KIBANA_USERNAME: '',
+        KIBANA_PASSWORD: '',
+        KIBANA_DEFAULT_SPACE: 'default',
+        NODE_TLS_REJECT_UNAUTHORIZED: '0'
+      }),
       planRequired: 'BASE',
-      banner: 'https://raw.githubusercontent.com/modelcontextprotocol/servers/main/docs/assets/mcp-logo.png',
-      tokenCost: 0.01,
-      tokenRequired: 0.01,
-      tokenPriceUnit: 'operation',
-      isActive: true
-    },
-    {
-      name: 'GitHub MCP',
-      description: 'Interact with GitHub repositories',
-      tags: JSON.stringify(['github', 'git', 'repository']),
-      transport: 'stdio',
-      command: 'npx',
-      args: JSON.stringify(['@modelcontextprotocol/server-github']),
-      planRequired: 'PRO',
-      banner: 'https://raw.githubusercontent.com/logos/GitHub-Logos/master/2011/GitHub_Logo.png',
-      tokenCost: 0.02,
-      tokenRequired: 0.02,
-      tokenPriceUnit: 'operation',
-      isActive: true
-    },
-    {
-      name: 'Database MCP',
-      description: 'Connect to various databases',
-      tags: JSON.stringify(['database', 'sql', 'query']),
-      transport: 'stdio',
-      command: 'npx',
-      args: JSON.stringify(['@modelcontextprotocol/server-database']),
-      planRequired: 'ENTERPRISE',
-      banner: 'https://raw.githubusercontent.com/modelcontextprotocol/servers/main/docs/assets/database-icon.svg',
-      tokenCost: 0.03,
-      tokenRequired: 0.03,
-      tokenPriceUnit: 'query',
+      banner: 'https://raw.githubusercontent.com/elastic/kibana/main/src/core/server/core_app/assets/logos/kibana.svg',
+      document: `# Kibana MCP Server
+
+Comprehensive Kibana management with full API coverage for dashboards, visualizations, and data exploration.
+
+## Features
+- Dashboard management and creation
+- Visualization tools integration
+- Index pattern management
+- Saved objects operations
+- Multi-space support
+- Health and dependency analysis
+
+## Configuration
+Set the following environment variables:
+- KIBANA_URL: Kibana endpoint
+- KIBANA_API_KEY or KIBANA_USERNAME/KIBANA_PASSWORD: Authentication
+- KIBANA_DEFAULT_SPACE: Default Kibana space (optional)
+- NODE_TLS_REJECT_UNAUTHORIZED: Set to '0' for self-signed certs
+
+## Usage Examples
+- Create and manage dashboards
+- Execute Kibana API calls
+- Manage visualizations and saved objects
+- Analyze dashboard health`,
+      documentI18n: JSON.stringify({
+        en: `# Kibana MCP Server
+
+Comprehensive Kibana management with full API coverage for dashboards, visualizations, and data exploration.
+
+## Features
+- Dashboard management and creation
+- Visualization tools integration
+- Index pattern management
+- Saved objects operations
+- Multi-space support
+- Health and dependency analysis`,
+        zh: `# Kibana MCP 服务器
+
+全面的 Kibana 管理，提供仪表板、可视化和数据探索的完整 API 覆盖。
+
+## 功能特性
+- 仪表板管理和创建
+- 可视化工具集成
+- 索引模式管理
+- 保存对象操作
+- 多空间支持
+- 健康状态和依赖分析`
+      }),
+      version: '0.6.2',
+      downloadUrl: 'https://github.com/TocharianOU/mcp-server-kibana/releases/download/v0.6.2/mcp-server-kibana-v0.6.2.tar.gz',
+      tokenCost: 0.1,
+      tokenRequired: 0.1,
+      tokenPriceUnit: 'request',
+      popular: true,
+      new: false,
       isActive: true
     }
   ];
@@ -179,7 +246,7 @@ This is a professional security-focused solution for Elasticsearch interaction, 
     },
     {
       modelId: 'newmind-medium',
-      name: 'Newmind Medium (Claude Sonnet)',
+      name: 'AttackTrace Medium (Claude Sonnet)',
       provider: 'anthropic',
       tokenCost: 0.015,
       description: 'Advanced reasoning and analysis',
@@ -190,7 +257,7 @@ This is a professional security-focused solution for Elasticsearch interaction, 
     },
     {
       modelId: 'newmind-strong',
-      name: 'Newmind Strong (Claude Opus)',
+      name: 'AttackTrace Strong (Claude Opus)',
       provider: 'anthropic',
       tokenCost: 0.075,
       description: 'Most capable model for complex tasks',
