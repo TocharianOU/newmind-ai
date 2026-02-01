@@ -74,7 +74,7 @@ Full version support for Elasticsearch (5.x-9.x) with comprehensive API access.
   
   configSchema: {
     type: 'object',
-    required: ['url'],
+    required: ['url', 'tlsVerification'],
     properties: {
       url: {
         type: 'string',
@@ -85,24 +85,31 @@ Full version support for Elasticsearch (5.x-9.x) with comprehensive API access.
       apiKey: {
         type: 'string',
         title: 'API Key',
-        description: 'Elasticsearch API key for authentication (optional)',
+        description: 'Elasticsearch API key for authentication',
         sensitive: true
       },
       username: {
         type: 'string',
         title: 'Username',
-        description: 'Username for basic authentication (optional)'
+        description: 'Username for basic authentication'
       },
       password: {
         type: 'string',
         title: 'Password',
-        description: 'Password for basic authentication (optional)',
+        description: 'Password for basic authentication',
         sensitive: true
+      },
+      tlsVerification: {
+        type: 'string',
+        title: 'SSL/TLS Verification',
+        description: 'Choose how to verify SSL/TLS certificates',
+        enum: ['skip', 'default', 'ca-cert'],
+        default: 'default'
       },
       caCert: {
         type: 'string',
         title: 'CA Certificate',
-        description: 'Upload custom CA certificate file for SSL verification (optional)',
+        description: 'Upload custom CA certificate file',
         format: 'file'
       }
     },
@@ -114,12 +121,25 @@ Full version support for Elasticsearch (5.x-9.x) with comprehensive API access.
       {
         required: ['url', 'username', 'password'],
         title: 'Basic Authentication'
-      },
-      {
-        required: ['url'],
-        title: 'No Authentication (Local Development)'
       }
-    ]
+    ],
+    dependencies: {
+      tlsVerification: {
+        oneOf: [
+          {
+            properties: {
+              tlsVerification: { enum: ['ca-cert'] }
+            },
+            required: ['caCert']
+          },
+          {
+            properties: {
+              tlsVerification: { enum: ['skip', 'default'] }
+            }
+          }
+        ]
+      }
+    }
   },
   
   tokenCost: 0.1,

@@ -63,6 +63,15 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
   const visibleFields = useMemo(() => {
     const fields = new Set<string>(Object.keys(schema.properties || {}))
     
+    // Handle conditional field visibility based on dependencies
+    // For example, only show caCert when tlsVerification is 'ca-cert'
+    if (schema.dependencies?.tlsVerification) {
+      const tlsValue = formData['tlsVerification']
+      if (tlsValue !== 'ca-cert') {
+        fields.delete('caCert')
+      }
+    }
+    
     if (schema.oneOf) {
       // Find the active oneOf group
       // This logic can be complex. For simplicity, we check if any required field in a group has a value.
@@ -76,7 +85,7 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
     }
 
     return Array.from(fields)
-  }, [schema])
+  }, [schema, formData])
 
   const renderField = (key: string, fieldSchema: any) => {
     const value = formData[key] ?? fieldSchema.default ?? ""
@@ -223,6 +232,13 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
 
     // Select/Enum
     if (fieldSchema.enum) {
+        // Special handling for TLS verification mode
+        const enumLabels: Record<string, string> = {
+          'skip': t('tools.tls.skip') || 'Skip Verification (Insecure)',
+          'default': t('tools.tls.verify') || 'Default Verification',
+          'ca-cert': t('tools.tls.caCert') || 'Custom CA Certificate'
+        }
+        
         return (
             <div key={key} className="field-item">
                 <label>
@@ -234,7 +250,10 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
                     )}
                 </label>
                 <Select
-                    options={fieldSchema.enum.map((opt: string) => ({ label: opt, value: opt }))}
+                    options={fieldSchema.enum.map((opt: string) => ({ 
+                        label: enumLabels[opt] || opt, 
+                        value: opt 
+                    }))}
                     value={value}
                     onSelect={(val) => handleChange(key, val)}
                     disabled={disabled}

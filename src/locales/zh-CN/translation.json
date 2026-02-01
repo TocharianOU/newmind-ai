@@ -143,8 +143,9 @@
     "enterValue": "输入值...",
     "selectValue": "选择值...",
     "tls": {
-      "verify": "验证证书",
-      "skip": "跳过验证"
+      "verify": "默认验证",
+      "skip": "跳过验证（不安全）",
+      "caCert": "自定义 CA 证书"
     },
     "viewJsonConfig": "查看底层 JSON 配置",
     "copyJsonConfig": "复制配置",

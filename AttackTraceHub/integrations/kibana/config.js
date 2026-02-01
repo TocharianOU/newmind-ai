@@ -78,7 +78,7 @@ Comprehensive Kibana management with full API coverage for dashboards, visualiza
   
   configSchema: {
     type: 'object',
-    required: ['url'],
+    required: ['url', 'tlsVerification'],
     properties: {
       url: {
         type: 'string',
@@ -89,24 +89,24 @@ Comprehensive Kibana management with full API coverage for dashboards, visualiza
       apiKey: {
         type: 'string',
         title: 'API Key',
-        description: 'Kibana API key for authentication (optional, recommended)',
+        description: 'Kibana API key for authentication (recommended)',
         sensitive: true
       },
       username: {
         type: 'string',
         title: 'Username',
-        description: 'Username for basic authentication (optional)'
+        description: 'Username for basic authentication'
       },
       password: {
         type: 'string',
         title: 'Password',
-        description: 'Password for basic authentication (optional)',
+        description: 'Password for basic authentication',
         sensitive: true
       },
       cookies: {
         type: 'string',
         title: 'Cookies',
-        description: 'Session cookies for authentication (optional)',
+        description: 'Session cookies for authentication',
         sensitive: true
       },
       defaultSpace: {
@@ -115,10 +115,17 @@ Comprehensive Kibana management with full API coverage for dashboards, visualiza
         description: 'Default Kibana space to operate in',
         default: 'default'
       },
+      tlsVerification: {
+        type: 'string',
+        title: 'SSL/TLS Verification',
+        description: 'Choose how to verify SSL/TLS certificates',
+        enum: ['skip', 'default', 'ca-cert'],
+        default: 'default'
+      },
       caCert: {
         type: 'string',
         title: 'CA Certificate',
-        description: 'Upload custom CA certificate file for SSL verification (optional)',
+        description: 'Upload custom CA certificate file',
         format: 'file'
       },
       timeout: {
@@ -150,12 +157,25 @@ Comprehensive Kibana management with full API coverage for dashboards, visualiza
       {
         required: ['url', 'cookies'],
         title: 'Cookie Authentication'
-      },
-      {
-        required: ['url'],
-        title: 'No Authentication (Local Development)'
       }
-    ]
+    ],
+    dependencies: {
+      tlsVerification: {
+        oneOf: [
+          {
+            properties: {
+              tlsVerification: { enum: ['ca-cert'] }
+            },
+            required: ['caCert']
+          },
+          {
+            properties: {
+              tlsVerification: { enum: ['skip', 'default'] }
+            }
+          }
+        ]
+      }
+    }
   },
   
   tokenCost: 0.1,

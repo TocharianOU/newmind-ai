@@ -143,8 +143,9 @@
     "enterValue": "Enter value...",
     "selectValue": "Select value...",
     "tls": {
-      "verify": "Verify Certificate",
-      "skip": "Skip Verification"
+      "verify": "Default Verification",
+      "skip": "Skip Verification (Insecure)",
+      "caCert": "Custom CA Certificate"
     },
     "viewJsonConfig": "View Underlying JSON Configuration",
     "copyJsonConfig": "Copy Configuration",
