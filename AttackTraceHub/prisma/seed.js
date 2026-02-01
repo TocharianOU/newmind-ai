@@ -132,6 +132,50 @@ Full version support for Elasticsearch (5.x-9.x) with comprehensive API access.
       }),
       version: '0.6.3',
       downloadUrl: 'https://github.com/TocharianOU/elasticsearch-mcp/releases/download/v0.6.3/elasticsearch-mcp-v0.6.3.tar.gz',
+      configSchema: JSON.stringify({
+        type: 'object',
+        required: ['url'],
+        properties: {
+          url: {
+            type: 'string',
+            title: 'Elasticsearch URL',
+            description: 'Elasticsearch server endpoint (e.g., https://localhost:9200)',
+            format: 'uri'
+          },
+          apiKey: {
+            type: 'string',
+            title: 'API Key',
+            description: 'Elasticsearch API key for authentication (optional)',
+            sensitive: true
+          },
+          username: {
+            type: 'string',
+            title: 'Username',
+            description: 'Username for basic authentication (optional)'
+          },
+          password: {
+            type: 'string',
+            title: 'Password',
+            description: 'Password for basic authentication (optional)',
+            sensitive: true
+          },
+          caCert: {
+            type: 'string',
+            title: 'CA Certificate Path',
+            description: 'Path to custom CA certificate file for SSL verification (optional)'
+          }
+        },
+        dependencies: {
+          username: {
+            required: ['password'],
+            errorMessage: 'Password is required when username is provided'
+          },
+          password: {
+            required: ['username'],
+            errorMessage: 'Username is required when password is provided'
+          }
+        }
+      }),
       tokenCost: 0.1,
       tokenRequired: 0.1,
       tokenPriceUnit: 'request',
@@ -210,6 +254,86 @@ Comprehensive Kibana management with full API coverage for dashboards, visualiza
       }),
       version: '0.6.2',
       downloadUrl: 'https://github.com/TocharianOU/mcp-server-kibana/releases/download/v0.6.2/mcp-server-kibana-v0.6.2.tar.gz',
+      configSchema: JSON.stringify({
+        type: 'object',
+        required: ['url'],
+        properties: {
+          url: {
+            type: 'string',
+            title: 'Kibana URL',
+            description: 'Kibana server endpoint (e.g., https://localhost:5601)',
+            format: 'uri'
+          },
+          apiKey: {
+            type: 'string',
+            title: 'API Key',
+            description: 'Kibana API key for authentication (optional, recommended)',
+            sensitive: true
+          },
+          username: {
+            type: 'string',
+            title: 'Username',
+            description: 'Username for basic authentication (optional)'
+          },
+          password: {
+            type: 'string',
+            title: 'Password',
+            description: 'Password for basic authentication (optional)',
+            sensitive: true
+          },
+          cookies: {
+            type: 'string',
+            title: 'Cookies',
+            description: 'Session cookies for authentication (optional)',
+            sensitive: true
+          },
+          defaultSpace: {
+            type: 'string',
+            title: 'Default Space',
+            description: 'Default Kibana space to operate in',
+            default: 'default'
+          },
+          caCert: {
+            type: 'string',
+            title: 'CA Certificate Path',
+            description: 'Path to custom CA certificate file for SSL verification (optional)'
+          },
+          timeout: {
+            type: 'number',
+            title: 'Timeout (ms)',
+            description: 'Request timeout in milliseconds',
+            default: 30000,
+            minimum: 1000,
+            maximum: 120000
+          },
+          maxRetries: {
+            type: 'number',
+            title: 'Max Retries',
+            description: 'Maximum number of retry attempts for failed requests',
+            default: 3,
+            minimum: 0,
+            maximum: 10
+          }
+        },
+        oneOf: [
+          {
+            required: ['url', 'apiKey'],
+            title: 'API Key Authentication'
+          },
+          {
+            required: ['url', 'username', 'password'],
+            title: 'Basic Authentication'
+          },
+          {
+            required: ['url', 'cookies'],
+            title: 'Cookie Authentication'
+          },
+          {
+            required: ['url'],
+            title: 'No Authentication (Local Development)'
+          }
+        ]
+      }),
       tokenCost: 0.1,
       tokenRequired: 0.1,
       tokenPriceUnit: 'request',
