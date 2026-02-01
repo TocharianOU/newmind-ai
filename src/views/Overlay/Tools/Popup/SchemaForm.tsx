@@ -284,16 +284,25 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
     const [activeModeIndex, setActiveModeIndex] = useState(0)
 
     // Check on mount/update if formData satisfies a specific mode
+    // Only auto-switch if the current mode's required fields are empty
     useEffect(() => {
+        const currentOption = schema.oneOf[activeModeIndex]
+        const currentModeHasValues = currentOption.required?.some((field: string) => 
+            formData[field] && formData[field] !== ""
+        )
+        
+        // Don't auto-switch if user is actively filling the current mode
+        if (currentModeHasValues) return
+        
         const matchIndex = schema.oneOf.findIndex((option: any) => {
             if (!option.required) return false
             // Check if all required fields in this option have values
             return option.required.every((field: string) => formData[field] && formData[field] !== "")
         })
-        if (matchIndex !== -1) {
+        if (matchIndex !== -1 && matchIndex !== activeModeIndex) {
             setActiveModeIndex(matchIndex)
         }
-    }, [formData, schema.oneOf])
+    }, [formData, schema.oneOf, activeModeIndex])
 
     const activeOption = schema.oneOf[activeModeIndex]
     

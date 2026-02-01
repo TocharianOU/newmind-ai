@@ -161,8 +161,9 @@ Full version support for Elasticsearch (5.x-9.x) with comprehensive API access.
           },
           caCert: {
             type: 'string',
-            title: 'CA Certificate Path',
-            description: 'Path to custom CA certificate file for SSL verification (optional)'
+            title: 'CA Certificate',
+            description: 'Upload custom CA certificate file for SSL verification (optional)',
+            format: 'file'
           }
         },
         dependencies: {
@@ -295,8 +296,9 @@ Comprehensive Kibana management with full API coverage for dashboards, visualiza
           },
           caCert: {
             type: 'string',
-            title: 'CA Certificate Path',
-            description: 'Path to custom CA certificate file for SSL verification (optional)'
+            title: 'CA Certificate',
+            description: 'Upload custom CA certificate file for SSL verification (optional)',
+            format: 'file'
           },
           timeout: {
             type: 'number',
