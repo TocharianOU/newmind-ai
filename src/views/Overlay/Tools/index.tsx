@@ -1106,6 +1106,11 @@ const Tools = () => {
         <IntegrationMarket
           onClose={() => setShowIntegrationMarket(false)}
           onIntegrationAdded={async (instanceName) => {
+            console.log("[Tools] onIntegrationAdded called with:", instanceName)
+            
+            // Close integration market first
+            setShowIntegrationMarket(false)
+            
             // Reload MCP config first to get the new instance
             await loadMcpConfig()
             // Then reload tools
@@ -1115,21 +1120,22 @@ const Tools = () => {
             // Trigger resort to show new tool
             setIsResort(true)
             
-            // Close integration market
-            setShowIntegrationMarket(false)
-            
             // Open config page for the newly added tool
             if (instanceName) {
               // Clear any previous auto-open timer
               if (autoOpenTimerRef.current) {
                 clearTimeout(autoOpenTimerRef.current)
+                autoOpenTimerRef.current = null
               }
               
+              console.log("[Tools] Setting currentTool to:", instanceName)
               setCurrentTool(instanceName)
+              
               autoOpenTimerRef.current = setTimeout(() => {
+                console.log("[Tools] Opening CustomEdit popup")
                 setShowCustomEditPopup(true)
                 autoOpenTimerRef.current = null
-              }, 300)
+              }, 500)  // Increased delay to ensure state updates
             }
           }}
         />

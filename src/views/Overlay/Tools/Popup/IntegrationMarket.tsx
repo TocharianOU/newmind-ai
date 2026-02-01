@@ -249,6 +249,7 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
         args: tool.args || undefined,
         url: tool.url || undefined,
         env: stringifiedConfig || {},
+        enabled: true,  // Auto-enable after configuration
         version: tool.version || undefined,
         download_url: tool.downloadUrl || undefined,
         config_schema: tool.configSchema || undefined,
@@ -325,9 +326,11 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
         )
         
         // Notify parent to refresh tools and open config
+        console.log("[IntegrationMarket] Calling onIntegrationAdded with:", data.instance.instance_name)
         if (onIntegrationAdded) {
           await onIntegrationAdded(data.instance.instance_name)
         } else {
+          console.log("[IntegrationMarket] No onIntegrationAdded callback, closing market")
           // Close the integration market if no callback
           onClose()
         }
