@@ -14,7 +14,7 @@ import Tooltip from "../../../../components/Tooltip"
 
 interface IntegrationMarketProps {
   onClose: () => void
-  onIntegrationAdded?: (instanceName?: string) => void
+  onIntegrationAdded?: (instanceName: string, instanceConfig: any) => void
 }
 
 interface ToolItem extends OAPMCPServer {
@@ -150,17 +150,18 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
     setSelectedTool(tool)
     setInstanceName(tool.name || "")
     
-    // Start installation
-    setViewMode("installing")
-    setInstallProgress(0)
-    setInstallStatus(t("tools.marketplace.downloading") || "Downloading package...")
-    
     try {
-      // Install package first
-      await installPackage(tool)
+      // Check if configuration is needed
+      const needsConfig = tool.configSchema?.properties && Object.keys(tool.configSchema.properties).length > 0
       
-      // After installation, check if configuration is needed
-      if (tool.configSchema?.properties && Object.keys(tool.configSchema.properties).length > 0) {
+      if (needsConfig) {
+        // Show preparation progress before config
+        setViewMode("installing")
+        setInstallProgress(0)
+        setInstallStatus(t("tools.marketplace.preparing") || "Preparing integration...")
+        
+        await installPackage(tool)
+        
         // Initialize config data from schema defaults
         const initialConfig: [string, unknown, boolean][] = []
         const properties = tool.configSchema.properties || {}
@@ -170,8 +171,20 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
         setConfigData(initialConfig)
         setViewMode("configure")
       } else {
-        // Direct create without configuration
+        // Direct install without configuration - show installing view
+        setViewMode("installing")
+        setInstallProgress(0)
+        setInstallStatus(t("tools.marketplace.installing") || "Installing integration...")
+        
+        // Brief visual feedback
+        await new Promise(resolve => setTimeout(resolve, 300))
+        setInstallProgress(50)
+        
+        // Create instance directly
         await createInstance(tool, {})
+        
+        // Success is handled in createInstance callback
+        // Reset state for next operation
         setViewMode("browse")
         setSelectedTool(null)
       }
@@ -186,32 +199,24 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
     }
   }
   
-  // Install package with progress (simulated)
+  // Prepare for installation (package will be downloaded during instance creation)
   const installPackage = async (tool: ToolItem) => {
     try {
-      setInstallStatus(t("tools.marketplace.preparing") || "Preparing installation...")
-      setInstallProgress(10)
+      setInstallStatus(t("tools.marketplace.preparing") || "Preparing integration...")
+      setInstallProgress(20)
       
-      // Simulate installation progress
-      await new Promise(resolve => setTimeout(resolve, 300))
-      setInstallProgress(30)
-      
-      setInstallStatus(t("tools.marketplace.downloading") || "Downloading package...")
+      // Brief delay to show preparation
       await new Promise(resolve => setTimeout(resolve, 400))
       setInstallProgress(60)
       
-      setInstallStatus(t("tools.marketplace.installing") || "Installing...")
-      await new Promise(resolve => setTimeout(resolve, 400))
-      setInstallProgress(90)
-      
-      // Package will be installed automatically when creating instance
-      setInstallProgress(100)
-      setInstallStatus(t("tools.marketplace.ready") || "Ready")
-      
-      // Wait a bit to show completion
+      setInstallStatus(t("tools.marketplace.ready") || "Ready to configure")
       await new Promise(resolve => setTimeout(resolve, 300))
+      setInstallProgress(100)
+      
+      // Brief pause to show completion
+      await new Promise(resolve => setTimeout(resolve, 200))
     } catch (error) {
-      console.error("[IntegrationMarket] Installation simulation error:", error)
+      console.error("[IntegrationMarket] Preparation error:", error)
       throw error
     }
   }
@@ -239,6 +244,13 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
           stringifiedConfig[key] = String(value)
         }
       })
+      
+      // Map TLS mode selection to NODE_TLS_REJECT_UNAUTHORIZED
+      if (stringifiedConfig.tlsMode) {
+        const tlsMode = stringifiedConfig.tlsMode
+        delete stringifiedConfig.tlsMode
+        stringifiedConfig.NODE_TLS_REJECT_UNAUTHORIZED = tlsMode === "skip" ? "0" : "1"
+      }
       
       const requestBody = {
         tool_id: tool.id,
@@ -325,17 +337,18 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
           )
         )
         
-        // Notify parent to refresh tools and open config
-        // Important: Don't close the market here, let the parent handle it
-        // This prevents a flash of the tools list before the config page opens
-        console.log("[IntegrationMarket] Calling onIntegrationAdded with:", data.instance.instance_name)
-        if (onIntegrationAdded) {
-          // Use setTimeout to ensure DOM has finished updating
-          setTimeout(async () => {
-            await onIntegrationAdded(data.instance.instance_name)
-          }, 100)
+        // Notify parent with instance name and configuration
+        // Parent can directly use the config without reloading from file
+        console.log("[IntegrationMarket] Calling onIntegrationAdded with:", {
+          instanceName: data.instance.instance_name,
+          config: data.instance.config
+        })
+        if (onIntegrationAdded && data.instance.config) {
+          // Pass both instance name and configuration
+          // No timeout needed since we're passing the config directly
+          onIntegrationAdded(data.instance.instance_name, data.instance.config)
         } else {
-          console.log("[IntegrationMarket] No onIntegrationAdded callback, closing market")
+          console.log("[IntegrationMarket] No callback or config, closing market")
           onClose()
         }
       } else {
@@ -401,8 +414,8 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
 
       await createInstance(selectedTool, config)
       
-      // Note: createInstance already handles view reset on success
-      // Only reset here if there's an error (which would be caught below)
+      // createInstance handles success callback and closing
+      // If we reach here without error, the instance was created successfully
     } catch (error) {
       console.error("Error in configuration submit:", error)
       showToast({
@@ -742,7 +755,7 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
   return (
     <PopupConfirm
       overlay
-      className="tool-edit-popup-container marketplace"
+      className={`tool-edit-popup-container marketplace ${viewMode !== "browse" ? "single-column" : ""}`}
       onConfirm={viewMode === "configure" ? handleConfigSubmit : undefined}
       onCancel={viewMode === "configure" ? handleBackToBrowse : (viewMode === "installing" ? undefined : onClose)}
       disabled={isSubmitting || viewMode === "browse" || viewMode === "installing"}
@@ -774,7 +787,8 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
       </div>
       
       <div className="tool-edit-popup">
-        {IntegrationList}
+        {/* Only show list in browse mode */}
+        {viewMode === "browse" && IntegrationList}
         {ContentArea}
       </div>
     </PopupConfirm>

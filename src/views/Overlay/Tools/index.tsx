@@ -1098,37 +1098,38 @@ const Tools = () => {
       {showIntegrationMarket && (
         <IntegrationMarket
           onClose={() => setShowIntegrationMarket(false)}
-          onIntegrationAdded={async (instanceName) => {
-            console.log("[Tools] onIntegrationAdded called with:", instanceName)
+          onIntegrationAdded={async (instanceName, instanceConfig) => {
+            console.log("[Tools] onIntegrationAdded called with:", {
+              instanceName,
+              hasConfig: !!instanceConfig
+            })
             
-            try {
-              // Reload MCP config first to get the new instance
-              await loadMcpConfig()
-              // Then reload tools
-              await loadTools()
-              // Update cache
-              await updateToolsCache()
-              // Trigger resort to show new tool
-              setIsResort(true)
-              
-              console.log("[Tools] Data reloaded successfully")
-            } catch (error) {
-              console.error("[Tools] Failed to reload data:", error)
-            }
-            
-            // Close integration market
+            // Close integration market immediately
             setShowIntegrationMarket(false)
             
-            // Open config page for the newly added tool immediately
-            // Don't use timer - just set both states directly
-            if (instanceName) {
-              console.log("[Tools] Opening config for:", instanceName)
-              setCurrentTool(instanceName)
-              
-              // Use requestAnimationFrame to ensure state updates in next frame
-              requestAnimationFrame(() => {
-                setShowCustomEditPopup(true)
-              })
+            // Update local mcpConfig state with the new instance immediately
+            setMcpConfig(prev => ({
+              ...prev,
+              mcpServers: {
+                ...prev.mcpServers,
+                [instanceName]: instanceConfig
+              }
+            }))
+            
+            // Don't automatically open CustomEdit - user already configured in IntegrationMarket
+            // The tool will appear in the list and user can edit it if needed
+            console.log("[Tools] Integration added successfully:", instanceName)
+            
+            // Reload everything in background to sync with file system
+            // This ensures consistency but doesn't block the UI
+            try {
+              await loadMcpConfig()
+              await loadTools()
+              await updateToolsCache()
+              setIsResort(true)
+              console.log("[Tools] Background sync completed")
+            } catch (error) {
+              console.error("[Tools] Background sync failed:", error)
             }
           }}
         />

@@ -63,20 +63,26 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
   const visibleFields = useMemo(() => {
     const fields = new Set<string>(Object.keys(schema.properties || {}))
     
-    // Handle conditional field visibility based on dependencies
-    // For example, only show caCert when NODE_TLS_REJECT_UNAUTHORIZED is 'ca-cert'
+    // Handle conditional field visibility based on TLS mode selections
+    const tlsModeValue = formData['tlsMode']
+    if (tlsModeValue !== 'ca-cert') {
+      fields.delete('ES_CA_CERT')
+      fields.delete('KIBANA_CA_CERT')
+    }
+    
+    // Legacy support for NODE_TLS_REJECT_UNAUTHORIZED / tlsVerification
     if (schema.dependencies?.NODE_TLS_REJECT_UNAUTHORIZED) {
       const tlsValue = formData['NODE_TLS_REJECT_UNAUTHORIZED']
       if (tlsValue !== 'ca-cert') {
-        fields.delete('caCert')
+        fields.delete('ES_CA_CERT')
+        fields.delete('KIBANA_CA_CERT')
       }
     }
-    
-    // Legacy support for tlsVerification field name
     if (schema.dependencies?.tlsVerification) {
       const tlsValue = formData['tlsVerification']
       if (tlsValue !== 'ca-cert') {
-        fields.delete('caCert')
+        fields.delete('ES_CA_CERT')
+        fields.delete('KIBANA_CA_CERT')
       }
     }
     
@@ -251,6 +257,8 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
           const defaultLabels: Record<string, string> = {
             '0': t('tools.tls.skip') || 'Skip Verification (Insecure)',
             '1': t('tools.tls.verify') || 'Default Verification',
+            'skip': t('tools.tls.skip') || 'Skip Verification (Insecure)',
+            'default': t('tools.tls.verify') || 'Default Verification',
             'ca-cert': t('tools.tls.caCert') || 'Custom CA Certificate'
           }
           

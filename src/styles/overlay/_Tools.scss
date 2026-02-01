@@ -917,6 +917,16 @@
     }
   }
 
+  // Single column mode (configure/installing views)
+  &.single-column {
+    .tool-edit-popup {
+      .tool-edit-popup-content {
+        max-width: 100%;
+        width: 100%;
+      }
+    }
+  }
+
   .tool-edit-popup {
     display: flex;
     flex: 1;

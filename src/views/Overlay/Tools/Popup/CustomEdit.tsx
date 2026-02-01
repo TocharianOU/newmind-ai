@@ -722,6 +722,12 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
           })
         }
         
+        // Map tlsMode to NODE_TLS_REJECT_UNAUTHORIZED
+        if (envObj.tlsMode) {
+          envObj.NODE_TLS_REJECT_UNAUTHORIZED = envObj.tlsMode === "skip" ? "0" : "1"
+          delete envObj.tlsMode
+        }
+        
         console.log('[handleSubmit] OAP instance update (no rename):', {
           instanceName: currentMcp.name,
           env: envObj
@@ -817,6 +823,17 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
       }
 
       console.log('[handleSubmit] FINAL newConfig:', JSON.stringify(newConfig, null, 2))
+      
+      // Map tlsMode to NODE_TLS_REJECT_UNAUTHORIZED in env objects
+      Object.keys(newConfig.mcpServers).forEach((serverName) => {
+        const serverEnv = newConfig.mcpServers[serverName]?.env
+        if (serverEnv && typeof serverEnv === "object" && !Array.isArray(serverEnv)) {
+          if (serverEnv.tlsMode) {
+            serverEnv.NODE_TLS_REJECT_UNAUTHORIZED = serverEnv.tlsMode === "skip" ? "0" : "1"
+            delete serverEnv.tlsMode
+          }
+        }
+      })
       
       await onSubmit(newConfig)
     } catch (err) {
@@ -949,16 +966,6 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
       const result = env.map(([key, value, error]) => {
         let processedValue = value;
         
-        // Convert NODE_TLS_REJECT_UNAUTHORIZED from '0'/'1' to boolean
-        if (key === 'NODE_TLS_REJECT_UNAUTHORIZED') {
-          if (value === '0' || value === 0 || value === false || value === 'false') {
-            processedValue = false;
-          } else if (value === '1' || value === 1 || value === true || value === 'true') {
-            processedValue = true;
-          }
-          console.log(`[CustomEdit] envConfig useMemo - converted ${key}: ${value} -> ${processedValue}`);
-        }
-        
         // Ensure MAX_TOKEN_CACHE_SIZE is string or number
         if (key === 'MAX_TOKEN_CACHE_SIZE' && value !== null && value !== undefined) {
           processedValue = String(value);
@@ -966,6 +973,23 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
         
         return [key, processedValue, error] as [string, unknown, boolean];
       });
+      
+      // Map NODE_TLS_REJECT_UNAUTHORIZED to tlsMode for UI
+      const tlsEntry = result.find(([key]) => key === 'NODE_TLS_REJECT_UNAUTHORIZED');
+      const esCa = result.find(([key]) => key === 'ES_CA_CERT');
+      const kibanaCa = result.find(([key]) => key === 'KIBANA_CA_CERT');
+      if (tlsEntry) {
+        const tlsValue = String(tlsEntry[1] ?? '');
+        const hasCaCert = !!(esCa?.[1] || kibanaCa?.[1]);
+        const tlsMode = tlsValue === '0' ? 'skip' : (hasCaCert ? 'ca-cert' : 'default');
+        
+        // Remove NODE_TLS_REJECT_UNAUTHORIZED from form config and add tlsMode
+        const filtered = result.filter(([key]) => key !== 'NODE_TLS_REJECT_UNAUTHORIZED');
+        filtered.push(['tlsMode', tlsMode, false]);
+        console.log('[CustomEdit] envConfig useMemo - array result:', filtered);
+        return filtered;
+      }
+      
       console.log('[CustomEdit] envConfig useMemo - array result:', result);
       return result;
     }
@@ -975,16 +999,6 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
       const result = Object.entries(env).map(([key, value]) => {
         let processedValue = value;
         
-        // Convert NODE_TLS_REJECT_UNAUTHORIZED from '0'/'1' to boolean
-        if (key === 'NODE_TLS_REJECT_UNAUTHORIZED') {
-          if (value === '0' || value === 0 || value === false || value === 'false') {
-            processedValue = false;
-          } else if (value === '1' || value === 1 || value === true || value === 'true') {
-            processedValue = true;
-          }
-          console.log(`[CustomEdit] envConfig useMemo - converted ${key}: ${value} -> ${processedValue}`);
-        }
-        
         // Ensure MAX_TOKEN_CACHE_SIZE is string or number
         if (key === 'MAX_TOKEN_CACHE_SIZE' && value !== null && value !== undefined) {
           processedValue = String(value);
@@ -992,6 +1006,22 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
         
         return [key, processedValue, false] as [string, unknown, boolean];
       });
+      
+      // Map NODE_TLS_REJECT_UNAUTHORIZED to tlsMode for UI
+      const tlsEntry = result.find(([key]) => key === 'NODE_TLS_REJECT_UNAUTHORIZED');
+      const esCa = result.find(([key]) => key === 'ES_CA_CERT');
+      const kibanaCa = result.find(([key]) => key === 'KIBANA_CA_CERT');
+      if (tlsEntry) {
+        const tlsValue = String(tlsEntry[1] ?? '');
+        const hasCaCert = !!(esCa?.[1] || kibanaCa?.[1]);
+        const tlsMode = tlsValue === '0' ? 'skip' : (hasCaCert ? 'ca-cert' : 'default');
+        
+        const filtered = result.filter(([key]) => key !== 'NODE_TLS_REJECT_UNAUTHORIZED');
+        filtered.push(['tlsMode', tlsMode, false]);
+        console.log('[CustomEdit] envConfig useMemo - object result:', filtered);
+        return filtered;
+      }
+      
       console.log('[CustomEdit] envConfig useMemo - object result:', result);
       return result;
     }

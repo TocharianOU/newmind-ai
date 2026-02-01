@@ -193,12 +193,20 @@ class OAPHttpHandlers:
             
             await app.mcp_server_config_manager.update_all_configs(config)
             
+            # Get the created instance configuration
+            created_config = config.mcp_servers.get(instance_name)
+            instance_config = None
+            if created_config:
+                # Serialize the config to dict for JSON response
+                instance_config = created_config.model_dump(by_alias=True)
+            
             return {
                 "status": "success",
                 "instance": {
                     "instance_id": instance_id,
                     "instance_name": instance_name,
                     "install_path": str(install_path) if install_path else None,
+                    "config": instance_config,  # Include full configuration
                 },
             }
         except Exception as e:

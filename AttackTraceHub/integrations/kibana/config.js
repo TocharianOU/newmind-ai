@@ -77,62 +77,44 @@ Comprehensive Kibana management with full API coverage for dashboards, visualiza
   
   configSchema: {
     type: 'object',
-    required: ['url', 'NODE_TLS_REJECT_UNAUTHORIZED'],
+    required: ['KIBANA_URL', 'tlsMode'],
     properties: {
-      url: {
+      KIBANA_URL: {
         type: 'string',
         title: 'Kibana URL',
         description: 'Kibana server endpoint (e.g., https://localhost:5601)',
         format: 'uri'
       },
-      apiKey: {
+      KIBANA_API_KEY: {
         type: 'string',
         title: 'API Key',
         description: 'Kibana API key for authentication (recommended)',
         sensitive: true
       },
-      username: {
+      KIBANA_USERNAME: {
         type: 'string',
         title: 'Username',
         description: 'Username for basic authentication'
       },
-      password: {
+      KIBANA_PASSWORD: {
         type: 'string',
         title: 'Password',
         description: 'Password for basic authentication',
         sensitive: true
       },
-      cookies: {
+      KIBANA_COOKIES: {
         type: 'string',
         title: 'Cookies',
         description: 'Session cookies for authentication',
         sensitive: true
       },
-      defaultSpace: {
+      KIBANA_DEFAULT_SPACE: {
         type: 'string',
         title: 'Default Space',
         description: 'Default Kibana space to operate in',
         default: 'default'
       },
-      NODE_TLS_REJECT_UNAUTHORIZED: {
-        type: 'string',
-        title: 'SSL/TLS Verification',
-        description: 'Choose how to verify SSL/TLS certificates',
-        enum: ['0', '1', 'ca-cert'],
-        default: '1',
-        enumLabels: {
-          '0': 'Skip Verification (Insecure)',
-          '1': 'Default Verification',
-          'ca-cert': 'Custom CA Certificate'
-        }
-      },
-      caCert: {
-        type: 'string',
-        title: 'CA Certificate',
-        description: 'Upload custom CA certificate file',
-        format: 'file'
-      },
-      timeout: {
+      KIBANA_TIMEOUT: {
         type: 'number',
         title: 'Timeout (ms)',
         description: 'Request timeout in milliseconds',
@@ -140,41 +122,54 @@ Comprehensive Kibana management with full API coverage for dashboards, visualiza
         minimum: 1000,
         maximum: 120000
       },
-      maxRetries: {
+      KIBANA_MAX_RETRIES: {
         type: 'number',
         title: 'Max Retries',
         description: 'Maximum number of retry attempts for failed requests',
         default: 3,
         minimum: 0,
         maximum: 10
+      },
+      tlsMode: {
+        type: 'string',
+        title: 'SSL/TLS Verification',
+        description: 'Choose how to verify SSL/TLS certificates',
+        enum: ['skip', 'default', 'ca-cert'],
+        default: 'skip'
+      },
+      KIBANA_CA_CERT: {
+        type: 'string',
+        title: 'CA Certificate',
+        description: 'Upload custom CA certificate file',
+        format: 'file'
       }
     },
     oneOf: [
       {
-        required: ['url', 'apiKey'],
+        required: ['KIBANA_URL', 'KIBANA_API_KEY'],
         title: 'API Key Authentication'
       },
       {
-        required: ['url', 'username', 'password'],
+        required: ['KIBANA_URL', 'KIBANA_USERNAME', 'KIBANA_PASSWORD'],
         title: 'Basic Authentication'
       },
       {
-        required: ['url', 'cookies'],
+        required: ['KIBANA_URL', 'KIBANA_COOKIES'],
         title: 'Cookie Authentication'
       }
     ],
     dependencies: {
-      NODE_TLS_REJECT_UNAUTHORIZED: {
+      tlsMode: {
         oneOf: [
           {
             properties: {
-              NODE_TLS_REJECT_UNAUTHORIZED: { enum: ['ca-cert'] }
+              tlsMode: { enum: ['ca-cert'] }
             },
-            required: ['caCert']
+            required: ['KIBANA_CA_CERT']
           },
           {
             properties: {
-              NODE_TLS_REJECT_UNAUTHORIZED: { enum: ['0', '1'] }
+              tlsMode: { enum: ['skip', 'default'] }
             }
           }
         ]

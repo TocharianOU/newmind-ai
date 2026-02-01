@@ -1,7 +1,7 @@
 export default {
   name: 'Elasticsearch',
-  version: '0.6.3',
-  downloadUrl: 'https://github.com/TocharianOU/elasticsearch-mcp/releases/download/v0.6.3/elasticsearch-mcp-v0.6.3.tar.gz',
+  version: '0.6.2',
+  downloadUrl: 'https://github.com/TocharianOU/elasticsearch-mcp/releases/download/v0.6.2/elasticsearch-mcp-v0.6.2.tar.gz',
   
   description: 'Full version support (ES 5.x-9.x) with comprehensive API access',
   descriptionI18n: {
@@ -73,44 +73,45 @@ Full version support for Elasticsearch (5.x-9.x) with comprehensive API access.
   
   configSchema: {
     type: 'object',
-    required: ['url', 'NODE_TLS_REJECT_UNAUTHORIZED'],
+    required: ['ES_URL', 'tlsMode'],
     properties: {
-      url: {
+      ES_URL: {
         type: 'string',
         title: 'Elasticsearch URL',
         description: 'Elasticsearch server endpoint (e.g., https://localhost:9200)',
         format: 'uri'
       },
-      apiKey: {
+      ES_API_KEY: {
         type: 'string',
         title: 'API Key',
         description: 'Elasticsearch API key for authentication',
         sensitive: true
       },
-      username: {
+      ES_USERNAME: {
         type: 'string',
         title: 'Username',
         description: 'Username for basic authentication'
       },
-      password: {
+      ES_PASSWORD: {
         type: 'string',
         title: 'Password',
         description: 'Password for basic authentication',
         sensitive: true
       },
-      NODE_TLS_REJECT_UNAUTHORIZED: {
+      MAX_TOKEN_CALL: {
+        type: 'string',
+        title: 'Max Token Call',
+        description: 'Maximum token call limit',
+        default: '8000'
+      },
+      tlsMode: {
         type: 'string',
         title: 'SSL/TLS Verification',
         description: 'Choose how to verify SSL/TLS certificates',
-        enum: ['0', '1', 'ca-cert'],
-        default: '1',
-        enumLabels: {
-          '0': 'Skip Verification (Insecure)',
-          '1': 'Default Verification',
-          'ca-cert': 'Custom CA Certificate'
-        }
+        enum: ['skip', 'default', 'ca-cert'],
+        default: 'skip'
       },
-      caCert: {
+      ES_CA_CERT: {
         type: 'string',
         title: 'CA Certificate',
         description: 'Upload custom CA certificate file',
@@ -119,26 +120,26 @@ Full version support for Elasticsearch (5.x-9.x) with comprehensive API access.
     },
     oneOf: [
       {
-        required: ['url', 'apiKey'],
+        required: ['ES_URL', 'ES_API_KEY'],
         title: 'API Key Authentication'
       },
       {
-        required: ['url', 'username', 'password'],
+        required: ['ES_URL', 'ES_USERNAME', 'ES_PASSWORD'],
         title: 'Basic Authentication'
       }
     ],
     dependencies: {
-      NODE_TLS_REJECT_UNAUTHORIZED: {
+      tlsMode: {
         oneOf: [
           {
             properties: {
-              NODE_TLS_REJECT_UNAUTHORIZED: { enum: ['ca-cert'] }
+              tlsMode: { enum: ['ca-cert'] }
             },
-            required: ['caCert']
+            required: ['ES_CA_CERT']
           },
           {
             properties: {
-              NODE_TLS_REJECT_UNAUTHORIZED: { enum: ['0', '1'] }
+              tlsMode: { enum: ['skip', 'default'] }
             }
           }
         ]
