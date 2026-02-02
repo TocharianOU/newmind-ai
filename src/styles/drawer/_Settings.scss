@@ -9,13 +9,13 @@
 }
 
 .settings-drawer-header {
-  padding: 24px 24px 16px;
+  padding: 20px 20px 14px;
   border-bottom: 1px solid var(--border-weak);
   flex-shrink: 0;
 
   h1 {
     margin: 0;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 600;
   }
 }
@@ -41,11 +41,11 @@
   }
 
   .settings-drawer-sidebar-item {
-    padding: 12px 20px;
+    padding: 10px 18px;
     cursor: pointer;
     transition: all 0.2s;
     color: var(--text-weak);
-    font-size: 14px;
+    font-size: 13px;
 
     &:hover {
       background: var(--bg-op-dark-weak);
@@ -61,7 +61,7 @@
   }
 
   .settings-drawer-sidebar-category {
-    padding: 12px 20px;
+    padding: 10px 18px;
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
@@ -77,11 +77,11 @@
     .settings-drawer-sidebar-category-left {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
 
       img {
-        width: 24px;
-        height: 24px;
+        width: 32px;
+        height: 32px;
       }
 
       .oap-info {
@@ -90,12 +90,12 @@
         gap: 2px;
 
         .oap-name {
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 500;
         }
 
         .oap-details {
-          font-size: 11px;
+          font-size: 10px;
           color: var(--text-weak);
 
           .oap-username {
