@@ -1,5 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+import asyncio
+import json
 
 from attacktrace_mcp_host.httpd.dependencies import get_app
 from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
@@ -25,12 +28,21 @@ class CreateInstanceRequest(BaseModel):
     config_schema: dict | None = None
     plan_tag: str = "base"
     description: str = ""
+    logo: str | None = None
+    banner: str | None = None
 
 
 class UpdateInstanceRequest(BaseModel):
     """Request model for updating an instance"""
     env: dict[str, str] | None = None
     enabled: bool | None = None
+
+
+class DownloadPackageRequest(BaseModel):
+    """Request model for downloading a package"""
+    name: str
+    version: str
+    download_url: str
 
 
 class OAPHttpHandlers:
@@ -62,6 +74,7 @@ class OAPHttpHandlers:
         
         # New: Package management API
         self._router.get("/packages")(self.list_packages_handler)
+        self._router.post("/packages/download")(self.download_package_handler)
         self._router.delete("/packages/{name}/{version}")(self.delete_package_handler)
         
         # New: Instance management API
@@ -149,6 +162,50 @@ class OAPHttpHandlers:
         except Exception as e:
             return {"status": "error", "message": f"Failed to list packages: {str(e)}"}
     
+    async def download_package_handler(self, request: DownloadPackageRequest):
+        """POST /packages/download - Download a package with progress"""
+        async def progress_generator():
+            try:
+                # Check if already exists
+                existing_pkg = self._package_manager.get_package(request.name, request.version)
+                if existing_pkg:
+                    yield f"data: {json.dumps({'status': 'exists', 'progress': 100, 'message': 'Package already downloaded'})}\n\n"
+                    yield f"data: {json.dumps({'status': 'success', 'install_path': str(existing_pkg.install_path)})}\n\n"
+                    return
+                
+                # Start download
+                yield f"data: {json.dumps({'status': 'downloading', 'progress': 0, 'message': 'Starting download...'})}\n\n"
+                
+                # Download with progress callback
+                progress_queue = asyncio.Queue()
+                
+                async def progress_callback(progress: int, message: str):
+                    await progress_queue.put((progress, message))
+                
+                # Start download task
+                download_task = asyncio.create_task(
+                    self._package_manager.download_package_with_progress(
+                        request.name, request.version, request.download_url, progress_callback
+                    )
+                )
+                
+                # Stream progress updates
+                while not download_task.done():
+                    try:
+                        progress, message = await asyncio.wait_for(progress_queue.get(), timeout=0.1)
+                        yield f"data: {json.dumps({'status': 'downloading', 'progress': progress, 'message': message})}\n\n"
+                    except asyncio.TimeoutError:
+                        continue
+                
+                # Get final result
+                pkg = await download_task
+                yield f"data: {json.dumps({'status': 'success', 'progress': 100, 'install_path': str(pkg.install_path)})}\n\n"
+                
+            except Exception as e:
+                yield f"data: {json.dumps({'status': 'error', 'message': str(e)})}\n\n"
+        
+        return StreamingResponse(progress_generator(), media_type="text/event-stream")
+    
     async def delete_package_handler(self, name: str, version: str):
         """DELETE /packages/{name}/{version} - Delete a package"""
         try:
@@ -185,6 +242,8 @@ class OAPHttpHandlers:
                 config_schema=request.config_schema,
                 plan_tag=request.plan_tag,
                 description=request.description,
+                logo=request.logo,
+                banner=request.banner,
             )
             
             instance_id, instance_name, install_path = await self._instance_manager.create_instance(

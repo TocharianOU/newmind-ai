@@ -13,7 +13,7 @@ import Tabs from "../../../components/Tabs"
 import { OAPMCPServer } from "../../../types/oap"
 import { isLoggedInOAPAtom, loadOapToolsAtom, oapToolsAtom } from "../../../atoms/oapState"
 import { OAP_ROOT_URL } from "../../../../shared/oap"
-import { openUrl } from "../../../ipc/util"
+import { openUrl, readLocalLogo } from "../../../ipc/util"
 import { oapApplyMCPServer } from "../../../ipc"
 import cloneDeep from "lodash/cloneDeep"
 import { ClickOutside } from "../../../components/ClickOutside"
@@ -85,6 +85,7 @@ const Tools = () => {
   const sortedConfigOrderRef = useRef<string[]>([])
   const [expandedSections, setExpandedSections] = useState<string[]>([])
   const [installToolBuffer, setInstallToolBuffer] = useAtom(installToolBufferAtom)
+  const [localLogos, setLocalLogos] = useState<Record<string, string>>({})
   const getMcpConfig = () => new Promise((resolve) => {
     setMcpConfig(prevConfig => {
       resolve(prevConfig)
@@ -930,13 +931,56 @@ const Tools = () => {
                           <circle cx="50" cy="50" r="25" fill="#ff0000" />
                         </svg>}
                     </div>
-                    {tool.type === "oap" ?
-                      <img className="tool-header-content-icon oap-logo" src={`${imgPrefix}logo_oap.png`} alt="info" />
-                    :
-                      <svg className="tool-header-content-icon" width="20" height="20" viewBox="0 0 24 24">
-                        <path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/>
-                      </svg>
-                    }
+                    {(() => {
+                      // Try to get logo from mcpConfig (for OAP tools with custom logos)
+                      const toolConfig = mcpConfig.mcpServers?.[tool.name]
+                      const installPath = toolConfig?.extraData?.oap?.installPath
+                      let logoUrl = toolConfig?.extraData?.oap?.logo || toolConfig?.logo
+                      
+                      if (!logoUrl) {
+                        const bannerUrl = toolConfig?.extraData?.oap?.banner
+                        if (bannerUrl) {
+                          logoUrl = bannerUrl.replace("logo-240", "logo-48")
+                        }
+                      }
+                      
+                      // If package is installed locally, load local logo asynchronously
+                      if (installPath && logoUrl && !logoUrl.startsWith("http")) {
+                        const logoFileName = logoUrl.split('/').pop()
+                        const logoPath = `${installPath}/logos/${logoFileName}`
+                        const cacheKey = `${tool.name}_${logoFileName}`
+                        
+                        // Check if already loaded
+                        if (!localLogos[cacheKey]) {
+                          // Load asynchronously
+                          readLocalLogo(logoPath).then(base64Logo => {
+                            if (base64Logo) {
+                              setLocalLogos(prev => ({ ...prev, [cacheKey]: base64Logo }))
+                            }
+                          }).catch(err => {
+                            console.error(`Failed to load logo for ${tool.name}:`, err)
+                          })
+                        }
+                        
+                        // Use cached logo or fallback to Hub URL while loading
+                        logoUrl = localLogos[cacheKey] || `${OAP_ROOT_URL}${logoUrl}`
+                      } else if (logoUrl && !logoUrl.startsWith("http")) {
+                        // Fallback: use Hub URL if not installed locally
+                        logoUrl = `${OAP_ROOT_URL}${logoUrl}`
+                      }
+                      
+                      if (logoUrl) {
+                        return <img className="tool-header-content-icon" src={logoUrl} alt={tool.name} />
+                      } else if (tool.type === "oap") {
+                        return <img className="tool-header-content-icon oap-logo" src={`${imgPrefix}logo_oap.png`} alt="info" />
+                      } else {
+                        return (
+                          <svg className="tool-header-content-icon" width="20" height="20" viewBox="0 0 24 24">
+                            <path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/>
+                          </svg>
+                        )
+                      }
+                    })()}
                     <span className="tool-name">{tool.name}</span>
                     {isOapTool(tool.name) && tool.oapId &&
                       <>

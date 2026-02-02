@@ -1,7 +1,7 @@
 export default {
   name: 'Elasticsearch',
-  version: '0.6.2',
-  downloadUrl: 'https://github.com/TocharianOU/elasticsearch-mcp/releases/download/v0.6.2/elasticsearch-mcp-v0.6.2.tar.gz',
+  version: '0.7.2',
+  downloadUrl: 'https://github.com/TocharianOU/elasticsearch-mcp/releases/download/v0.7.2/elasticsearch-mcp-v0.7.2.tar.gz',
   
   description: 'Full version support (ES 5.x-9.x) with comprehensive API access',
   descriptionI18n: {
@@ -23,7 +23,8 @@ export default {
   },
   
   planRequired: 'BASE',
-  banner: 'https://raw.githubusercontent.com/elastic/elasticsearch/main/docs/src/test/resources/logos/elastic-logo.svg',
+  logo: '/integrations/elasticsearch/logo-48.svg',
+  banner: '/integrations/elasticsearch/logo-240.svg',
   
   document: `# Elasticsearch MCP Server
 

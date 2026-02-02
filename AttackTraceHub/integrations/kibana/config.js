@@ -1,7 +1,7 @@
 export default {
   name: 'Kibana',
-  version: '0.6.2',
-  downloadUrl: 'https://github.com/TocharianOU/mcp-server-kibana/releases/download/v0.6.2/mcp-server-kibana-v0.6.2.tar.gz',
+  version: '0.7.2',
+  downloadUrl: 'https://github.com/TocharianOU/mcp-server-kibana/releases/download/v0.7.2/mcp-server-kibana-v0.7.2.tar.gz',
   
   description: 'Comprehensive Kibana management and visualization tools',
   descriptionI18n: {
@@ -23,7 +23,8 @@ export default {
   },
   
   planRequired: 'BASE',
-  banner: 'https://raw.githubusercontent.com/elastic/kibana/main/src/core/server/core_app/assets/logos/kibana.svg',
+  logo: '/integrations/kibana/logo-48.svg',
+  banner: '/integrations/kibana/logo-240.svg',
   
   document: `# Kibana MCP Server
 

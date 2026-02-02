@@ -199,24 +199,67 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
     }
   }
   
-  // Prepare for installation (package will be downloaded during instance creation)
+  // Download package with real progress
   const installPackage = async (tool: ToolItem) => {
     try {
-      setInstallStatus(t("tools.marketplace.preparing") || "Preparing integration...")
-      setInstallProgress(20)
+      if (!tool.downloadUrl || !tool.version) {
+        // No download needed
+        return
+      }
       
-      // Brief delay to show preparation
-      await new Promise(resolve => setTimeout(resolve, 400))
-      setInstallProgress(60)
+      const response = await fetch("/api/plugins/oap-platform/packages/download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: tool.name,
+          version: tool.version,
+          download_url: tool.downloadUrl
+        })
+      })
       
-      setInstallStatus(t("tools.marketplace.ready") || "Ready to configure")
-      await new Promise(resolve => setTimeout(resolve, 300))
-      setInstallProgress(100)
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.statusText}`)
+      }
       
-      // Brief pause to show completion
-      await new Promise(resolve => setTimeout(resolve, 200))
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error("Failed to get response reader")
+      }
+      
+      const decoder = new TextDecoder()
+      let buffer = ""
+      
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split("\n")
+        buffer = lines.pop() || ""
+        
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              
+              if (data.status === "downloading" || data.status === "exists") {
+                setInstallProgress(data.progress || 0)
+                setInstallStatus(data.message || "Downloading...")
+              } else if (data.status === "success") {
+                setInstallProgress(100)
+                setInstallStatus("Package ready")
+                return
+              } else if (data.status === "error") {
+                throw new Error(data.message || "Download failed")
+              }
+            } catch (e) {
+              console.error("[IntegrationMarket] Failed to parse SSE data:", line, e)
+            }
+          }
+        }
+      }
     } catch (error) {
-      console.error("[IntegrationMarket] Preparation error:", error)
+      console.error("[IntegrationMarket] Download error:", error)
       throw error
     }
   }
@@ -252,6 +295,7 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
         stringifiedConfig.NODE_TLS_REJECT_UNAUTHORIZED = tlsMode === "skip" ? "0" : "1"
       }
       
+      const derivedLogo = tool.logo || (tool.banner ? tool.banner.replace("logo-240", "logo-48") : undefined)
       const requestBody = {
         tool_id: tool.id,
         tool_name: tool.name,
@@ -267,6 +311,8 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
         config_schema: tool.configSchema || undefined,
         plan_tag: tool.plan || "base",
         description: tool.description || "",
+        logo: derivedLogo,
+        banner: tool.banner || undefined,
       }
       
       // Remove undefined values
@@ -339,14 +385,33 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
         
         // Notify parent with instance name and configuration
         // Parent can directly use the config without reloading from file
+        // Enhance config with OAP metadata (logo, banner, etc.)
+        const enhancedConfig = {
+          ...data.instance.config,
+          extraData: {
+            ...data.instance.config?.extraData,
+            oap: {
+              ...data.instance.config?.extraData?.oap,
+              id: tool.id,
+              name: tool.name,
+              logo: derivedLogo,
+              banner: tool.banner,
+              planTag: tool.plan,
+              description: tool.description,
+              instanceId: data.instance.instance_id,
+              configSchema: tool.configSchema
+            }
+          }
+        }
+        
         console.log("[IntegrationMarket] Calling onIntegrationAdded with:", {
           instanceName: data.instance.instance_name,
-          config: data.instance.config
+          config: enhancedConfig
         })
         if (onIntegrationAdded && data.instance.config) {
-          // Pass both instance name and configuration
+          // Pass both instance name and enhanced configuration
           // No timeout needed since we're passing the config directly
-          onIntegrationAdded(data.instance.instance_name, data.instance.config)
+          onIntegrationAdded(data.instance.instance_name, enhancedConfig)
         } else {
           console.log("[IntegrationMarket] No callback or config, closing market")
           onClose()

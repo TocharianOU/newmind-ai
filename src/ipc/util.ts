@@ -25,3 +25,12 @@ export function openUrl(url: string) {
     tauriOpenUrl(url)
   }
 }
+
+export async function readLocalLogo(logoPath: string): Promise<string | null> {
+  if (isElectron) {
+    return window.ipcRenderer.readLocalLogo(logoPath)
+  } else {
+    // TODO: Implement for Tauri if needed
+    return null
+  }
+}

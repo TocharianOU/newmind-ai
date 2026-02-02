@@ -134,6 +134,30 @@ export function ipcUtilHandler(win: BrowserWindow) {
     console.log('🔗 Opening external URL:', url);
     shell.openExternal(url);
   })
+
+  ipcMain.handle("util:readLocalLogo", async (_, logoPath: string) => {
+    try {
+      if (!fse.existsSync(logoPath)) {
+        console.warn(`Logo file not found: ${logoPath}`)
+        return null
+      }
+
+      const fileBuffer = await fse.readFile(logoPath)
+      const ext = path.extname(logoPath).toLowerCase()
+      
+      // Determine MIME type
+      let mimeType = 'image/svg+xml'
+      if (ext === '.png') mimeType = 'image/png'
+      else if (ext === '.jpg' || ext === '.jpeg') mimeType = 'image/jpeg'
+      
+      // Convert to base64 data URL
+      const base64 = fileBuffer.toString('base64')
+      return `data:${mimeType};base64,${base64}`
+    } catch (error) {
+      console.error(`Error reading logo file ${logoPath}:`, error)
+      return null
+    }
+  })
 }
 
 function getFilenameFromUrl(url: string) {

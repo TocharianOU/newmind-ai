@@ -5,6 +5,12 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load environment variables
 dotenv.config();
@@ -113,6 +119,9 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Rate limiting
 app.use('/api/', rateLimiter);
+
+// Serve static files from integrations directory (for logos)
+app.use('/integrations', express.static(path.join(__dirname, '../integrations')));
 
 // Health check
 app.get('/api/health', (req, res) => {

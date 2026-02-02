@@ -4,7 +4,8 @@ export const isElectron = window.ipcRenderer !== undefined
 export const isTauri = window.__TAURI_INTERNALS__ !== undefined
 export const isWeb = !isElectron && !isTauri
 
-export const imgPrefix = isTauri ? "/image/" : "img://"
+// Use dev server assets in dev, custom protocol in production.
+export const imgPrefix = isTauri ? "/image/" : (import.meta.env.DEV ? "/image/" : "img://")
 
 export async function initPlatform() {
   if (isElectron) {

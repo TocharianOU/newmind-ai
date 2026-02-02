@@ -19,6 +19,8 @@ export interface OAPMCPServer {
   configSchema: Record<string, any> | null
   command?: string | null
   args?: string[] | null
+  logo?: string | null
+  banner?: string | null
 }
 
 export interface OAPModelDescription {

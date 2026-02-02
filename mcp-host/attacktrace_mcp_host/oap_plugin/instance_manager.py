@@ -27,6 +27,8 @@ class InstanceRequest:
     config_schema: dict | None = None
     plan_tag: str = "base"
     description: str = ""
+    logo: str | None = None
+    banner: str | None = None
 
 
 @dataclass
@@ -88,10 +90,20 @@ class InstanceManager:
                 logger.error(f"Failed to download package: {e}")
                 # Continue creating instance without install_path
         
-        # Generate instance name
-        instance_name = request.instance_name or self._generate_unique_name(
-            config, request.tool_name
-        )
+        # Generate instance name with conflict detection
+        if request.instance_name:
+            # User provided a name - check if it conflicts with existing instances
+            if request.instance_name in config.mcp_servers:
+                # Name conflict - auto-generate unique name based on provided name
+                instance_name = self._generate_unique_name(config, request.instance_name)
+                logger.info(f"Name conflict detected for '{request.instance_name}', using unique name: {instance_name}")
+            else:
+                # No conflict - use provided name
+                instance_name = request.instance_name
+        else:
+            # No name provided - generate unique name based on tool name
+            instance_name = self._generate_unique_name(config, request.tool_name)
+        
         logger.info(f"Generated instance name: {instance_name}")
         
         # Prepare configuration parameters
@@ -110,6 +122,9 @@ class InstanceManager:
                     "version": request.version,
                     "downloadUrl": request.download_url,
                     "configSchema": request.config_schema,
+                    "logo": request.logo,
+                    "banner": request.banner,
+                    "installPath": str(install_path) if install_path else None,
                 }
             },
         }
