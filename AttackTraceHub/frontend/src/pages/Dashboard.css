@@ -391,6 +391,42 @@
   margin: 0;
 }
 
+/* Dark Mode Support */
+[data-theme="dark"] .stat-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .stat-card:hover {
+  border-color: var(--accent-primary);
+  box-shadow: 0 10px 25px -5px rgba(30, 64, 175, 0.3);
+}
+
+[data-theme="dark"] .chart-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .chart-card:hover {
+  box-shadow: 0 10px 25px -5px rgba(30, 64, 175, 0.2);
+}
+
+[data-theme="dark"] .usage-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .table-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .error-message {
+  background: #7f1d1d;
+  border-color: #991b1b;
+  color: #fca5a5;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .dashboard {
