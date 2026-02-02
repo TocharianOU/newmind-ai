@@ -384,13 +384,14 @@
           opacity: 1;
         }
 
-        .tool-name {
-          font-weight: 500;
-        }
+          .tool-name {
+            font-size: 15px;
+            font-weight: 500;
+          }
 
-        .tool-tag {
-          font-size: 13px;
-          font-weight: 400;
+          .tool-tag {
+            font-size: 13px;
+            font-weight: 400;
           color: var(--text-weak);
           background: var(--bg-op-dark-extremeweak);
           padding: 3px 8px;
@@ -579,7 +580,7 @@
 
       .tool-content-sub-title {
         padding-left: 64px;
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 500;
         color: var(--text-ultraweak);
         margin-top: -9px;
@@ -603,6 +604,7 @@
 
         .tool-description {
           margin-bottom: 16px;
+          font-size: 14px;
           color: var(--text-weak);
 
           @include line-clamp(3);
@@ -773,10 +775,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 55px;
+  margin-bottom: 32px;
   position: relative;
   width: 100%;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
 
   .header-actions {

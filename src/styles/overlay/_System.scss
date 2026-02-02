@@ -27,8 +27,8 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 24px;
-    font-size: 16px;
+    margin-bottom: 32px;
+    font-size: 22px;
     font-weight: 600;
     line-height: 28px;
   }
@@ -80,7 +80,7 @@
       }
 
       .system-list-description {
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 400;
         color: var(--text-weak);
       }
@@ -92,7 +92,7 @@
         margin-top: 20px;
 
         .custom-prompt-description {
-          font-size: 13px;
+          font-size: 14px;
           font-weight: 400;
           color: var(--text-pri-blue-medium);
         }
