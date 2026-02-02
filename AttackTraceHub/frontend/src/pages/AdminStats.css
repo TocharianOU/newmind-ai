@@ -56,7 +56,7 @@
 .range-selector button.active {
   background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   color: white;
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.3);
 }
 
 .stats-grid {

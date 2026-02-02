@@ -1,9 +1,9 @@
 :root {
   /* Light theme variables */
-  /* 主色 - 橙色系 */
-  --accent-primary: #F97316;      /* 主橙色 */
-  --accent-secondary: #EA580C;    /* 深橙色 */
-  --accent-light: #FB923C;        /* 浅橙色 */
+  /* 主色 - 蓝色系 */
+  --accent-primary: #1E40AF;      /* 深蓝色 */
+  --accent-secondary: #0891B2;    /* 青色 */
+  --accent-light: #3B82F6;        /* 浅蓝色 */
   
   /* 背景色 */
   --bg-primary: #FFFFFF;          /* 纯白 */
@@ -33,10 +33,10 @@
 
 [data-theme='dark'] {
   /* Dark theme variables */
-  /* 主色 - 橙色系（与浅色主题相同） */
-  --accent-primary: #F97316;
-  --accent-secondary: #EA580C;
-  --accent-light: #FB923C;
+  /* 主色 - 蓝色系（与浅色主题相同） */
+  --accent-primary: #1E40AF;
+  --accent-secondary: #0891B2;
+  --accent-light: #3B82F6;
   
   /* 背景色 */
   --bg-primary: #18181B;          /* 炭黑 */

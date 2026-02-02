@@ -52,7 +52,7 @@
   background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   border-radius: 12px;
   color: white;
-  box-shadow: 0 10px 30px rgba(249, 115, 22, 0.3);
+  box-shadow: 0 10px 30px rgba(30, 64, 175, 0.3);
 }
 
 .balance-icon {
@@ -118,7 +118,7 @@
 
 .package-card.popular {
   border-color: var(--accent-primary);
-  box-shadow: 0 8px 20px rgba(249, 115, 22, 0.2);
+  box-shadow: 0 8px 20px rgba(30, 64, 175, 0.2);
 }
 
 .popular-badge {
@@ -204,7 +204,7 @@
 
 .buy-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
+  box-shadow: 0 6px 16px rgba(30, 64, 175, 0.4);
 }
 
 .buy-button:disabled {
@@ -256,7 +256,7 @@
 
 .subscription-card.enterprise {
   border-color: var(--accent-light);
-  background: linear-gradient(135deg, rgba(251, 146, 60, 0.05) 0%, rgba(249, 115, 22, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(30, 64, 175, 0.05) 100%);
 }
 
 .enterprise-badge {
@@ -342,7 +342,7 @@
 }
 
 [data-theme="dark"] .subscription-card.enterprise {
-  background: linear-gradient(135deg, rgba(251, 146, 60, 0.1) 0%, rgba(249, 115, 22, 0.1) 100%);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(30, 64, 175, 0.1) 100%);
   border-color: var(--accent-light);
 }
 
@@ -367,12 +367,12 @@
 
 [data-theme="dark"] .package-card:hover {
   border-color: var(--accent-primary);
-  box-shadow: 0 12px 24px rgba(249, 115, 22, 0.3);
+  box-shadow: 0 12px 24px rgba(30, 64, 175, 0.3);
 }
 
 [data-theme="dark"] .package-card.popular {
   border-color: var(--accent-primary);
-  box-shadow: 0 8px 20px rgba(249, 115, 22, 0.3);
+  box-shadow: 0 8px 20px rgba(30, 64, 175, 0.3);
 }
 
 [data-theme="dark"] .package-card h3 {
@@ -420,7 +420,7 @@
 
 [data-theme="dark"] .subscribe-button.secondary:hover:not(:disabled) {
   background: #334155;
-  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
+  box-shadow: 0 6px 16px rgba(30, 64, 175, 0.4);
 }
 
 /* Dark mode - Payment History */
@@ -472,7 +472,7 @@
 
 .subscribe-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
+  box-shadow: 0 6px 16px rgba(30, 64, 175, 0.4);
 }
 
 .subscribe-button:disabled {
@@ -521,7 +521,7 @@
 
 .subscribe-button.secondary:hover:not(:disabled) {
   background: #f7fafc;
-  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.2);
+  box-shadow: 0 6px 16px rgba(30, 64, 175, 0.2);
 }
 
 /* Extend Subscription Modal */
@@ -673,7 +673,7 @@
 
 .modal-button.confirm:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
+  box-shadow: 0 6px 16px rgba(30, 64, 175, 0.4);
 }
 
 /* Payment History */

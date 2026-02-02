@@ -79,7 +79,7 @@
 .range-selector button.active {
   background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
 }
 
 .stats-grid {
@@ -138,12 +138,12 @@
 }
 
 .stat-icon.total-calls {
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.13) 0%, rgba(234, 88, 12, 0.13) 100%);
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.13) 0%, rgba(8, 145, 178, 0.13) 100%);
   color: var(--accent-primary);
 }
 
 .stat-icon.total-tokens {
-  background: linear-gradient(135deg, rgba(251, 146, 60, 0.13) 0%, rgba(249, 115, 22, 0.13) 100%);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.13) 0%, rgba(30, 64, 175, 0.13) 100%);
   color: var(--accent-primary);
 }
 
