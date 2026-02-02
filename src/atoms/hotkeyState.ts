@@ -3,7 +3,8 @@ import merge from "lodash/merge"
 import { closeAllSidebarsAtom, toggleSidebarAtom } from "./sidebarState"
 import { router } from "../router"
 import mitt from "mitt"
-import { closeAllOverlaysAtom, popLayerAtom } from "./layerState"
+import { popLayerAtom } from "./layerState"
+import { closeAllDrawersAtom } from "./drawerState"
 import { toggleKeymapModalAtom } from "./modalState"
 import { currentChatIdAtom } from "./chatState"
 import { getKeymap } from "../../shared/keymap"
@@ -206,7 +207,7 @@ const handleGlobalEventAtom = atom(
         break
       case "global:new-chat":
         set(closeAllSidebarsAtom)
-        set(closeAllOverlaysAtom)
+        set(closeAllDrawersAtom)
         set(currentChatIdAtom, "")
         router.navigate("/")
         break

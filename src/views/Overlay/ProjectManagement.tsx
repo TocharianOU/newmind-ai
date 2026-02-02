@@ -13,7 +13,7 @@ import {
   type CreateProjectRequest,
   type UpdateProjectRequest
 } from "@/atoms/projectState"
-import { currentUserAtom } from "@/atoms/oapState"
+import { oapUserAtom } from "@/atoms/oapState"
 import Button from "@/components/Button"
 import Modal from "@/components/Modal/KeymapModal"
 import WrappedInput from "@/components/WrappedInput"
@@ -27,7 +27,7 @@ const ProjectManagement: React.FC = () => {
   const loading = useAtomValue(projectsLoadingAtom)
   const error = useAtomValue(projectsErrorAtom)
   const currentProjectId = useAtomValue(currentProjectIdAtom)
-  const currentUser = useAtomValue(currentUserAtom)
+  const currentUser = useAtomValue(oapUserAtom)
   const loadProjects = useSetAtom(loadProjectsAtom)
   const createProject = useSetAtom(createProjectAtom)
   const updateProject = useSetAtom(updateProjectAtom)

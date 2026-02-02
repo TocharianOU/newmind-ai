@@ -101,6 +101,7 @@ async function main() {
         args: JSON.stringify(config.args),
         env: JSON.stringify(config.env),
         planRequired: config.planRequired,
+        logo: config.logo,
         banner: config.banner,
         document: config.document,
         documentI18n: JSON.stringify(config.documentI18n),

@@ -273,7 +273,7 @@ const PageLayout = () => {
         {showNoModelAfterToggle && (
           <PopupConfirm
             noBorder={true}
-            zIndex={900}
+            zIndex={1200}
             footerType="center"
             className="models-delete-confirm"
             onConfirm={() => {
@@ -298,7 +298,7 @@ const PageLayout = () => {
         {showDeleteModel && (
           <PopupConfirm
             noBorder={true}
-            zIndex={900}
+            zIndex={1200}
             footerType="center"
             className="models-delete-confirm"
             onConfirm={handleConfirmDelete}
@@ -318,7 +318,7 @@ const PageLayout = () => {
         {showNoModelAfterDelete && (
           <PopupConfirm
             noBorder={true}
-            zIndex={900}
+            zIndex={1200}
             footerType="center"
             className="models-delete-confirm"
             onConfirm={handleConfirmDelete}

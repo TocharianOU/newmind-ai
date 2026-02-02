@@ -8,7 +8,7 @@ import Textarea from "./WrappedTextarea"
 import { lastMessageAtom } from "../atoms/chatState"
 import { useAtomValue, useSetAtom } from "jotai"
 import { activeConfigAtom, configAtom, configDictAtom, currentModelSupportToolsAtom, isConfigActiveAtom, writeRawConfigAtom } from "../atoms/configState"
-import { openOverlayAtom } from "../atoms/layerState"
+import { openDrawerAtom } from "../atoms/drawerState"
 import { enabledToolsAtom, loadToolsAtom, successToolsAtom } from "../atoms/toolState"
 import { useNavigate } from "react-router-dom"
 import { showToastAtom } from "../atoms/toastState"
@@ -50,7 +50,7 @@ const ChatInput: React.FC<Props> = ({ page, onSendMessage, disabled, onAbort }) 
   const hasActiveConfig = useAtomValue(isConfigActiveAtom)
   const supportTools = useAtomValue(currentModelSupportToolsAtom)
   const activeConfig = useAtomValue(activeConfigAtom)
-  const openOverlay = useSetAtom(openOverlayAtom)
+  const openDrawer = useSetAtom(openDrawerAtom)
   const enabledTools = useAtomValue(enabledToolsAtom)
   const successTools = useAtomValue(successToolsAtom)
   const [isDragging, setIsDragging] = useState(false)
@@ -538,7 +538,7 @@ const ChatInput: React.FC<Props> = ({ page, onSendMessage, disabled, onAbort }) 
                 className="tools-btn"
                 onClick={(e) => {
                   e.preventDefault()
-                  openOverlay({ page: "Setting", tab: "Tools" })
+                  openDrawer({ id: "Settings", page: "Settings", tab: "Tools" })
                 }}
               >
                 {currentModelEnableToolcall() ?

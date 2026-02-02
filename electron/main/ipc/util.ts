@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow, dialog, nativeImage, clipboard, shell } from "electron"
+import { BrowserWindow, dialog, nativeImage, clipboard, shell } from "electron"
 import fse from "fs-extra"
 import path from "node:path"
 import { configDir, scriptsDir } from "../constant"
@@ -6,9 +6,10 @@ import { CancelError, download } from "electron-dl"
 import { ModelGroupSetting } from "../../../types/model"
 import { refreshConfig } from "../deeplink"
 import { getInstallHostDependenciesLog } from "../service"
+import { safeRegisterHandler } from "../utils/ipcRegistry"
 
 export function ipcUtilHandler(win: BrowserWindow) {
-  ipcMain.handle("util:fillPathToConfig", async (_, _config: string) => {
+  safeRegisterHandler("util:fillPathToConfig", async (_, _config: string) => {
     try {
       const { mcpServers: servers } = JSON.parse(_config) as {mcpServers: Record<string, {enabled: boolean, command?: string, args?: string[]}>}
       const mcpServers = Object.keys(servers).reduce((acc, server) => {
@@ -49,7 +50,7 @@ export function ipcUtilHandler(win: BrowserWindow) {
     }
   })
 
-  ipcMain.handle("util:download", async (event, { url }) => {
+  safeRegisterHandler("util:download", async (event, { url }) => {
     let filename = getFilenameFromUrl(url)
     await fetch(url, { method: "HEAD" })
       .then(response => {
@@ -86,7 +87,7 @@ export function ipcUtilHandler(win: BrowserWindow) {
     }
   })
 
-  ipcMain.handle("util:copyimage", async (_, url: string) => {
+  safeRegisterHandler("util:copyimage", async (_, url: string) => {
     const getImageFromRemote = async (url: string) => {
       const response = await fetch(url)
       if (!response.ok) {
@@ -110,7 +111,7 @@ export function ipcUtilHandler(win: BrowserWindow) {
     clipboard.writeImage(image)
   })
 
-  ipcMain.handle("util:getModelSettings", async (_) => {
+  safeRegisterHandler("util:getModelSettings", async (_) => {
     if (!fse.existsSync(path.join(configDir, "model_settings.json"))) {
       return null
     }
@@ -118,24 +119,24 @@ export function ipcUtilHandler(win: BrowserWindow) {
     return fse.readJson(path.join(configDir, "model_settings.json"))
   })
 
-  ipcMain.handle("util:setModelSettings", async (_, settings: ModelGroupSetting) => {
+  safeRegisterHandler("util:setModelSettings", async (_, settings: ModelGroupSetting) => {
     return fse.writeJson(path.join(configDir, "model_settings.json"), settings, { spaces: 2 })
   })
 
-  ipcMain.handle("util:refreshConfig", async () => {
+  safeRegisterHandler("util:refreshConfig", async () => {
     return refreshConfig()
   })
 
-  ipcMain.handle("util:getInstallHostDependenciesLog", async () => {
+  safeRegisterHandler("util:getInstallHostDependenciesLog", async () => {
     return getInstallHostDependenciesLog()
   })
 
-  ipcMain.handle("open-external-url", async (_, url: string) => {
+  safeRegisterHandler("open-external-url", async (_, url: string) => {
     console.log('🔗 Opening external URL:', url);
     shell.openExternal(url);
   })
 
-  ipcMain.handle("util:readLocalLogo", async (_, logoPath: string) => {
+  safeRegisterHandler("util:readLocalLogo", async (_, logoPath: string) => {
     try {
       if (!fse.existsSync(logoPath)) {
         console.warn(`Logo file not found: ${logoPath}`)

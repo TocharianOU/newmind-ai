@@ -1,4 +1,4 @@
-import { ipcMain } from "electron"
+import { BrowserWindow } from "electron"
 import fs from "fs-extra"
 import path from "path"
 import fetch from "node-fetch"
@@ -9,6 +9,8 @@ import {
   getProjectDbPath,
   getCurrentProjectFilePath
 } from "../constant"
+import { safeRegisterHandler } from "../utils/ipcRegistry"
+import { getToken } from "../oap"
 
 // Current project state (in-memory cache)
 let currentProjectId: string = "default"
@@ -52,26 +54,27 @@ function ensureProjectDir(projectId: string) {
   fs.ensureDirSync(path.join(projectDir, "reports"))
 }
 
-// IPC Handlers
+// Initialize current project on startup
+currentProjectId = loadCurrentProjectId()
+ensureProjectDir(currentProjectId)
 
-ipcMain.handle("project:getCurrentProject", async () => {
-  return currentProjectId
-})
+console.log(`[Project] Initialized with project: ${currentProjectId}`)
 
-ipcMain.handle("project:setCurrentProject", async (_, projectId: string) => {
-  currentProjectId = projectId
-  saveCurrentProjectId(projectId)
-  ensureProjectDir(projectId)
-  return { success: true, projectId }
-})
+export function ipcProjectHandler(_win: BrowserWindow) {
+  safeRegisterHandler("project:getCurrentProject", async () => {
+    return currentProjectId
+  })
 
-ipcMain.handle("project:list", async (_, hubUrl?: string) => {
+  safeRegisterHandler("project:setCurrentProject", async (_, projectId: string) => {
+    currentProjectId = projectId
+    saveCurrentProjectId(projectId)
+    ensureProjectDir(projectId)
+    return { success: true, projectId }
+  })
+
+  safeRegisterHandler("project:list", async (_, hubUrl?: string) => {
   try {
-    // Get token from OAP
-    const tokenResult = await ipcMain.handleOnce("oap:getToken", async () => {
-      // This will be handled by oap.ts
-      return null
-    })
+    const tokenResult = getToken()
     
     if (!tokenResult || !hubUrl) {
       // Fallback: list local projects from filesystem
@@ -112,10 +115,9 @@ ipcMain.handle("project:list", async (_, hubUrl?: string) => {
   }
 })
 
-ipcMain.handle("project:create", async (_, data: { name: string; description?: string }, hubUrl?: string) => {
+  safeRegisterHandler("project:create", async (_, data: { name: string; description?: string }, hubUrl?: string) => {
   try {
-    // Get token
-    const tokenResult = await ipcMain.handleOnce("oap:getToken", async () => null)
+    const tokenResult = getToken()
     
     if (!tokenResult || !hubUrl) {
       // Local-only mode: create project directory
@@ -162,9 +164,9 @@ ipcMain.handle("project:create", async (_, data: { name: string; description?: s
   }
 })
 
-ipcMain.handle("project:update", async (_, projectId: string, data: { name?: string; description?: string }, hubUrl?: string) => {
+  safeRegisterHandler("project:update", async (_, projectId: string, data: { name?: string; description?: string }, hubUrl?: string) => {
   try {
-    const tokenResult = await ipcMain.handleOnce("oap:getToken", async () => null)
+    const tokenResult = getToken()
     
     if (!tokenResult || !hubUrl) {
       return { project: { id: projectId, ...data } }
@@ -191,14 +193,13 @@ ipcMain.handle("project:update", async (_, projectId: string, data: { name?: str
   }
 })
 
-ipcMain.handle("project:delete", async (_, projectId: string, hubUrl?: string) => {
+  safeRegisterHandler("project:delete", async (_, projectId: string, hubUrl?: string) => {
   try {
-    // Don't allow deleting default project
     if (projectId === "default") {
       throw new Error("Cannot delete default project")
     }
     
-    const tokenResult = await ipcMain.handleOnce("oap:getToken", async () => null)
+    const tokenResult = getToken()
     
     // Delete from Hub if authenticated
     if (tokenResult && hubUrl) {
@@ -233,9 +234,4 @@ ipcMain.handle("project:delete", async (_, projectId: string, hubUrl?: string) =
     throw error
   }
 })
-
-// Initialize current project on startup
-currentProjectId = loadCurrentProjectId()
-ensureProjectDir(currentProjectId)
-
-console.log(`[Project] Initialized with project: ${currentProjectId}`)
+}

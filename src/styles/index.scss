@@ -20,6 +20,9 @@
 @use "./pages/Chat";
 @use "./memory-panel";
 @use "./overlay/Overlay";
+@use "./drawer/Settings";
+@use "./drawer/ProjectManagement";
+@use "./drawer/IntegrationMarket";
 
 * {
   box-sizing: border-box;

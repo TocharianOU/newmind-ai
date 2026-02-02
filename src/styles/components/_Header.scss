@@ -66,20 +66,24 @@
     .left-side {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
+      flex-shrink: 0;
+      min-width: 0;
+    }
 
-      .menu-container {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        white-space: nowrap;
-      }
+    .center-side {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      min-width: 0;
+      max-width: 600px;
     }
 
     .right-side {
       display: flex;
       align-items: center;
       gap: 5px;
+      flex-shrink: 0;
 
       @media (max-width: $breakpoint-s) {
         display: none;
@@ -262,7 +266,7 @@
     }
   }
 
-  .help-btn {
+  .help-btn, .settings-btn {
     color: var(--text-weak);
 
     &:hover {

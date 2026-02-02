@@ -99,7 +99,8 @@ model McpServer {
   headers         Json? // HTTP headers for http transport
   planRequired    String   @default("BASE") // BASE, PRO, ENTERPRISE
   isActive        Boolean  @default(true)
-  banner          String?  @db.VarChar(500) // Banner image URL
+  logo            String?  @db.VarChar(500) // Logo image URL (48px)
+  banner          String?  @db.VarChar(500) // Banner image URL (240px)
   document        String? // Markdown documentation
   tokenCost       Float    @default(0) // Token cost per unit
   tokenRequired   Float    @default(0) // Required tokens

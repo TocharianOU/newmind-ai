@@ -1,4 +1,5 @@
-import { ipcMain, BrowserWindow, Menu } from "electron"
+import { BrowserWindow, Menu } from "electron"
+import { safeRegisterHandler } from "../utils/ipcRegistry"
 
 const selectionMenu = Menu.buildFromTemplate([
   { role: "copy" },
@@ -13,11 +14,11 @@ const inputMenu = Menu.buildFromTemplate([
 ])
 
 export function ipcMenuHandler(_win: BrowserWindow) {
-  ipcMain.handle("show-selection-context-menu", () => {
+  safeRegisterHandler("show-selection-context-menu", () => {
     selectionMenu.popup()
   })
 
-  ipcMain.handle("show-input-context-menu", () => {
+  safeRegisterHandler("show-input-context-menu", () => {
     inputMenu.popup()
   })
 }

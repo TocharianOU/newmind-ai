@@ -1,7 +1,8 @@
-import { app, ipcMain, shell, BrowserWindow } from "electron"
+import { app, shell, BrowserWindow } from "electron"
 import AppState from "../state"
 import { scriptsDir } from "../constant"
 import { preferencesStore } from "../store"
+import { safeRegisterHandler } from "../utils/ipcRegistry"
 
 import {
   checkAppImageAutoLaunchStatus,
@@ -10,11 +11,11 @@ import {
 import { destroyTray, initTray } from "../tray"
 
 export function ipcSystemHandler(win: BrowserWindow) {
-  ipcMain.handle("system:openScriptsDir", async () => {
+  safeRegisterHandler("system:openScriptsDir", async () => {
     shell.openPath(scriptsDir)
   })
 
-  ipcMain.handle("system:getAutoLaunch", () => {
+  safeRegisterHandler("system:getAutoLaunch", () => {
     if (process.env.APPIMAGE) {
       return checkAppImageAutoLaunchStatus()
     }
@@ -22,7 +23,7 @@ export function ipcSystemHandler(win: BrowserWindow) {
     return app.getLoginItemSettings().openAtLogin
   })
 
-  ipcMain.handle("system:setAutoLaunch", (event, enable) => {
+  safeRegisterHandler("system:setAutoLaunch", (event, enable) => {
     preferencesStore.set("autoLaunch", enable)
 
     if (process.env.APPIMAGE) {
@@ -37,11 +38,11 @@ export function ipcSystemHandler(win: BrowserWindow) {
     return enable
   })
 
-  ipcMain.handle("system:getMinimalToTray", () => {
+  safeRegisterHandler("system:getMinimalToTray", () => {
     return preferencesStore.get("minimalToTray")
   })
 
-  ipcMain.handle("system:setMinimalToTray", (event, enable) => {
+  safeRegisterHandler("system:setMinimalToTray", (event, enable) => {
     preferencesStore.set("minimalToTray", enable)
     AppState.setIsQuitting(!enable)
 

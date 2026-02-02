@@ -23,7 +23,7 @@ const Layout = () => {
         {!isConfigNotInitialized && <HistorySidebar />}
         <div className="outlet-container">
           {/* Header 始终显示，包括侧边栏切换按钮 */}
-          {!isConfigNotInitialized && <Header showHelpButton={overlays.length === 0} showModelSelect={overlays.length === 0} />}
+          {!isConfigNotInitialized && <Header showHelpButton={overlays.length === 0} showModelSelect={overlays.length === 0} showProjectSelector={true} />}
           <Outlet />
         </div>
         <CodeModal />

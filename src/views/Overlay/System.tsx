@@ -1,7 +1,7 @@
-import { useAtom, useAtomValue } from "jotai"
+import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useTranslation } from "react-i18next"
 import Select from "../../components/Select"
-import { openOverlayAtom } from "../../atoms/layerState"
+import { openDrawerAtom } from "../../atoms/drawerState"
 import React, { useState, useEffect } from "react"
 
 import ThemeSwitch from "../../components/ThemeSwitch"
@@ -20,7 +20,7 @@ const System = () => {
   const [minimalToTray, setMinimalToTray] = useState(false)
   const disableDiveSystemPrompt = useAtomValue(disableDiveSystemPromptAtom)
   const [, updateDisableDiveSystemPrompt] = useAtom(updateDisableDiveSystemPromptAtom)
-  const [, openOverlay] = useAtom(openOverlayAtom)
+  const openDrawer = useSetAtom(openDrawerAtom)
   const [, setCommonFlash] = useAtom(commonFlashAtom)
 
   useEffect(() => {
@@ -77,7 +77,7 @@ const System = () => {
   }
 
   const openPromtSetting = () => {
-    openOverlay({ page: "Setting", tab: "Model" })
+    openDrawer({ id: "Settings", page: "Settings", tab: "Model" })
     setCommonFlash("openPromtSetting")
   }
 

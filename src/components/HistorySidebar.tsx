@@ -7,7 +7,8 @@ import Header from "./Header"
 import { useTranslation } from "react-i18next"
 import { showToastAtom } from "../atoms/toastState"
 import Tooltip from "./Tooltip"
-import { closeAllOverlaysAtom, openOverlayAtom, OverlayType } from "../atoms/layerState"
+import { openDrawerAtom, type DrawerType } from "../atoms/drawerState"
+import { closeAllDrawersAtom } from "../atoms/drawerState"
 import { useSidebarLayer } from "../hooks/useLayer"
 import useHotkeyEvent from "../hooks/useHotkeyEvent"
 import { currentChatIdAtom, isChatStreamingAtom } from "../atoms/chatState"
@@ -114,8 +115,8 @@ const HistorySidebar = ({ onNewConversation }: Props) => {
   const loadHistories = useSetAtom(loadHistoriesAtom)
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null)
   const showToast = useSetAtom(showToastAtom)
-  const _openOverlay = useSetAtom(openOverlayAtom)
-  const closeAllOverlays = useSetAtom(closeAllOverlaysAtom)
+  const _openDrawer = useSetAtom(openDrawerAtom)
+  const closeAllDrawers = useSetAtom(closeAllDrawersAtom)
   const [isVisible, setVisible] = useSidebarLayer(sidebarVisibleAtom)
   const [currentChatId, setCurrentChatId] = useAtom(currentChatIdAtom)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -128,10 +129,9 @@ const HistorySidebar = ({ onNewConversation }: Props) => {
   const settingTab = useAtomValue(settingTabAtom)
   const [isSubMenuOpen, setIsSubMenuOpen] = useState(false) // 🔥 关键添加
 
-  const openOverlay = useCallback((overlay: OverlayType) => {
-    _openOverlay(overlay)
-    // 不要隐藏侧边栏，让设置页面可以和侧边栏共存
-  }, [_openOverlay])
+  const openDrawer = useCallback((drawer: DrawerType) => {
+    _openDrawer(drawer)
+  }, [_openDrawer])
 
   useEffect(() => {
     if (isVisible) {
@@ -248,16 +248,16 @@ const HistorySidebar = ({ onNewConversation }: Props) => {
 
   const loadChat = useCallback((chatId: string) => {
     setCurrentChatId(chatId)
-    closeAllOverlays()
+    closeAllDrawers()
     navigate(`/chat/${chatId}`)
     if (window.innerWidth < 960) {
       setVisible(false)
     }
-  }, [navigate])
+  }, [navigate, closeAllDrawers])
 
   const handleNewConversation = () => {
     setCurrentChatId("")
-    closeAllOverlays()
+    closeAllDrawers()
     if (onNewConversation) {
       onNewConversation()
     } else {
@@ -270,8 +270,7 @@ const HistorySidebar = ({ onNewConversation }: Props) => {
 
   const handleTools = () => {
     setCurrentChatId("")
-    openOverlay({ page: "Setting", tab: settingTab })
-    // 在小屏幕上才隐藏侧边栏，桌面保持显示
+    openDrawer({ id: "Settings", page: "Settings", tab: settingTab })
     if (window.innerWidth < 960) {
       setVisible(false)
     }
@@ -396,7 +395,7 @@ const HistorySidebar = ({ onNewConversation }: Props) => {
             {isLoggedInOAP && oapUser ? (
               <div className="history-footer-user">
                 <Tooltip content={t("chat.modelSettings")}>
-                  <div className="user-info" onClick={() => openOverlay({ page: "Setting", tab: "Model" })}>
+                  <div className="user-info" onClick={() => openDrawer({ id: "Settings", page: "Settings", tab: "Model" })}>
                     <div className="user-avatar">
                       {oapUser.email?.charAt(0).toUpperCase() || oapUser.username?.charAt(0).toUpperCase() || 'U'}
                     </div>

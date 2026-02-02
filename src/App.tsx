@@ -15,8 +15,10 @@ import { useTranslation } from "react-i18next"
 import { setModelSettings } from "./ipc/config"
 import { oapGetMe, oapGetToken, oapLogout, registBackendEvent } from "./ipc"
 import { refreshConfig } from "./ipc/host"
-import { openOverlayAtom } from "./atoms/layerState"
+import { openDrawerAtom } from "./atoms/drawerState"
 import PopupConfirm from "./components/PopupConfirm"
+import DrawerPortal from "./components/Drawer/DrawerPortal"
+import ModalPortal from "./components/Modal/ModalPortal"
 
 function App() {
   const { t } = useTranslation()
@@ -35,7 +37,7 @@ function App() {
   const { i18n } = useTranslation()
   const loadMcpConfig = useSetAtom(loadMcpConfigAtom)
   const loadOapTools = useSetAtom(loadOapToolsAtom)
-  const openOverlay = useSetAtom(openOverlayAtom)
+  const openDrawer = useSetAtom(openDrawerAtom)
   
 
   const setInstallToolBuffer = useSetAtom(installToolBufferAtom)
@@ -86,7 +88,7 @@ function App() {
       data = data || installToolBuffer.current!
       const { name, config } = data
       setInstallToolBuffer(prev => [...prev, { name, config }])
-      openOverlay({ page: "Setting", tab: "Tools" })
+      openDrawer({ id: "Settings", page: "Settings", tab: "Tools" })
     } catch(e) {
       console.error("mcp install error", e)
     }
@@ -197,6 +199,8 @@ function App() {
     <>
       <RouterProvider router={router} />
       <Updater />
+      <DrawerPortal />
+      <ModalPortal />
 
       {installToolConfirm &&
         <PopupConfirm

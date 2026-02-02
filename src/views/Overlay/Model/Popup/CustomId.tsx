@@ -64,7 +64,7 @@ const CustomIdPopup = ({ onAddCustomModelID }: Props) => {
       </button>
       {showCustomModelID && (
         <PopupConfirm
-          zIndex={900}
+          zIndex={1200}
           className="model-customID-popup"
           onConfirm={() => addCustomModelID(customModelID)}
           onCancel={handleCustomModelIDClose}

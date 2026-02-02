@@ -233,7 +233,7 @@ const AdvancedSettingPopup = ({ model, onClose, onSave }: Props) => {
 
   return (
     <PopupConfirm
-      zIndex={900}
+      zIndex={1200}
       className="model-parameters-popup"
       confirmText={t("tools.save") || "Save"}
       onConfirm={handleSave}

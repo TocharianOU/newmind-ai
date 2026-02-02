@@ -560,7 +560,7 @@ const ModelPopup = ({ onClose, onSuccess }: Props) => {
 
   return (
     <PopupConfirm
-      zIndex={900}
+      zIndex={1200}
       className="model-popup"
       disabled={isFetching || isVerifying.current || isSubmitting}
       confirmText={(isVerifying.current || isSubmitting) ? (
@@ -733,7 +733,7 @@ const ModelPopup = ({ onClose, onSuccess }: Props) => {
           }
           {showConfirmVerify &&
             <PopupConfirm
-              zIndex={900}
+              zIndex={1200}
               className="model-list-verify-popup"
               onConfirm={() => onVerifyConfirm(searchListOptions?.filter(model => model.active && model.verifyStatus == "unVerified"))}
               confirmText={t("models.verify")}
@@ -772,7 +772,7 @@ const ModelPopup = ({ onClose, onSuccess }: Props) => {
           }
           {showUnSupportInfo &&
             <PopupConfirm
-              zIndex={900}
+              zIndex={1200}
               footerType="center"
               className="model-list-unsupport-info"
               onCancel={() => setShowUnSupportInfo(false)}

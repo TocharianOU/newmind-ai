@@ -201,7 +201,7 @@ const GroupCreator = ({ onClose, onSuccess }: Props) => {
   return (
     <PopupConfirm
       noBorder={true}
-      zIndex={900}
+      zIndex={1200}
       footerType="center"
       onConfirm={onConfirm}
       confirmText={(isVerifying.current || isSubmitting) ? (<div className="loading-spinner"></div>) : t("tools.save")}

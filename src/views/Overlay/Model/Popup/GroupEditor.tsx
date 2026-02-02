@@ -181,7 +181,7 @@ const KeyPopupEdit = ({ onClose, onSuccess }: Props) => {
     <>
       <PopupConfirm
         noBorder={true}
-        zIndex={900}
+        zIndex={1200}
         footerType="center"
         onConfirm={onConfirm}
         confirmText={

@@ -1,5 +1,5 @@
 import { Anthropic } from "@anthropic-ai/sdk"
-import { ipcMain, BrowserWindow } from "electron"
+import { BrowserWindow } from "electron"
 import { Ollama } from "ollama"
 import OpenAI, { AzureOpenAI } from "openai"
 import { Mistral } from "@mistralai/mistralai"
@@ -7,9 +7,10 @@ import {
   BedrockClient,
   ListFoundationModelsCommand,
 } from "@aws-sdk/client-bedrock"
+import { safeRegisterHandler } from "../utils/ipcRegistry"
 
 export function ipcLlmHandler(_win: BrowserWindow) {
-  ipcMain.handle("llm:openaiModelList", async (_, apiKey: string) => {
+  safeRegisterHandler("llm:openaiModelList", async (_, apiKey: string) => {
     try {
       const client = new OpenAI({ apiKey })
       const models = await client.models.list()
@@ -19,7 +20,7 @@ export function ipcLlmHandler(_win: BrowserWindow) {
     }
   })
   
-  ipcMain.handle("llm:azureOpenaiModelList", async (_, apiKey: string, azureEndpoint: string, azureDeployment: string, apiVersion: string) => {
+  safeRegisterHandler("llm:azureOpenaiModelList", async (_, apiKey: string, azureEndpoint: string, azureDeployment: string, apiVersion: string) => {
     try {
       const client = new AzureOpenAI({ apiKey, endpoint: azureEndpoint, deployment: azureDeployment, apiVersion })
       const models = await client.models.list()
@@ -29,7 +30,7 @@ export function ipcLlmHandler(_win: BrowserWindow) {
     }
   })
 
-  ipcMain.handle("llm:anthropicModelList", async (_, apiKey: string, baseURL: string) => {
+  safeRegisterHandler("llm:anthropicModelList", async (_, apiKey: string, baseURL: string) => {
     try {
       const client = new Anthropic({ apiKey, baseURL })
       const models = await client.models.list()
@@ -39,7 +40,7 @@ export function ipcLlmHandler(_win: BrowserWindow) {
     }
   })
 
-  ipcMain.handle("llm:ollamaModelList", async (_, baseURL: string) => {
+  safeRegisterHandler("llm:ollamaModelList", async (_, baseURL: string) => {
     try {
       const ollama = new Ollama({ host: baseURL })
       const list = await ollama.list()
@@ -49,7 +50,7 @@ export function ipcLlmHandler(_win: BrowserWindow) {
     }
   })
 
-  ipcMain.handle("llm:openaiCompatibleModelList", async (_, apiKey: string, baseURL: string) => {
+  safeRegisterHandler("llm:openaiCompatibleModelList", async (_, apiKey: string, baseURL: string) => {
     try {
       console.log(`[DEBUG] OpenAI Compatible Model List - baseURL: ${baseURL}, apiKey: ${apiKey ? apiKey.substring(0, 10) + '...' : 'undefined'}`)
       
@@ -90,7 +91,7 @@ export function ipcLlmHandler(_win: BrowserWindow) {
     }
   })
 
-  ipcMain.handle("llm:googleGenaiModelList", async (_, apiKey: string) => {
+  safeRegisterHandler("llm:googleGenaiModelList", async (_, apiKey: string) => {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
       const response = await fetch(url)
@@ -101,7 +102,7 @@ export function ipcLlmHandler(_win: BrowserWindow) {
     }
   })
 
-  ipcMain.handle("llm:mistralaiModelList", async (_, apiKey: string) => {
+  safeRegisterHandler("llm:mistralaiModelList", async (_, apiKey: string) => {
     try {
       const client = new Mistral({ apiKey })
       const models = await client.models.list()
@@ -111,7 +112,7 @@ export function ipcLlmHandler(_win: BrowserWindow) {
     }
   })
 
-  ipcMain.handle("llm:bedrockModelList", async (_, accessKeyId: string, secretAccessKey: string, sessionToken: string, region: string) => {
+  safeRegisterHandler("llm:bedrockModelList", async (_, accessKeyId: string, secretAccessKey: string, sessionToken: string, region: string) => {
     try {
       let modelPrefix = ""
       if (region.startsWith("us-")) {

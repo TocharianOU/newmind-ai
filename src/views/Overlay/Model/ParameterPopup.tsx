@@ -60,7 +60,7 @@ const ParameterPopup = ({ onClose }: { onClose: () => void }) => {
 
   return (
     <PopupConfirm
-      zIndex={900}
+      zIndex={1200}
       className="models-parameter-popup-confirm"
       onConfirm={onConfirm}
       confirmText={
