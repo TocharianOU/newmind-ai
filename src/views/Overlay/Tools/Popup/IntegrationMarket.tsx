@@ -631,7 +631,7 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
             <div className="tool-edit-field">
               <div className="field-content">
                 <div className="oap-edit-notice">
-                  {t("tools.oap.edit_managed_notice") || "This integration is managed by AttackTrace Hub. Configure the required settings below."}
+                  {t("tools.oap.edit_managed_notice") || "This integration is managed by OAP Platform. Configure the required settings below."}
                 </div>
                 
                 <div className="field-item">

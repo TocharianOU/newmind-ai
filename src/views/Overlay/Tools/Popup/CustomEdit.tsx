@@ -1097,7 +1097,7 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
             <>
               {/* OAP Integration: Simplified UI */}
               <div className="oap-edit-notice">
-                {t("tools.oap.edit_managed_notice") || "This integration is managed by AttackTrace Hub. Configure the required settings below."}
+                {t("tools.oap.edit_managed_notice") || "This integration is managed by OAP Platform. Configure the required settings below."}
               </div>
               
               {/* Name (editable for OAP) */}

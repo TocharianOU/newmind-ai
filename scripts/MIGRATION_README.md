@@ -64,7 +64,7 @@ rm -f db.sqlite
 
 ## Hub Database Migration
 
-For the AttackTrace Hub backend, run the Prisma migration and data migration script:
+For the OAP Platform backend, run the Prisma migration and data migration script:
 
 ```bash
 cd AttackTraceHub  # OAP Platform
