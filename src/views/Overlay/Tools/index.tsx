@@ -126,7 +126,6 @@ const Tools = () => {
       // Check if we should clear cache (useful after OAP integration)
       const shouldClearCache = sessionStorage.getItem("clearToolsCache")
       if (shouldClearCache === "true") {
-        console.log('🧹 Clearing stale tool cache...')
         localStorage.removeItem("toolsCache")
         sessionStorage.removeItem("clearToolsCache")
         toolsCacheRef.current = {}
@@ -594,7 +593,6 @@ const Tools = () => {
     setIsLoading(true)
     
     // Clear tool cache to prevent duplicates
-    console.log('🧹 Clearing tool cache...')
     localStorage.removeItem("toolsCache")
     toolsCacheRef.current = {}
     
@@ -650,13 +648,10 @@ const Tools = () => {
       
       // CRITICAL: Always check if we need to configure tools, even if the refresh above failed.
       // The tool entry might exist in the file system even if the process crashed.
-      console.log('🔧 Checking tools needing config (finally block):', toolsNeedingConfig);
-      
       if (toolsNeedingConfig && toolsNeedingConfig.length > 0) {
         // Ensure we have the latest config loaded if possible, or at least try to edit
         // We use a small timeout to let the UI settle
         setTimeout(() => {
-          console.log('🔧 Opening CustomEdit for:', toolsNeedingConfig[0]);
           setCurrentTool(toolsNeedingConfig[0])
           setShowCustomEditPopup(true)
           
@@ -1143,11 +1138,6 @@ const Tools = () => {
         <IntegrationMarket
           onClose={() => setShowIntegrationMarket(false)}
           onIntegrationAdded={async (instanceName, instanceConfig) => {
-            console.log("[Tools] onIntegrationAdded called with:", {
-              instanceName,
-              hasConfig: !!instanceConfig
-            })
-            
             // Close integration market immediately
             setShowIntegrationMarket(false)
             
@@ -1162,7 +1152,6 @@ const Tools = () => {
             
             // Don't automatically open CustomEdit - user already configured in IntegrationMarket
             // The tool will appear in the list and user can edit it if needed
-            console.log("[Tools] Integration added successfully:", instanceName)
             
             // Reload everything in background to sync with file system
             // This ensures consistency but doesn't block the UI
@@ -1171,7 +1160,6 @@ const Tools = () => {
               await loadTools()
               await updateToolsCache()
               setIsResort(true)
-              console.log("[Tools] Background sync completed")
             } catch (error) {
               console.error("[Tools] Background sync failed:", error)
             }

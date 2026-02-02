@@ -984,6 +984,7 @@ class McpTool(BaseTool):
     description: str = ""
     mcp_server: McpServer
     kwargs_arg: bool = False
+    original_tool_name: str = ""  # Store original tool name for MCP call
 
     def _run(
         self,
@@ -1040,8 +1041,10 @@ class McpTool(BaseTool):
                 name=f"stream_writer-{self.name}",
             )
             try:
+                # Use original tool name for MCP server call (without instance prefix)
+                tool_name_to_call = self.original_tool_name if self.original_tool_name else self.name
                 result = await session.call_tool(
-                    self.name,
+                    tool_name_to_call,
                     arguments=kwargs,
                     progress_callback=progress_callback,
                 )
@@ -1052,12 +1055,11 @@ class McpTool(BaseTool):
         content = to_json(result.content).decode()
         if result.isError:
             logger.error(
-                "Tool execution failed for %s.%s: %s",
-                self.toolkit_name,
-                self.name,
+                "Tool execution failed for %s: %s",
+                self.name,  # Now includes instance prefix
                 content,
             )
-        logger.debug("Tool %s.%s executed successfully", self.toolkit_name, self.name)
+        logger.debug("Tool %s executed successfully", self.name)
         return content
 
     @classmethod
@@ -1066,9 +1068,18 @@ class McpTool(BaseTool):
         input_schema = tool.inputSchema.copy()
         if "properties" not in input_schema:
             input_schema["properties"] = {}
+        
+        # Include MCP instance name in tool name for better identification
+        # Format: "InstanceName_tool_name" (using _ as separator due to API constraints)
+        # Anthropic API requires: ^[a-zA-Z0-9_-]{1,128}$
+        # Clean instance name: replace spaces with underscores, keep hyphens
+        clean_instance_name = mcp_server.name.replace(' ', '_')
+        prefixed_name = f"{clean_instance_name}_{tool.name}"
+        
         return cls(
             toolkit_name=mcp_server.name,
-            name=tool.name,
+            name=prefixed_name,
+            original_tool_name=tool.name,  # Store original name for MCP call
             description=tool.description or "",
             mcp_server=mcp_server,
             kwargs_arg="kwargs" in tool.inputSchema,

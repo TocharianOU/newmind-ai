@@ -130,7 +130,6 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
     if (!isInitializedRef.current) {
       isInitializedRef.current = true
       const init = async () => {
-        console.log("[IntegrationMarket] Starting initialization")
         await loadInstalledInstances()
         handleLoadNextPage()
       }
@@ -322,15 +321,11 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
         }
       })
       
-      console.log("[IntegrationMarket] Creating instance with data:", requestBody)
-      
       const res = await fetch("/api/plugins/oap-platform/instances", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
       })
-      
-      console.log("[IntegrationMarket] Response status:", res.status)
       
       if (!res.ok) {
         const errorText = await res.text()
@@ -363,7 +358,6 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
       }
       
       const data = await res.json()
-      console.log("[IntegrationMarket] Success response:", data)
       
       if (data.status === "success") {
         showToast({
@@ -404,16 +398,11 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
           }
         }
         
-        console.log("[IntegrationMarket] Calling onIntegrationAdded with:", {
-          instanceName: data.instance.instance_name,
-          config: enhancedConfig
-        })
         if (onIntegrationAdded && data.instance.config) {
           // Pass both instance name and enhanced configuration
           // No timeout needed since we're passing the config directly
           onIntegrationAdded(data.instance.instance_name, enhancedConfig)
         } else {
-          console.log("[IntegrationMarket] No callback or config, closing market")
           onClose()
         }
       } else {
