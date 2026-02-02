@@ -1,5 +1,5 @@
 .project-management-container {
-  padding: 24px;
+  padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
 
@@ -7,12 +7,13 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
 
     h2 {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 600;
       margin: 0;
+      color: var(--text);
     }
   }
 
@@ -27,14 +28,16 @@
 
   .loading-spinner {
     text-align: center;
-    padding: 48px;
-    color: var(--text-secondary);
+    padding: 40px;
+    color: var(--text-weak);
+    font-size: 14px;
   }
 
   .empty-state {
     text-align: center;
-    padding: 48px;
-    color: var(--text-secondary);
+    padding: 40px;
+    color: var(--text-weak);
+    font-size: 14px;
   }
 
   .projects-list {
@@ -44,21 +47,21 @@
   }
 
   .project-card {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 20px;
+    background: var(--bg-medium);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
     transition: all 0.2s ease;
 
     &:hover {
-      border-color: var(--primary-color);
+      border-color: var(--border-pri-blue);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     &.active {
-      border-color: var(--primary-color);
-      background: var(--bg-primary);
-      box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.15);
+      border-color: var(--border-pri-blue);
+      background: var(--bg-input);
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
     }
 
     .project-card-header {
@@ -79,19 +82,19 @@
         }
 
         h3 {
-          font-size: 18px;
+          font-size: 15px;
           font-weight: 600;
           margin: 0;
-          color: var(--text-primary);
+          color: var(--text);
         }
 
         .current-badge {
-          background: var(--primary-color);
+          background: var(--bg-pri-blue-medium);
           color: white;
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 600;
           padding: 2px 8px;
-          border-radius: 12px;
+          border-radius: 10px;
           text-transform: uppercase;
         }
       }
@@ -104,7 +107,7 @@
           padding: 6px;
           border: none;
           background: transparent;
-          color: var(--text-secondary);
+          color: var(--text-weak);
           cursor: pointer;
           border-radius: 4px;
           display: flex;
@@ -113,8 +116,8 @@
           transition: all 0.2s ease;
 
           &:hover {
-            background: var(--bg-hover);
-            color: var(--text-primary);
+            background: var(--bg-btn-hover);
+            color: var(--text);
           }
 
           &.danger:hover {
@@ -126,19 +129,19 @@
     }
 
     .project-card-description {
-      color: var(--text-secondary);
-      font-size: 14px;
+      color: var(--text-weak);
+      font-size: 13px;
       line-height: 1.5;
-      margin: 0 0 12px 0;
+      margin: 0 0 10px 0;
     }
 
     .project-card-stats {
       display: flex;
       gap: 16px;
-      font-size: 13px;
-      color: var(--text-tertiary);
-      padding-top: 12px;
-      border-top: 1px solid var(--border-color);
+      font-size: 12px;
+      color: var(--text-ultraweak);
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
 
       span {
         display: flex;
@@ -162,10 +165,10 @@
   }
 
   .modal-content {
-    background: var(--bg-primary);
-    border-radius: 12px;
+    background: var(--bg-dark);
+    border-radius: 10px;
     width: 90%;
-    max-width: 500px;
+    max-width: 480px;
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
@@ -174,24 +177,25 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 20px 24px;
-      border-bottom: 1px solid var(--border-color);
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
 
       h3 {
         margin: 0;
-        font-size: 20px;
+        font-size: 16px;
         font-weight: 600;
+        color: var(--text);
       }
 
       .close-btn {
         background: none;
         border: none;
-        font-size: 28px;
-        color: var(--text-secondary);
+        font-size: 24px;
+        color: var(--text-weak);
         cursor: pointer;
         padding: 0;
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -199,17 +203,17 @@
         transition: all 0.2s ease;
 
         &:hover {
-          background: var(--bg-hover);
-          color: var(--text-primary);
+          background: var(--bg-btn-hover);
+          color: var(--text);
         }
       }
     }
 
     .modal-body {
-      padding: 24px;
+      padding: 20px;
 
       .form-group {
-        margin-bottom: 20px;
+        margin-bottom: 16px;
 
         &:last-child {
           margin-bottom: 0;
@@ -218,8 +222,9 @@
         label {
           display: block;
           font-weight: 500;
+          font-size: 14px;
           margin-bottom: 8px;
-          color: var(--text-primary);
+          color: var(--text);
         }
 
         input,
@@ -243,8 +248,8 @@
       display: flex;
       justify-content: flex-end;
       gap: 12px;
-      padding: 20px 24px;
-      border-top: 1px solid var(--border-color);
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
     }
   }
 }
