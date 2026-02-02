@@ -96,10 +96,28 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
       }
       
       if (res.data.length > 0) {
-        console.log("MCP Server data from Hub:", res.data)
+        console.log("[IntegrationMarket] MCP Server data from Hub:", res.data)
+        console.log("[IntegrationMarket] OAP_ROOT_URL:", OAP_ROOT_URL)
         const data = res.data.map((tool: OAPMCPServer) => {
-          const logoUrl = tool.logo || (tool.banner ? `${OAP_ROOT_URL}${tool.banner}` : null)
-          console.log(`Tool ${tool.name}:`, {
+          // Fix logo URL construction - always prepend OAP_ROOT_URL for relative paths
+          let logoUrl = null
+          if (tool.logo) {
+            // If logo starts with /, prepend OAP_ROOT_URL
+            if (tool.logo.startsWith('http')) {
+              logoUrl = tool.logo
+            } else {
+              logoUrl = tool.logo.startsWith('/') ? `${OAP_ROOT_URL}${tool.logo}` : `${OAP_ROOT_URL}/${tool.logo}`
+            }
+          } else if (tool.banner) {
+            // If banner starts with /, prepend OAP_ROOT_URL
+            if (tool.banner.startsWith('http')) {
+              logoUrl = tool.banner
+            } else {
+              logoUrl = tool.banner.startsWith('/') ? `${OAP_ROOT_URL}${tool.banner}` : `${OAP_ROOT_URL}/${tool.banner}`
+            }
+          }
+          
+          console.log(`[IntegrationMarket] Tool ${tool.name}:`, {
             logo: tool.logo,
             banner: tool.banner,
             logoUrl: logoUrl,

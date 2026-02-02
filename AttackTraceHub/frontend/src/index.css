@@ -33,10 +33,10 @@
 
 [data-theme='dark'] {
   /* Dark theme variables */
-  /* 主色 - 蓝色系（与浅色主题相同） */
-  --accent-primary: #1E40AF;
-  --accent-secondary: #0891B2;
-  --accent-light: #3B82F6;
+  /* 主色 - 蓝色系（调亮以提高对比度） */
+  --accent-primary: #3B82F6;      /* 亮蓝色 - 提高对比度 */
+  --accent-secondary: #06B6D4;    /* 亮青色 - 提高对比度 */
+  --accent-light: #60A5FA;        /* 更亮的蓝色 */
   
   /* 背景色 */
   --bg-primary: #18181B;          /* 炭黑 */
@@ -46,17 +46,17 @@
   /* 文本色 */
   --text-primary: #FAFAFA;        /* 接近白 */
   --text-secondary: #E4E4E7;      /* 浅灰 */
-  --text-tertiary: #A1A1AA;       /* 中浅灰 */
+  --text-tertiary: #C4C4C8;       /* 中浅灰 - 提高对比度 */
   
   /* 边框色 */
   --border-primary: #3F3F46;      /* 深灰 */
   --border-secondary: #52525B;    /* 中深灰 */
   
-  /* 功能色（与浅色主题相同） */
-  --success: #10B981;
-  --error: #EF4444;
-  --warning: #F59E0B;
-  --info: #3B82F6;
+  /* 功能色（调整以提高可见度） */
+  --success: #22C55E;             /* 更亮的绿色 */
+  --error: #F87171;               /* 更亮的红色 */
+  --warning: #FBBF24;             /* 更亮的黄色 */
+  --info: #60A5FA;                /* 更亮的蓝色 */
   
   /* 阴影（加深） */
   --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);

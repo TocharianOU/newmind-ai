@@ -2184,11 +2184,18 @@
   }
 
   .cloud-icon {
-    width: 48px;
-    height: 48px;
+    width: 80px;
+    height: 80px;
     position: relative;
-    color: var(--text-hover-blue);
-    opacity: 0.5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .oap-placeholder-logo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
   }
 
   .no-oap-result-title {

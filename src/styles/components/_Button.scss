@@ -178,9 +178,9 @@
   &.disabled:not(.loading) {
     background-color: var(--bg-op-dark-weak)!important;
     box-shadow: none!important;
-    color: var(--text-light)!important;
+    color: var(--text-weak)!important;
     cursor: not-allowed!important;
-    opacity: 0.5;
+    opacity: 0.6;
   }
 
   &.loading {

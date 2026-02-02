@@ -85,6 +85,7 @@
 .nav-item.active {
   background: var(--accent-primary);
   color: white;
+  font-weight: 600;
 }
 
 .nav-item svg {
