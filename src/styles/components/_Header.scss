@@ -27,6 +27,7 @@
   z-index: $z-header;
   position: relative;
   
+  // Header bottom divider line - stays below content
   &::after {
     content: '';
     position: absolute;
@@ -42,6 +43,7 @@
       transparent 100%
     );
     opacity: 0.5;
+    z-index: 0; // Below content to prevent line from showing through components
   }
 
   [data-theme='dark'] {
@@ -60,37 +62,41 @@
     display: flex;
     align-items: center;
     gap: 16px;
-    margin-top: 5px;
+    height: 44px; // Fixed height to match selector components (36px + padding)
     position: relative;
+    z-index: 1; // Above divider line
 
+    // Left side: Sidebar toggle + Model selector
     .left-side {
       display: flex;
       align-items: center;
       gap: 12px;
       flex-shrink: 0;
       min-width: fit-content;
-      z-index: 2;
+      z-index: 2; // Above center content
     }
 
+    // Center: Project selector - absolutely positioned for precise centering
     .center-side {
       position: absolute;
       left: 50%;
-      transform: translateX(-50%);
+      transform: translateX(-50%); // Center horizontally
       display: flex;
       align-items: center;
       justify-content: center;
-      max-width: $chat-width;
+      max-width: $chat-width; // Match chat container width (840px)
       width: fit-content;
-      z-index: 1;
+      z-index: 1; // Below left/right sides
     }
 
+    // Right side: Update button + Settings button
     .right-side {
       display: flex;
       align-items: center;
       gap: 5px;
       flex-shrink: 0;
       margin-left: auto;
-      z-index: 2;
+      z-index: 2; // Above center content
 
       @media (max-width: $breakpoint-s) {
         display: none;
@@ -279,6 +285,41 @@
 
     &:hover {
       color: var(--text);
+    }
+  }
+
+  // Project selector - center position with border for emphasis
+  .project-selector {
+    .project-select-button {
+      height: 36px; // Match model selector height
+      padding: 0 12px 0 16px;
+      background: var(--bg);
+      border: 1px solid var(--border-weak) !important; // Override default styles
+      border-radius: 8px; // Modern rounded corners
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: var(--bg-op-dark-ultraweak);
+        border-color: var(--border) !important; // Darker border on hover
+      }
+
+      &[data-state="open"] {
+        background: var(--bg-op-dark-ultraweak);
+        border-color: var(--primary-color) !important; // Highlight when dropdown is open
+      }
+
+      // Dropdown arrow
+      svg {
+        opacity: 0.6;
+        transition: opacity 0.2s ease;
+      }
+
+      &:hover svg {
+        opacity: 1; // Full opacity on hover
+      }
     }
   }
 }

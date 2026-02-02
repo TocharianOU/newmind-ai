@@ -21,11 +21,13 @@
     border-right: 1px solid var(--border-weak);
   }
 
+  // Top spacer - aligns sidebar content with main header
   .sidebar-top-spacer {
-    height: 50px;
+    height: 50px; // Match header height for visual consistency
     flex-shrink: 0;
     position: relative;
 
+    // Bottom divider line matching main header style
     &::after {
       content: '';
       position: absolute;
@@ -111,6 +113,7 @@
 
       .history-title {
         font-weight: 500;
+        font-size: 15px;
         margin-bottom: 2px;
         white-space: nowrap;
         overflow: hidden;

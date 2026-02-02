@@ -132,6 +132,7 @@
 
 
 
+// Chat message container
 .message {
   max-width: 100%;
   margin: 12px 0;
@@ -139,6 +140,12 @@
   border-radius: 12px;
   word-wrap: break-word;
   line-height: 1.6;
+  font-size: 15px; // Base font size for message content
+
+  // Paragraph text within messages
+  p {
+    font-size: 15px; // Consistent with container font size
+  }
 
   // Document Card Compact Styles
   .document-card-compact {
@@ -313,6 +320,7 @@
       padding-bottom: 0;
       margin-left: 0;
       margin-bottom: 0;
+      font-size: 15px;
     }
 
     .message-images img {

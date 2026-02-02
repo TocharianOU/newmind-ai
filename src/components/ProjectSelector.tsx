@@ -69,14 +69,13 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({ onManageClick }) => {
   }]
 
   return (
-    <div className="project-selector" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+    <div className="project-selector">
       <Select
         options={options}
         value={currentProjectId}
         onSelect={handleProjectSwitch}
         placeholder={loading ? t("project.loading") : displayName}
-        size="s"
-        type="outline"
+        className="project-select-button"
         fullWidth={false}
       />
     </div>
