@@ -56,9 +56,17 @@ export const successToolsAtom = atom<Tool[]>(
 export const loadToolsAtom = atom(
   null,
   async (get, set) => {
-    const response = await apiFetch("/api/tools")
+    // Add cache buster to force fresh data
+    const cacheBuster = `?_t=${Date.now()}`
+    const response = await apiFetch(`/api/tools${cacheBuster}`, {
+      cache: 'no-cache',
+      headers: { 'Cache-Control': 'no-cache' }
+    })
     const data = await response.json()
-    const mcpserverResponse = await apiFetch("/api/config/mcpserver")
+    const mcpserverResponse = await apiFetch(`/api/config/mcpserver${cacheBuster}`, {
+      cache: 'no-cache',
+      headers: { 'Cache-Control': 'no-cache' }
+    })
     const mcpserverData = await mcpserverResponse.json()
     if (data.success) {
       let tools = data.tools
@@ -94,7 +102,12 @@ export const mcpConfigAtom = atom<{mcpServers: MCPConfig}>({mcpServers: {}})
 export const loadMcpConfigAtom = atom(
   null,
   async (get, set) => {
-    const response = await apiFetch("/api/config/mcpserver")
+    // Add cache buster to force fresh data
+    const cacheBuster = `?_t=${Date.now()}`
+    const response = await apiFetch(`/api/config/mcpserver${cacheBuster}`, {
+      cache: 'no-cache',
+      headers: { 'Cache-Control': 'no-cache' }
+    })
     const data = await response.json()
     if (data.success) {
       set(mcpConfigAtom, data.config)

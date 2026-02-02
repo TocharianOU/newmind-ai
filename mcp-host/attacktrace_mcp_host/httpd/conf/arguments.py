@@ -6,6 +6,7 @@ from typing import Annotated, Self
 from pydantic import AfterValidator, BaseModel, Field, model_validator
 
 from attacktrace_mcp_host.env import ATTACKTRACE_CONFIG_DIR
+from attacktrace_mcp_host.httpd.conf.project_context import get_project_config_path
 
 type StrPath = str | Path
 
@@ -116,7 +117,8 @@ class Arguments(BaseModel):
         if not self.llm_config:
             self.llm_config = cwd.joinpath("model_config.json")
         if not self.mcp_config:
-            self.mcp_config = cwd.joinpath("mcp_config.json")
+            # Use project-specific config path instead of legacy .config path
+            self.mcp_config = get_project_config_path()
         if not self.command_alias_config:
             self.command_alias_config = cwd.joinpath("command_alias.json")
         if not self.plugin_config:

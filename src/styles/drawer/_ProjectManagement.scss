@@ -1,0 +1,152 @@
+@use "../_variables" as *;
+
+.project-management-drawer-container {
+  width: 100%;
+  max-width: 800px;
+}
+
+.project-management-drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+
+  h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+  }
+}
+
+.error-message {
+  padding: 12px 16px;
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  border-radius: 8px;
+  color: #ff4444;
+  margin-bottom: 20px;
+}
+
+.loading-spinner {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-weak);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-weak);
+  font-size: 16px;
+}
+
+.projects-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.project-card {
+  padding: 20px;
+  border: 1px solid var(--border-weak);
+  border-radius: 8px;
+  background: var(--bg);
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  &.active {
+    border-color: var(--primary-color);
+    background: var(--bg-op-dark-ultraweak);
+  }
+
+  .project-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+
+    .project-card-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .default-icon {
+        color: #ffc107;
+        flex-shrink: 0;
+      }
+
+      h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .current-badge {
+        padding: 2px 8px;
+        background: var(--primary-color);
+        color: white;
+        font-size: 11px;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+    }
+
+    .project-card-actions {
+      display: flex;
+      gap: 8px;
+
+      .icon-btn {
+        background: none;
+        border: 1px solid var(--border-weak);
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        color: var(--text);
+
+        &:hover {
+          background: var(--bg-op-dark-weak);
+          border-color: var(--border-color);
+        }
+
+        &.danger:hover {
+          background: rgba(255, 0, 0, 0.1);
+          border-color: #ff4444;
+          color: #ff4444;
+        }
+
+        svg {
+          width: 16px;
+          height: 16px;
+        }
+      }
+    }
+  }
+
+  .project-card-description {
+    margin: 0 0 12px 0;
+    color: var(--text-weak);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .project-card-stats {
+    display: flex;
+    gap: 20px;
+    font-size: 13px;
+    color: var(--text-weak);
+
+    span {
+      display: flex;
+      align-items: center;
+    }
+  }
+}

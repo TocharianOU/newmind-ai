@@ -2,7 +2,8 @@
   "header": {
     "title": "AttackTrace",
     "openSidebar": "Open sidebar",
-    "closeSidebar": "Close sidebar"
+    "closeSidebar": "Close sidebar",
+    "settings": "Settings"
   },
   "chat": {
     "placeholder": "Send any message...",
@@ -103,8 +104,11 @@
     "selectProject": "Select Project",
     "manageProjects": "Manage Projects",
     "createNew": "Create Project",
+    "createFirstProject": "Create your first project",
     "edit": "Edit",
     "delete": "Delete",
+    "deleteConfirmTitle": "Delete Project",
+    "error": "Error",
     "name": "Project Name",
     "description": "Description",
     "namePlaceholder": "Enter project name",
@@ -123,10 +127,14 @@
     "cancel": "Cancel",
     "save": "Save",
     "create": "Create",
+    "creating": "Creating...",
+    "saving": "Saving...",
+    "confirming": "Confirming...",
     "delete": "Delete",
     "edit": "Edit",
     "close": "Close",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "ok": "OK"
   },
   "tools": {
     "title": "Security Integrations",
@@ -185,6 +193,7 @@
       "title": "Integration Marketplace",
       "search": "Search integrations...",
       "installed": "Installed",
+      "notInstalled": "Not Installed",
       "addButton": "Add Integration",
       "adding": "Adding...",
       "configure": "Configure Integration",
@@ -192,6 +201,7 @@
       "installing": "Installing Integration",
       "downloading": "Downloading package...",
       "ready": "Ready",
+      "installationCancelled": "Installation cancelled",
       "preparing": "Preparing installation..."
     },
     "packages": {

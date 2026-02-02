@@ -101,7 +101,7 @@ class OAPHttpHandlers:
         """Get MCPServerManager for the given project"""
         config_path = str(get_project_config_path(project_id))
         manager = MCPServerManager(config_path=config_path, project_id=project_id)
-        await manager.reload()
+        manager.initialize()
         return manager
     
     async def auth_handler(
@@ -295,6 +295,7 @@ class OAPHttpHandlers:
                     "install_path": str(install_path) if install_path else None,
                     "config": instance_config,  # Include full configuration
                 },
+                "full_config": config.model_dump(by_alias=True)  # Return complete config for immediate frontend update
             }
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to create instance: {str(e)}")

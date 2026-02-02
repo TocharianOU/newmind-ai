@@ -1,0 +1,135 @@
+@use "../../styles/_variables" as *;
+
+.drawer-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: $z-drawer;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+}
+
+.drawer-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  animation: fadeIn 0.3s ease-out;
+  
+  @media (prefers-color-scheme: dark) {
+    background: rgba(0, 0, 0, 0.7);
+  }
+}
+
+.drawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--bg);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+  overflow-y: auto;
+  overflow-x: hidden;
+  
+  &.drawer-right {
+    animation: slideInRight 0.3s ease-out;
+  }
+  
+  &.drawer-left {
+    animation: slideInLeft 0.3s ease-out;
+  }
+
+  &.drawer-fullscreen {
+    left: 0;
+    right: 0;
+    width: 100% !important;
+    animation: fadeIn 0.2s ease-out;
+    display: flex;
+    flex-direction: column;
+  }
+
+  @media (max-width: $breakpoint-m) {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+.drawer-fullscreen-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-weak);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+
+.drawer-back-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-hover);
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+.drawer-fullscreen-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.drawer-fullscreen-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}

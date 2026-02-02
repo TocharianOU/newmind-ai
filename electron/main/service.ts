@@ -49,9 +49,8 @@ async function initApp() {
   await migratePrebuiltScripts().catch(console.error)
   await migrateLegacyConfig().catch(console.error)
 
-  // create config file if not exists
-  const mcpServerConfigPath = path.join(baseConfigDir, "mcp_config.json")
-  await mergeDefaultMCPConfig(mcpServerConfigPath)
+  // NOTE: mcp_config.json is now managed by backend in project-specific directory
+  // (projects/default/mcp_config.json), not in .config directory
 
   // create custom rules file if not exists
   const customRulesPath = path.join(baseConfigDir, "customrules")

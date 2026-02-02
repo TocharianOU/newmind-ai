@@ -19,7 +19,7 @@ import cloneDeep from "lodash/cloneDeep"
 import { ClickOutside } from "../../../components/ClickOutside"
 import Button from "../../../components/Button"
 import CustomEdit from "./Popup/CustomEdit"
-import IntegrationMarket from "./Popup/IntegrationMarket"
+import { openDrawerAtom } from "../../../atoms/drawerState"
 import "../../../styles/overlay/_Tools.scss"
 
 interface ToolsCache {
@@ -71,7 +71,7 @@ const Tools = () => {
   const loadTools = useSetAtom(loadToolsAtom)
   const [showDeletePopup, setShowDeletePopup] = useState(false)
   const [showCustomEditPopup, setShowCustomEditPopup] = useState(false)
-  const [showIntegrationMarket, setShowIntegrationMarket] = useState(false)
+  const openDrawer = useSetAtom(openDrawerAtom)
   const [showUnsavedSubtoolsPopup, setShowUnsavedSubtoolsPopup] = useState(false)
   const [changingTool, setChangingTool] = useState<string>("")
   const [currentTool, setCurrentTool] = useState<string>("")
@@ -428,7 +428,7 @@ const Tools = () => {
 
       const newConfig = JSON.parse(JSON.stringify(mcpConfig))
       newConfig.mcpServers[tool.name].enabled = !currentEnabled
-      if(newConfig.mcpServers[tool.name].enabled && tool.tools.every(subTool => !subTool.enabled)) {
+      if(newConfig.mcpServers[tool.name].enabled && tool.tools && tool.tools.every(subTool => !subTool.enabled)) {
         newConfig.mcpServers[tool.name].exclude_tools = []
       }
 
@@ -520,7 +520,7 @@ const Tools = () => {
         }
       }
 
-      if(tool?.tools.filter(subTool => subTool.enabled).length === 0) {
+      if(tool?.tools && tool.tools.filter(subTool => subTool.enabled).length === 0) {
         tool.enabled = false
         //if closing all subtools, make tool disabled, check if tool is disabled originally
         //disabled Originally: it means it still in draft, recover all subtools state
@@ -537,12 +537,14 @@ const Tools = () => {
       }
     } else {
       tool.enabled = true
-      tool.tools.map(subTool => {
-        subTool.enabled = false
-        if(subTool.name === subToolName) {
-          subTool.enabled = true
-        }
-      })
+      if(tool?.tools) {
+        tool.tools.map(subTool => {
+          subTool.enabled = false
+          if(subTool.name === subToolName) {
+            subTool.enabled = true
+          }
+        })
+      }
     }
 
     setTools(newTools)
@@ -852,7 +854,55 @@ const Tools = () => {
             {isLoggedInOAP && (
               <Tooltip content={t("tools.oap.marketplaceAlt") || "Browse available integrations from the cloud"}>
                 <Button
-                  onClick={() => setShowIntegrationMarket(true)}
+                  onClick={() => openDrawer({
+                    id: "integration-market",
+                    page: "IntegrationMarket",
+                    props: {
+                      onIntegrationAdded: async (instanceName: string, instanceConfig: any, fullConfig?: any) => {
+                        try {
+                          console.log(`[Tools] Starting sync for new instance: ${instanceName}`)
+                          
+                          if (fullConfig) {
+                            // ✅ Fast path: Use config directly from backend
+                            console.log('[Tools] Using full config from backend (no API calls needed)')
+                            setMcpConfig(fullConfig)
+                            
+                            console.log('[Tools] Step 1: Loading tools...')
+                            await loadTools()
+                            
+                            console.log('[Tools] Step 2: Updating cache...')
+                            await updateToolsCache()
+                            
+                            console.log('[Tools] Step 3: Triggering re-sort...')
+                            setIsResort(true)
+                            
+                            console.log(`[Tools] ✓ Successfully synced new tool: ${instanceName} (fast path)`)
+                          } else {
+                            // Fallback: Reload from API (for backward compatibility)
+                            console.log('[Tools] No full config provided, falling back to API reload')
+                            
+                            await new Promise(resolve => setTimeout(resolve, 500))
+                            
+                            console.log('[Tools] Step 1: Loading MCP config...')
+                            await loadMcpConfig()
+                            
+                            console.log('[Tools] Step 2: Loading tools...')
+                            await loadTools()
+                            
+                            console.log('[Tools] Step 3: Updating cache...')
+                            await updateToolsCache()
+                            
+                            console.log('[Tools] Step 4: Triggering re-sort...')
+                            setIsResort(true)
+                            
+                            console.log(`[Tools] ✓ Successfully synced new tool: ${instanceName} (fallback path)`)
+                          }
+                        } catch (error) {
+                          console.error("[Tools] ✗ Background sync failed:", error)
+                        }
+                      }
+                    }
+                  })}
                   color="blue"
                   size="fit"
                   padding="xs"
@@ -1134,38 +1184,6 @@ const Tools = () => {
         />
       )}
 
-      {showIntegrationMarket && (
-        <IntegrationMarket
-          onClose={() => setShowIntegrationMarket(false)}
-          onIntegrationAdded={async (instanceName, instanceConfig) => {
-            // Close integration market immediately
-            setShowIntegrationMarket(false)
-            
-            // Update local mcpConfig state with the new instance immediately
-            setMcpConfig(prev => ({
-              ...prev,
-              mcpServers: {
-                ...prev.mcpServers,
-                [instanceName]: instanceConfig
-              }
-            }))
-            
-            // Don't automatically open CustomEdit - user already configured in IntegrationMarket
-            // The tool will appear in the list and user can edit it if needed
-            
-            // Reload everything in background to sync with file system
-            // This ensures consistency but doesn't block the UI
-            try {
-              await loadMcpConfig()
-              await loadTools()
-              await updateToolsCache()
-              setIsResort(true)
-            } catch (error) {
-              console.error("[Tools] Background sync failed:", error)
-            }
-          }}
-        />
-      )}
 
       {showUnsavedSubtoolsPopup && (
         <PopupConfirm

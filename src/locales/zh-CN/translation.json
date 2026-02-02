@@ -2,7 +2,8 @@
   "header": {
     "title": "AttackTrace",
     "openSidebar": "打开侧边栏",
-    "closeSidebar": "关闭侧边栏"
+    "closeSidebar": "关闭侧边栏",
+    "settings": "设置"
   },
   "chat": {
     "placeholder": "发送任何消息...",
@@ -103,8 +104,11 @@
     "selectProject": "选择项目",
     "manageProjects": "管理项目",
     "createNew": "创建项目",
+    "createFirstProject": "创建你的第一个项目",
     "edit": "编辑",
     "delete": "删除",
+    "deleteConfirmTitle": "删除项目",
+    "error": "错误",
     "name": "项目名称",
     "description": "描述",
     "namePlaceholder": "输入项目名称",
@@ -123,10 +127,14 @@
     "cancel": "取消",
     "save": "保存",
     "create": "创建",
+    "creating": "创建中...",
+    "saving": "保存中...",
+    "confirming": "确认中...",
     "delete": "删除",
     "edit": "编辑",
     "close": "关闭",
-    "confirm": "确认"
+    "confirm": "确认",
+    "ok": "确定"
   },
   "tools": {
     "title": "安全集成",
@@ -185,6 +193,7 @@
       "title": "集成市场",
       "search": "搜索集成...",
       "installed": "已安装",
+      "notInstalled": "未安装",
       "addButton": "添加集成",
       "adding": "添加中...",
       "configure": "配置集成",
@@ -192,6 +201,8 @@
       "installing": "正在安装集成",
       "downloading": "正在下载包...",
       "ready": "准备就绪",
+      "installationCancelled": "安装已取消",
+      "preparing": "准备集成中...",
       "preparing": "准备安装..."
     },
     "packages": {
