@@ -19,7 +19,7 @@
 
   h1 {
     margin: 0;
-    font-size: 28px;
+    font-size: 22px;
   }
 
   .system-header {
@@ -27,10 +27,10 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 34px;
-    font-size: 20px;
+    margin-bottom: 24px;
+    font-size: 16px;
     font-weight: 600;
-    line-height: 36px;
+    line-height: 28px;
   }
 
   .system-title-container {
@@ -48,14 +48,14 @@
     overflow: hidden;
 
     .system-list-section {
-      padding: 16px 24px;
+      padding: 14px 20px;
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
       border: 1px solid var(--border-weak);
-      border-radius: 10px;
+      border-radius: 8px;
 
       .system-list-content {
         display: flex;
@@ -69,7 +69,7 @@
 
         .system-list-name {
           font-weight: 500;
-          font-size: 20px;
+          font-size: 15px;
         }
       }
 
@@ -80,7 +80,7 @@
       }
 
       .system-list-description {
-        font-size: 16px;
+        font-size: 13px;
         font-weight: 400;
         color: var(--text-weak);
       }
@@ -92,7 +92,7 @@
         margin-top: 20px;
 
         .custom-prompt-description {
-          font-size: 16px;
+          font-size: 13px;
           font-weight: 400;
           color: var(--text-pri-blue-medium);
         }
