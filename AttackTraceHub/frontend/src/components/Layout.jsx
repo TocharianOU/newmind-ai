@@ -19,12 +19,15 @@ const Layout = ({ children }) => {
       <aside className="sidebar">
         <div className="sidebar-header">
           <img 
-            src="/image/logo_oap.svg" 
+            src="/image/logo_oap_compact.svg" 
             alt="OAP Platform Logo" 
             className="sidebar-logo"
-            style={{ width: '40px', height: '40px', marginRight: '12px' }}
+            style={{ width: '76px', height: '76px', marginRight: '14px', marginTop: '22px', objectFit: 'contain' }}
           />
-          <h1>OAP Platform</h1>
+          <div className="sidebar-title">
+            <div className="brand-name">OAP</div>
+            <div className="brand-subtitle">Platform</div>
+          </div>
         </div>
 
         <nav className="sidebar-nav">

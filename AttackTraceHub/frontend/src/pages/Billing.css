@@ -1,7 +1,7 @@
 .billing-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1.25rem;
 }
 
 .billing-loading {
@@ -18,7 +18,7 @@
 }
 
 .billing-header h1 {
-  font-size: 2rem;
+  font-size: 1.625rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
   background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
@@ -47,10 +47,10 @@
 .balance-card {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding: 2rem;
+  gap: 1.25rem;
+  padding: 1.5rem;
   background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
-  border-radius: 16px;
+  border-radius: 12px;
   color: white;
   box-shadow: 0 10px 30px rgba(249, 115, 22, 0.3);
 }
@@ -102,10 +102,10 @@
 
 .package-card {
   position: relative;
-  padding: 2rem;
+  padding: 1.5rem;
   background: white;
   border: 2px solid #e2e8f0;
-  border-radius: 16px;
+  border-radius: 12px;
   transition: all 0.3s ease;
   text-align: center;
 }
@@ -142,7 +142,7 @@
 }
 
 .package-tokens {
-  font-size: 2rem;
+  font-size: 1.625rem;
   font-weight: 700;
   color: var(--accent-primary);
   margin-bottom: 0.5rem;
@@ -242,10 +242,10 @@
 
 .subscription-card {
   position: relative;
-  padding: 2rem;
+  padding: 1.5rem;
   background: white;
   border: 2px solid #e2e8f0;
-  border-radius: 16px;
+  border-radius: 12px;
   transition: all 0.3s ease;
 }
 
@@ -546,7 +546,7 @@
 
 .modal-content {
   background: white;
-  border-radius: 12px;
+  border-radius: 10px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   max-width: 500px;
   width: 90%;
@@ -582,12 +582,12 @@
 .modal-close {
   background: none;
   border: none;
-  font-size: 2rem;
+  font-size: 1.5rem;
   color: #a0aec0;
   cursor: pointer;
   padding: 0;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -693,7 +693,7 @@
 
 .history-table-container {
   background: white;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid #e2e8f0;
   overflow: hidden;
 }
