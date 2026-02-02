@@ -52,6 +52,7 @@
     border-radius: 10px;
     padding: 16px;
     transition: all 0.2s ease;
+    color: var(--text);
 
     &:hover {
       border-color: var(--border-pri-blue);
@@ -90,9 +91,9 @@
 
         .current-badge {
           background: var(--bg-pri-blue-medium);
-          color: white;
+          color: #ffffff;
           font-size: 10px;
-          font-weight: 600;
+          font-weight: 700;
           padding: 2px 8px;
           border-radius: 10px;
           text-transform: uppercase;
@@ -172,6 +173,7 @@
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    color: var(--text);
 
     .modal-header {
       display: flex;
@@ -183,7 +185,7 @@
       h3 {
         margin: 0;
         font-size: 16px;
-        font-weight: 600;
+        font-weight: 700;
         color: var(--text);
       }
 
