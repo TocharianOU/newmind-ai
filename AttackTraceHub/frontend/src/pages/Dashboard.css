@@ -77,9 +77,9 @@
 }
 
 .range-selector button.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
 }
 
 .stats-grid {
@@ -138,13 +138,13 @@
 }
 
 .stat-icon.total-calls {
-  background: linear-gradient(135deg, #667eea22 0%, #764ba222 100%);
-  color: #667eea;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.13) 0%, rgba(234, 88, 12, 0.13) 100%);
+  color: var(--accent-primary);
 }
 
 .stat-icon.total-tokens {
-  background: linear-gradient(135deg, #f093fb22 0%, #f5576c22 100%);
-  color: #f5576c;
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.13) 0%, rgba(249, 115, 22, 0.13) 100%);
+  color: var(--accent-primary);
 }
 
 .stat-icon.avg-tokens {
@@ -186,7 +186,7 @@
 .refill-link {
   display: inline-block;
   margin-top: 0.5rem;
-  color: #667eea;
+  color: var(--accent-primary);
   font-size: 0.875rem;
   font-weight: 600;
   text-decoration: none;
@@ -194,7 +194,7 @@
 }
 
 .refill-link:hover {
-  color: #764ba2;
+  color: var(--accent-secondary);
   transform: translateX(4px);
 }
 
@@ -277,7 +277,7 @@
 
 .usage-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   border-radius: 99px;
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }

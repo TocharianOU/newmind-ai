@@ -18,6 +18,12 @@ const Layout = ({ children }) => {
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-header">
+          <img 
+            src="/image/logo_oap.svg" 
+            alt="OAP Platform Logo" 
+            className="sidebar-logo"
+            style={{ width: '40px', height: '40px', marginRight: '12px' }}
+          />
           <h1>OAP Platform</h1>
         </div>
 
