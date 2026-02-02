@@ -1,4 +1,4 @@
-# Frontend Dockerfile for NewmindHub
+# Frontend Dockerfile for OAP Platform
 FROM node:20-alpine
 
 WORKDIR /app

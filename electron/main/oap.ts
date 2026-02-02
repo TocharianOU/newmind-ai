@@ -48,7 +48,7 @@ class OAPClient {
       }
 
       // TODO: 后期需要根据OAP_ROOT_URL的协议动态选择ws://或wss://
-      // 当前为了跑通AttackTraceHub集成，临时使用ws://
+      // 当前为了跑通 OAP 集成，临时使用ws://
       // 原始代码: `wss://${OAP_ROOT_URL.split("://")[1]}/api/v1/socket`
       const wsProtocol = OAP_ROOT_URL.startsWith('https://') ? 'wss://' : 'ws://';
       const wsUrl = `${wsProtocol}${OAP_ROOT_URL.split("://")[1]}/api/v1/socket`;

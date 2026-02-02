@@ -2,12 +2,12 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
-    container_name: newmindhub-postgres
+    container_name: oap-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-newmindhub_auth}
+      POSTGRES_DB: ${POSTGRES_DB:-oap_auth}
     ports:
       - "${POSTGRES_PORT:-25432}:5432"
     volumes:
@@ -18,14 +18,14 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - newmindhub-network
+      - oap-network
 
   # Backend API
   backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: newmindhub-backend
+    container_name: oap-backend
     restart: unless-stopped
     depends_on:
       postgres:
@@ -33,7 +33,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-newmindhub_auth}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-oap_auth}?schema=public
       JWT_SECRET: ${JWT_SECRET}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       DIVE_OVERRIDE_SYSTEM_PROMPT: ${DIVE_OVERRIDE_SYSTEM_PROMPT:-}
@@ -66,7 +66,7 @@ services:
       retries: 3
       start_period: 40s
     networks:
-      - newmindhub-network
+      - oap-network
 
   # Frontend
   frontend:
@@ -76,7 +76,7 @@ services:
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:23000}
         VITE_DOCS_URL: ${DOCS_URL:-http://localhost:23002}
-    container_name: newmindhub-frontend
+    container_name: oap-frontend
     restart: unless-stopped
     depends_on:
       - backend
@@ -89,14 +89,14 @@ services:
       retries: 3
       start_period: 5s
     networks:
-      - newmindhub-network
+      - oap-network
 
   # Documentation (可选，如果没有 docs 目录可注释掉)
   # docs:
   #   build:
-  #     context: ../newmindchat-docs
+  #     context: ../attacktrace-docs
   #     dockerfile: Dockerfile
-  #   container_name: newmindhub-docs
+  #   container_name: oap-docs
   #   restart: unless-stopped
   #   ports:
   #     - "${DOCS_PORT:-23002}:8002"
@@ -114,5 +114,5 @@ volumes:
     driver: local
 
 networks:
-  newmindhub-network:
+  oap-network:
     driver: bridge

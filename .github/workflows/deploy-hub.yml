@@ -1,4 +1,4 @@
-name: Deploy AttackTraceHub
+name: Deploy OAP Platform
 # Trigger deployment: 2026-01-18 (retry after Docker installation)
 
 on:

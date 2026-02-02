@@ -1,7 +1,7 @@
 {
-  "name": "newmind-hub",
+  "name": "oap-platform",
   "version": "1.0.0",
-  "description": "AttackTraceHub - AI Model Proxy and Management Platform",
+  "description": "OAP Platform - Operations & Analytics Platform for AttackTrace",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
@@ -47,6 +47,6 @@
     "proxy",
     "hub"
   ],
-  "author": "AttackTraceHub Team",
+  "author": "AttackTrace Team",
   "license": "MIT"
 }

@@ -85,7 +85,7 @@ const Register = () => {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <h1>NewMind Hub</h1>
+          <h1>OAP Platform</h1>
           <p>{t('auth.registerTitle')}</p>
         </div>
 

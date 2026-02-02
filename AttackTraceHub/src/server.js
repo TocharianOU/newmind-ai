@@ -129,7 +129,7 @@ app.use('/integrations', express.static(path.join(__dirname, '../integrations'))
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok',
-    service: 'AttackTraceHub',
+    service: 'OAP-Platform',
     timestamp: new Date().toISOString()
   });
 });
@@ -211,7 +211,7 @@ initializeSSOProviders();
 // Start server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  logger.info(`🚀 AttackTraceHub server running on port ${PORT}`);
+  logger.info(`🚀 OAP Platform server running on port ${PORT}`);
   logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
   logger.info(`🌐 CORS origins: ${allowedOrigins.join(',')}`);
   

@@ -18,7 +18,7 @@ const Layout = ({ children }) => {
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-header">
-          <h1>NewMind Hub</h1>
+          <h1>OAP Platform</h1>
         </div>
 
         <nav className="sidebar-nav">

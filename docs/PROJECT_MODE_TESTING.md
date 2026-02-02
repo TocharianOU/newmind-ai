@@ -9,14 +9,14 @@ This document provides comprehensive testing procedures for the new Project Mode
 ### Prerequisites
 
 1. Clean AttackTrace installation or backed-up existing data
-2. AttackTraceHub running locally or accessible remotely
+2. OAP Platform running locally or accessible remotely
 3. At least one MCP integration configured (e.g., Elasticsearch or Kibana)
 
 ### Initial Setup
 
 ```bash
 # 1. Ensure Hub backend is running
-cd AttackTraceHub
+cd AttackTraceHub  # OAP Platform
 npm run dev
 
 # 2. Run Hub database migrations

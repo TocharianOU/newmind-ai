@@ -34,12 +34,12 @@ const Setting = ({ _tab }: { _tab: Tab }) => {
     setSettingTab(_tab)
   }, [_tab])
 
-  // 打开AttackTraceHub Dashboard（带token自动登录）
+  // 打开 OAP Dashboard（带token自动登录）
   const handleOAP = async () => {
     try {
       const token = await oapGetToken()
       const url = `${ENV_CONFIG.HUB_BASE_URL}/dashboard${token ? `?token=${token}` : ''}`
-      console.log('🔗 Opening AttackTraceHub Dashboard:', url)
+      console.log('🔗 Opening OAP Dashboard:', url)
       
       if (window.ipcRenderer && window.ipcRenderer.invoke) {
         // 使用IPC在外部浏览器中打开
@@ -49,7 +49,7 @@ const Setting = ({ _tab }: { _tab: Tab }) => {
         window.open(url, '_blank')
       }
     } catch (error) {
-      console.error('🔗 Error opening AttackTraceHub:', error)
+      console.error('🔗 Error opening OAP:', error)
       // 即使获取token失败，也尝试打开（不带token）
       const fallbackUrl = `${ENV_CONFIG.HUB_BASE_URL}/dashboard`
       if (window.ipcRenderer && window.ipcRenderer.invoke) {

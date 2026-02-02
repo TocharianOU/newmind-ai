@@ -451,7 +451,7 @@ export const defaultInterface: Record<ModelProvider, InterfaceDefinition> = {
   perplexity: openaiCompatibleTemplate("https://api.perplexity.ai"),
   newmind: openaiCompatibleTemplate(`${OAP_PROXY_URL}/api/newmind`, {
     apiKey: {
-      // The API key is the user's OAP/AttackTraceHub JWT token.
+      // The API key is the user's OAP JWT token.
       // This function retrieves the token when the provider is selected.
       getValue: async () => {
         try {

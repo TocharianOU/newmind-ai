@@ -30,12 +30,12 @@ const Settings = ({ tab }: { tab: Tab }) => {
     setSettingTab(tab)
   }, [tab, setSettingTab])
 
-  // Open AttackTraceHub Dashboard with token auto-login
+  // Open OAP Dashboard with token auto-login
   const handleOAP = async () => {
     try {
       const token = await oapGetToken()
       const url = `${ENV_CONFIG.HUB_BASE_URL}/dashboard${token ? `?token=${token}` : ''}`
-      console.log('Opening AttackTraceHub Dashboard:', url)
+      console.log('Opening OAP Dashboard:', url)
       
       if (window.ipcRenderer && window.ipcRenderer.invoke) {
         window.ipcRenderer.invoke('open-external-url', url)
@@ -43,7 +43,7 @@ const Settings = ({ tab }: { tab: Tab }) => {
         window.open(url, '_blank')
       }
     } catch (error) {
-      console.error('Error opening AttackTraceHub:', error)
+      console.error('Error opening OAP:', error)
       const fallbackUrl = `${ENV_CONFIG.HUB_BASE_URL}/dashboard`
       if (window.ipcRenderer && window.ipcRenderer.invoke) {
         window.ipcRenderer.invoke('open-external-url', fallbackUrl)

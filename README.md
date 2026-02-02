@@ -1,6 +1,6 @@
 # AttackTrace
 
-AI 驱动的桌面聊天应用，支持 MCP 服务器集成和 Hub 市场。
+AI 驱动的 SOC 调查与结案助手，支持 MCP 服务器集成和 OAP 云端服务。
 
 ## 项目简介
 
@@ -10,7 +10,7 @@ AttackTrace 是一款现代化的 AI 桌面应用，提供强大的对话能力�
 
 - **自研 AI 模型**：提供 newmind-medium、newmind-strong、newmind-small 三种模型
 - **MCP 集成**：支持 Elasticsearch、Kibana、GitHub 等多种 MCP 服务器
-- **Hub 市场**：预配置模型和工具，一键安装使用
+- **OAP 平台**：预配置模型和工具，一键安装使用
 - **跨平台支持**：支持 macOS、Windows 和 Linux
 - **本地优先**：数据本地存储，保护隐私
 - **流式响应**：实时显示 AI 响应内容
@@ -35,9 +35,9 @@ AttackTrace 是一款现代化的 AI 桌面应用，提供强大的对话能力�
 - MCP 服务器配置
 - 会话历史管理
 
-### 2. AttackTraceHub（Hub 服务）
+### 2. OAP Platform（Operations & Analytics Platform）
 
-用户认证、模型管理和订阅系统。
+云端服务平台，提供用户认证、模型管理和订阅系统。
 
 **技术栈**：
 - Node.js + Express
@@ -51,7 +51,7 @@ AttackTrace 是一款现代化的 AI 桌面应用，提供强大的对话能力�
 - 订阅计划管理
 - 使用统计和分析
 
-**文档**：[AttackTraceHub README](./AttackTraceHub/README.md)
+**文档**：[OAP Platform README](./AttackTraceHub/README.md)
 
 ### 3. MCP Host（MCP 服务）
 
@@ -97,9 +97,9 @@ Model Context Protocol 服务器主机，管理和运行 MCP 插件。
 
 ### 注册账号
 
-访问 AttackTraceHub 创建账号并登录：
+访问 OAP 平台创建账号并登录：
 
-**[访问 AttackTraceHub](http://xiaopenges.tocharian.eu:23001/login)**
+**[访问 OAP Platform](http://xiaopenges.tocharian.eu:23001/login)**
 
 ### 查看文档
 
@@ -127,7 +127,7 @@ uv run mkdocs serve -a 0.0.0.0:8002
 # 主应用
 npm install
 
-# AttackTraceHub
+# OAP Platform
 cd AttackTraceHub
 npm install
 
@@ -152,9 +152,9 @@ npm run dev
 ./start-dev.sh
 ```
 
-#### AttackTraceHub
+#### OAP Platform
 
-参考 [AttackTraceHub/START.md](./AttackTraceHub/START.md)
+参考 [OAP Platform START.md](./AttackTraceHub/START.md)
 
 ```bash
 cd AttackTraceHub
@@ -198,7 +198,7 @@ npm run build:linux   # Linux
 
 | 项目 | 构建文档 | 启动文档 | 项目说明 |
 |------|----------|----------|----------|
-| **AttackTraceHub** | [BUILD.md](./AttackTraceHub/BUILD.md) | [START.md](./AttackTraceHub/START.md) | [README.md](./AttackTraceHub/README.md) |
+| **OAP Platform** | [BUILD.md](./AttackTraceHub/BUILD.md) | [START.md](./AttackTraceHub/START.md) | [README.md](./AttackTraceHub/README.md) |
 | **MCP Host** | [BUILD.md](./mcp-host/BUILD.md) | [START.md](./mcp-host/START.md) | [README.md](./mcp-host/README.md) |
 | **文档站点** | [BUILD.md](./attacktrace-docs/BUILD.md) | [START.md](./attacktrace-docs/START.md) | [README.md](./attacktrace-docs/README.md) |
 

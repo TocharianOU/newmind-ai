@@ -311,7 +311,7 @@ export const writeOapConfigAtom = atom(
     }
 
     const token = await oapGetToken()
-    //因为新mindhub的api/v1/models接口返回的base_url是/api/v1，所以需要使用/api/v1， 底层用了openai compatible 所以会自动添加models后缀。  luke自己标记
+    // OAP 的 api/v1/models 接口返回的 base_url 是 /api/v1，底层用了 openai compatible 所以会自动添加 models 后缀
     const models = await fetchModels("openai_compatible", token, `${OAP_PROXY_URL}/api/v1`)
     if (models.error) {
       return

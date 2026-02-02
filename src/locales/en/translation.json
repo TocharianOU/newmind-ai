@@ -78,7 +78,7 @@
     "models": "Model Settings",
     "system": "System Settings",
     "manageAndSettings": "Management and Settings",
-    "New mindhub": "AttackTraceHub",
+    "New mindhub": "OAP Platform",
     "signOut": "Sign Out",
     "chat": {
       "starredChat": "Starred",
@@ -485,7 +485,7 @@
     "tokenPackageHint": "Token packages have no expiration date and will only be used after the monthly plan quota is exhausted.",
     "tokenPackageRemainingUsage": "Remaining usage",
     "tokenPackageWarningTitle": "Token quota used up.",
-    "tokenPackageWarning": "You can replenish more token usage at the AttackTracehub <planLink>Dashboard page</planLink>.",
+    "tokenPackageWarning": "You can replenish more token usage at the OAP <planLink>Dashboard page</planLink>.",
     "skipTlsVerifyWarning": "Security warning: Ignoring certificate verification may reduce connection security. It is recommended to use in trusted network environments."
   },
   "toast": {

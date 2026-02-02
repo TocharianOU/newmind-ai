@@ -66,7 +66,7 @@ const EmbeddedLogin: React.FC<EmbeddedLoginProps> = ({ onCancel, onSuccess }) =>
       }
     } catch (error) {
       console.error('Login error:', error)
-      setErrors({ general: '网络错误，请检查AttackTraceHub服务是否运行' })
+      setErrors({ general: '网络错误，请检查 OAP 服务是否运行' })
     } finally {
       setIsLoading(false)
     }
@@ -91,7 +91,7 @@ const EmbeddedLogin: React.FC<EmbeddedLoginProps> = ({ onCancel, onSuccess }) =>
     <div className="embedded-login-overlay">
       <div className="embedded-login-modal">
         <div className="embedded-login-header">
-          <h2>登录 AttackTraceHub</h2>
+          <h2>登录 OAP 平台</h2>
           <button className="close-button" onClick={onCancel}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>

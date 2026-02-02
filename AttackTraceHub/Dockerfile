@@ -1,4 +1,4 @@
-# Backend Dockerfile for NewmindHub
+# Backend Dockerfile for OAP Platform
 FROM node:20-alpine AS base
 
 # Install OpenSSL for Prisma

@@ -67,7 +67,7 @@ rm -f db.sqlite
 For the AttackTrace Hub backend, run the Prisma migration and data migration script:
 
 ```bash
-cd AttackTraceHub
+cd AttackTraceHub  # OAP Platform
 
 # Apply schema migration
 npx prisma migrate deploy
@@ -99,7 +99,7 @@ If the Prisma migration fails:
 
 1. Check database connection
 2. Verify database user has CREATE/ALTER permissions
-3. Review migration logs in `AttackTraceHub/prisma/migrations/`
+3. Review migration logs in `AttackTraceHub/prisma/migrations/`  # OAP Platform
 4. Manually apply the migration SQL if needed
 
 ### Data Not Migrated

@@ -23,10 +23,10 @@ echo ""
 
 # 1. 清理用户目录下的所有配置
 echo "1️⃣  清理用户配置目录..."
-rm -rf ~/.attacktrace ~/.dive ~/.newmind ~/.newchat
+rm -rf ~/.attacktrace ~/.dive ~/.oap
 rm -rf ~/Library/Application\ Support/AttackTrace 2>/dev/null || true
 rm -rf ~/Library/Application\ Support/Dive 2>/dev/null || true
-rm -rf ~/Library/Application\ Support/Newmind 2>/dev/null || true
+rm -rf ~/Library/Application\ Support/AttackTrace 2>/dev/null || true
 rm -rf ~/Library/Caches/AttackTrace 2>/dev/null || true
 rm -rf ~/Library/Caches/Dive 2>/dev/null || true
 rm -rf ~/Library/Logs/AttackTrace 2>/dev/null || true
@@ -61,7 +61,7 @@ echo "4️⃣  PostgreSQL 数据库清理..."
 read -p "是否重置 PostgreSQL 数据库？(y/N): " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    cd "$SCRIPT_DIR/AttackTraceHub"
+    cd "$SCRIPT_DIR/AttackTraceHub"  # OAP Platform
     echo "   停止并删除 Docker 容器和数据卷..."
     docker-compose down -v
     echo "   重新启动 PostgreSQL..."
@@ -95,7 +95,7 @@ echo ""
 echo "📝 接下来的步骤："
 echo ""
 echo "终端 1 - 启动 Hub 后端："
-echo "  cd $SCRIPT_DIR/AttackTraceHub"
+echo "  cd $SCRIPT_DIR/AttackTraceHub"  # OAP Platform
 echo "  npm run dev"
 echo ""
 echo "终端 2 - 启动 AttackTrace Desktop："

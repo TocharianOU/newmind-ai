@@ -13,8 +13,8 @@ export const HARDCODED_CONFIG = {
   
   // 有效的邀请码列表
   VALID_INVITE_CODES: [
-    'hellonewmind',
-    'newmind2024',
+    'attacktrace',
+    'attacktrace2026',
     'welcome'
   ],
 
