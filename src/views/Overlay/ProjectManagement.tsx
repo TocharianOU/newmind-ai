@@ -114,7 +114,7 @@ const ProjectManagement: React.FC = () => {
     <div className="project-management-container">
       <div className="project-management-header">
         <h2>{t("project.title")}</h2>
-        <Button onClick={handleCreate} size="small">
+        <Button onClick={handleCreate} color="blue" size="fit" padding="s">
           {t("project.createNew")}
         </Button>
       </div>
@@ -222,10 +222,10 @@ const ProjectManagement: React.FC = () => {
               {formError && <div className="form-error">{formError}</div>}
             </div>
             <div className="modal-footer">
-              <Button onClick={() => setShowCreateModal(false)} variant="secondary">
+              <Button onClick={() => setShowCreateModal(false)} color="gray" size="fit">
                 {t("common.cancel")}
               </Button>
-              <Button onClick={handleSubmitCreate}>
+              <Button onClick={handleSubmitCreate} color="blue" size="fit">
                 {t("common.create")}
               </Button>
             </div>
@@ -262,10 +262,10 @@ const ProjectManagement: React.FC = () => {
               {formError && <div className="form-error">{formError}</div>}
             </div>
             <div className="modal-footer">
-              <Button onClick={() => setShowEditModal(false)} variant="secondary">
+              <Button onClick={() => setShowEditModal(false)} color="gray" size="fit">
                 {t("common.cancel")}
               </Button>
-              <Button onClick={handleSubmitEdit}>
+              <Button onClick={handleSubmitEdit} color="blue" size="fit">
                 {t("common.save")}
               </Button>
             </div>
