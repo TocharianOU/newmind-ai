@@ -1,4 +1,5 @@
 import { atom } from "jotai"
+import { apiFetch } from "@/utils/api"
 
 export interface MCP {
   type: "oap" | "custom"
@@ -55,9 +56,9 @@ export const successToolsAtom = atom<Tool[]>(
 export const loadToolsAtom = atom(
   null,
   async (get, set) => {
-    const response = await fetch("/api/tools")
+    const response = await apiFetch("/api/tools")
     const data = await response.json()
-    const mcpserverResponse = await fetch("/api/config/mcpserver")
+    const mcpserverResponse = await apiFetch("/api/config/mcpserver")
     const mcpserverData = await mcpserverResponse.json()
     if (data.success) {
       let tools = data.tools
@@ -93,7 +94,7 @@ export const mcpConfigAtom = atom<{mcpServers: MCPConfig}>({mcpServers: {}})
 export const loadMcpConfigAtom = atom(
   null,
   async (get, set) => {
-    const response = await fetch("/api/config/mcpserver")
+    const response = await apiFetch("/api/config/mcpserver")
     const data = await response.json()
     if (data.success) {
       set(mcpConfigAtom, data.config)

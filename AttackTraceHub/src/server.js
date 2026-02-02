@@ -25,6 +25,8 @@ import mcpRoutes from './routes/mcp.js';
 import llmRoutes from './routes/llms.js';
 import systemPromptRoutes from './routes/system-prompt.js';
 import paymentRoutes, { stripeWebhookHandler } from './routes/payment.js';
+import projectRoutes from './routes/projects.js';
+import auditRoutes from './routes/audit.js';
 // import syncRoutes from './routes/sync.js';
 
 // Import middleware
@@ -142,6 +144,8 @@ app.use('/api/v1', mcpRoutes);
 app.use('/api/v1', llmRoutes);
 app.use('/api/v1/system-prompt', systemPromptRoutes);
 app.use('/api/v1/payment', paymentRoutes);
+app.use('/api/v1/projects', projectRoutes);
+app.use('/api/v1/audit', auditRoutes);
 // app.use('/api/v1/sync', syncRoutes);     // Cloud sync endpoints (still disabled)
 
 // WebSocket handling

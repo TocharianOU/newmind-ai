@@ -1,0 +1,786 @@
+{
+  "mcpServers": {
+    "echo": {
+      "transport": "stdio",
+      "enabled": true,
+      "command": "node",
+      "args": [
+        "/Users/macbook2022/.attacktrace/scripts/mcp-server-echo/dist/index.js"
+      ],
+      "env": {},
+      "url": null,
+      "version": null,
+      "configSchema": null,
+      "extraData": null,
+      "proxy": null,
+      "headers": null,
+      "exclude_tools": [],
+      "initialTimeout": 10
+    },
+    "Kibana": {
+      "transport": "stdio",
+      "enabled": true,
+      "command": "node",
+      "args": [
+        "/Users/macbook2022/.attacktrace/mcp-packages/Kibana@0.7.2/dist/index.js"
+      ],
+      "env": {
+        "KIBANA_URL": "http://xiaopenges.tocharian.eu:5602",
+        "KIBANA_USERNAME": "elastic",
+        "KIBANA_PASSWORD": "tocharian!",
+        "KIBANA_DEFAULT_SPACE": "default",
+        "KIBANA_TIMEOUT": "30000",
+        "KIBANA_MAX_RETRIES": "3",
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      },
+      "url": null,
+      "version": "0.7.2",
+      "configSchema": {
+        "type": "object",
+        "required": [
+          "KIBANA_URL",
+          "tlsMode"
+        ],
+        "properties": {
+          "KIBANA_URL": {
+            "type": "string",
+            "title": "Kibana URL",
+            "description": "Kibana server endpoint (e.g., https://localhost:5601)",
+            "format": "uri"
+          },
+          "KIBANA_API_KEY": {
+            "type": "string",
+            "title": "API Key",
+            "description": "Kibana API key for authentication (recommended)",
+            "sensitive": true
+          },
+          "KIBANA_USERNAME": {
+            "type": "string",
+            "title": "Username",
+            "description": "Username for basic authentication"
+          },
+          "KIBANA_PASSWORD": {
+            "type": "string",
+            "title": "Password",
+            "description": "Password for basic authentication",
+            "sensitive": true
+          },
+          "KIBANA_COOKIES": {
+            "type": "string",
+            "title": "Cookies",
+            "description": "Session cookies for authentication",
+            "sensitive": true
+          },
+          "KIBANA_DEFAULT_SPACE": {
+            "type": "string",
+            "title": "Default Space",
+            "description": "Default Kibana space to operate in",
+            "default": "default"
+          },
+          "KIBANA_TIMEOUT": {
+            "type": "number",
+            "title": "Timeout (ms)",
+            "description": "Request timeout in milliseconds",
+            "default": 30000,
+            "minimum": 1000,
+            "maximum": 120000
+          },
+          "KIBANA_MAX_RETRIES": {
+            "type": "number",
+            "title": "Max Retries",
+            "description": "Maximum number of retry attempts for failed requests",
+            "default": 3,
+            "minimum": 0,
+            "maximum": 10
+          },
+          "tlsMode": {
+            "type": "string",
+            "title": "SSL/TLS Verification",
+            "description": "Choose how to verify SSL/TLS certificates",
+            "enum": [
+              "skip",
+              "default",
+              "ca-cert"
+            ],
+            "default": "skip"
+          },
+          "KIBANA_CA_CERT": {
+            "type": "string",
+            "title": "CA Certificate",
+            "description": "Upload custom CA certificate file",
+            "format": "file"
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "KIBANA_URL",
+              "KIBANA_API_KEY"
+            ],
+            "title": "API Key Authentication"
+          },
+          {
+            "required": [
+              "KIBANA_URL",
+              "KIBANA_USERNAME",
+              "KIBANA_PASSWORD"
+            ],
+            "title": "Basic Authentication"
+          },
+          {
+            "required": [
+              "KIBANA_URL",
+              "KIBANA_COOKIES"
+            ],
+            "title": "Cookie Authentication"
+          }
+        ],
+        "dependencies": {
+          "tlsMode": {
+            "oneOf": [
+              {
+                "properties": {
+                  "tlsMode": {
+                    "enum": [
+                      "ca-cert"
+                    ]
+                  }
+                },
+                "required": [
+                  "KIBANA_CA_CERT"
+                ]
+              },
+              {
+                "properties": {
+                  "tlsMode": {
+                    "enum": [
+                      "skip",
+                      "default"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "extraData": {
+        "oap": {
+          "id": "aaae2662-af44-4194-918f-b45085ffe64b",
+          "instanceId": "213c5696-483b-4e1e-929c-7cbfa724210b",
+          "name": "Kibana",
+          "planTag": "base",
+          "description": "Comprehensive Kibana management and visualization tools",
+          "version": "0.7.2",
+          "downloadUrl": "https://github.com/TocharianOU/mcp-server-kibana/releases/download/v0.7.2/mcp-server-kibana-v0.7.2.tar.gz",
+          "configSchema": {
+            "type": "object",
+            "required": [
+              "KIBANA_URL",
+              "tlsMode"
+            ],
+            "properties": {
+              "KIBANA_URL": {
+                "type": "string",
+                "title": "Kibana URL",
+                "description": "Kibana server endpoint (e.g., https://localhost:5601)",
+                "format": "uri"
+              },
+              "KIBANA_API_KEY": {
+                "type": "string",
+                "title": "API Key",
+                "description": "Kibana API key for authentication (recommended)",
+                "sensitive": true
+              },
+              "KIBANA_USERNAME": {
+                "type": "string",
+                "title": "Username",
+                "description": "Username for basic authentication"
+              },
+              "KIBANA_PASSWORD": {
+                "type": "string",
+                "title": "Password",
+                "description": "Password for basic authentication",
+                "sensitive": true
+              },
+              "KIBANA_COOKIES": {
+                "type": "string",
+                "title": "Cookies",
+                "description": "Session cookies for authentication",
+                "sensitive": true
+              },
+              "KIBANA_DEFAULT_SPACE": {
+                "type": "string",
+                "title": "Default Space",
+                "description": "Default Kibana space to operate in",
+                "default": "default"
+              },
+              "KIBANA_TIMEOUT": {
+                "type": "number",
+                "title": "Timeout (ms)",
+                "description": "Request timeout in milliseconds",
+                "default": 30000,
+                "minimum": 1000,
+                "maximum": 120000
+              },
+              "KIBANA_MAX_RETRIES": {
+                "type": "number",
+                "title": "Max Retries",
+                "description": "Maximum number of retry attempts for failed requests",
+                "default": 3,
+                "minimum": 0,
+                "maximum": 10
+              },
+              "tlsMode": {
+                "type": "string",
+                "title": "SSL/TLS Verification",
+                "description": "Choose how to verify SSL/TLS certificates",
+                "enum": [
+                  "skip",
+                  "default",
+                  "ca-cert"
+                ],
+                "default": "skip"
+              },
+              "KIBANA_CA_CERT": {
+                "type": "string",
+                "title": "CA Certificate",
+                "description": "Upload custom CA certificate file",
+                "format": "file"
+              }
+            },
+            "oneOf": [
+              {
+                "required": [
+                  "KIBANA_URL",
+                  "KIBANA_API_KEY"
+                ],
+                "title": "API Key Authentication"
+              },
+              {
+                "required": [
+                  "KIBANA_URL",
+                  "KIBANA_USERNAME",
+                  "KIBANA_PASSWORD"
+                ],
+                "title": "Basic Authentication"
+              },
+              {
+                "required": [
+                  "KIBANA_URL",
+                  "KIBANA_COOKIES"
+                ],
+                "title": "Cookie Authentication"
+              }
+            ],
+            "dependencies": {
+              "tlsMode": {
+                "oneOf": [
+                  {
+                    "properties": {
+                      "tlsMode": {
+                        "enum": [
+                          "ca-cert"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "KIBANA_CA_CERT"
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "tlsMode": {
+                        "enum": [
+                          "skip",
+                          "default"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "logo": "/integrations/kibana/logo-48.svg",
+          "banner": "/integrations/kibana/logo-240.svg",
+          "installPath": "/Users/macbook2022/.attacktrace/mcp-packages/Kibana@0.7.2"
+        }
+      },
+      "proxy": null,
+      "headers": null,
+      "exclude_tools": [],
+      "initialTimeout": 10
+    },
+    "Elasticsearch-1": {
+      "transport": "stdio",
+      "enabled": true,
+      "command": "node",
+      "args": [
+        "/Users/macbook2022/.attacktrace/mcp-packages/Elasticsearch@0.7.2/dist/index.js"
+      ],
+      "env": {
+        "ES_URL": "https://xiaopenges.tocharian.eu:9201",
+        "ES_USERNAME": "elastic",
+        "ES_PASSWORD": "tocharian!",
+        "MAX_TOKEN_CALL": "8000",
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      },
+      "url": null,
+      "version": "0.7.2",
+      "configSchema": {
+        "type": "object",
+        "required": [
+          "ES_URL",
+          "tlsMode"
+        ],
+        "properties": {
+          "ES_URL": {
+            "type": "string",
+            "title": "Elasticsearch URL",
+            "description": "Elasticsearch server endpoint (e.g., https://localhost:9200)",
+            "format": "uri"
+          },
+          "ES_API_KEY": {
+            "type": "string",
+            "title": "API Key",
+            "description": "Elasticsearch API key for authentication",
+            "sensitive": true
+          },
+          "ES_USERNAME": {
+            "type": "string",
+            "title": "Username",
+            "description": "Username for basic authentication"
+          },
+          "ES_PASSWORD": {
+            "type": "string",
+            "title": "Password",
+            "description": "Password for basic authentication",
+            "sensitive": true
+          },
+          "MAX_TOKEN_CALL": {
+            "type": "string",
+            "title": "Max Token Call",
+            "description": "Maximum token call limit",
+            "default": "8000"
+          },
+          "tlsMode": {
+            "type": "string",
+            "title": "SSL/TLS Verification",
+            "description": "Choose how to verify SSL/TLS certificates",
+            "enum": [
+              "skip",
+              "default",
+              "ca-cert"
+            ],
+            "default": "skip"
+          },
+          "ES_CA_CERT": {
+            "type": "string",
+            "title": "CA Certificate",
+            "description": "Upload custom CA certificate file",
+            "format": "file"
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "ES_URL",
+              "ES_API_KEY"
+            ],
+            "title": "API Key Authentication"
+          },
+          {
+            "required": [
+              "ES_URL",
+              "ES_USERNAME",
+              "ES_PASSWORD"
+            ],
+            "title": "Basic Authentication"
+          }
+        ],
+        "dependencies": {
+          "tlsMode": {
+            "oneOf": [
+              {
+                "properties": {
+                  "tlsMode": {
+                    "enum": [
+                      "ca-cert"
+                    ]
+                  }
+                },
+                "required": [
+                  "ES_CA_CERT"
+                ]
+              },
+              {
+                "properties": {
+                  "tlsMode": {
+                    "enum": [
+                      "skip",
+                      "default"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "extraData": {
+        "oap": {
+          "id": "c5f1436d-2cb0-4ae2-b0a2-d45e1a74a512",
+          "instanceId": "0b3fa214-9e97-4a4e-814f-052beee5c0cf",
+          "name": "Elasticsearch",
+          "planTag": "base",
+          "description": "Full version support (ES 5.x-9.x) with comprehensive API access",
+          "version": "0.7.2",
+          "downloadUrl": "https://github.com/TocharianOU/elasticsearch-mcp/releases/download/v0.7.2/elasticsearch-mcp-v0.7.2.tar.gz",
+          "configSchema": {
+            "type": "object",
+            "required": [
+              "ES_URL",
+              "tlsMode"
+            ],
+            "properties": {
+              "ES_URL": {
+                "type": "string",
+                "title": "Elasticsearch URL",
+                "description": "Elasticsearch server endpoint (e.g., https://localhost:9200)",
+                "format": "uri"
+              },
+              "ES_API_KEY": {
+                "type": "string",
+                "title": "API Key",
+                "description": "Elasticsearch API key for authentication",
+                "sensitive": true
+              },
+              "ES_USERNAME": {
+                "type": "string",
+                "title": "Username",
+                "description": "Username for basic authentication"
+              },
+              "ES_PASSWORD": {
+                "type": "string",
+                "title": "Password",
+                "description": "Password for basic authentication",
+                "sensitive": true
+              },
+              "MAX_TOKEN_CALL": {
+                "type": "string",
+                "title": "Max Token Call",
+                "description": "Maximum token call limit",
+                "default": "8000"
+              },
+              "tlsMode": {
+                "type": "string",
+                "title": "SSL/TLS Verification",
+                "description": "Choose how to verify SSL/TLS certificates",
+                "enum": [
+                  "skip",
+                  "default",
+                  "ca-cert"
+                ],
+                "default": "skip"
+              },
+              "ES_CA_CERT": {
+                "type": "string",
+                "title": "CA Certificate",
+                "description": "Upload custom CA certificate file",
+                "format": "file"
+              }
+            },
+            "oneOf": [
+              {
+                "required": [
+                  "ES_URL",
+                  "ES_API_KEY"
+                ],
+                "title": "API Key Authentication"
+              },
+              {
+                "required": [
+                  "ES_URL",
+                  "ES_USERNAME",
+                  "ES_PASSWORD"
+                ],
+                "title": "Basic Authentication"
+              }
+            ],
+            "dependencies": {
+              "tlsMode": {
+                "oneOf": [
+                  {
+                    "properties": {
+                      "tlsMode": {
+                        "enum": [
+                          "ca-cert"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "ES_CA_CERT"
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "tlsMode": {
+                        "enum": [
+                          "skip",
+                          "default"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "logo": "/integrations/elasticsearch/logo-48.svg",
+          "banner": "/integrations/elasticsearch/logo-240.svg",
+          "installPath": "/Users/macbook2022/.attacktrace/mcp-packages/Elasticsearch@0.7.2"
+        }
+      },
+      "proxy": null,
+      "headers": null,
+      "exclude_tools": [],
+      "initialTimeout": 10
+    },
+    "Elasticsearch-2": {
+      "transport": "stdio",
+      "enabled": true,
+      "command": "node",
+      "args": [
+        "/Users/macbook2022/.attacktrace/mcp-packages/Elasticsearch@0.7.2/dist/index.js"
+      ],
+      "env": {
+        "ES_URL": "https://xiaopenges.tocharian.eu:9201",
+        "ES_USERNAME": "elastic",
+        "ES_PASSWORD": "tocharian!",
+        "MAX_TOKEN_CALL": "8000",
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      },
+      "url": null,
+      "version": "0.7.2",
+      "configSchema": {
+        "type": "object",
+        "required": [
+          "ES_URL",
+          "tlsMode"
+        ],
+        "properties": {
+          "ES_URL": {
+            "type": "string",
+            "title": "Elasticsearch URL",
+            "description": "Elasticsearch server endpoint (e.g., https://localhost:9200)",
+            "format": "uri"
+          },
+          "ES_API_KEY": {
+            "type": "string",
+            "title": "API Key",
+            "description": "Elasticsearch API key for authentication",
+            "sensitive": true
+          },
+          "ES_USERNAME": {
+            "type": "string",
+            "title": "Username",
+            "description": "Username for basic authentication"
+          },
+          "ES_PASSWORD": {
+            "type": "string",
+            "title": "Password",
+            "description": "Password for basic authentication",
+            "sensitive": true
+          },
+          "MAX_TOKEN_CALL": {
+            "type": "string",
+            "title": "Max Token Call",
+            "description": "Maximum token call limit",
+            "default": "8000"
+          },
+          "tlsMode": {
+            "type": "string",
+            "title": "SSL/TLS Verification",
+            "description": "Choose how to verify SSL/TLS certificates",
+            "enum": [
+              "skip",
+              "default",
+              "ca-cert"
+            ],
+            "default": "skip"
+          },
+          "ES_CA_CERT": {
+            "type": "string",
+            "title": "CA Certificate",
+            "description": "Upload custom CA certificate file",
+            "format": "file"
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "ES_URL",
+              "ES_API_KEY"
+            ],
+            "title": "API Key Authentication"
+          },
+          {
+            "required": [
+              "ES_URL",
+              "ES_USERNAME",
+              "ES_PASSWORD"
+            ],
+            "title": "Basic Authentication"
+          }
+        ],
+        "dependencies": {
+          "tlsMode": {
+            "oneOf": [
+              {
+                "properties": {
+                  "tlsMode": {
+                    "enum": [
+                      "ca-cert"
+                    ]
+                  }
+                },
+                "required": [
+                  "ES_CA_CERT"
+                ]
+              },
+              {
+                "properties": {
+                  "tlsMode": {
+                    "enum": [
+                      "skip",
+                      "default"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "extraData": {
+        "oap": {
+          "id": "c5f1436d-2cb0-4ae2-b0a2-d45e1a74a512",
+          "instanceId": "357bee4d-b343-469b-8d83-9af8c13c6040",
+          "name": "Elasticsearch",
+          "planTag": "base",
+          "description": "Full version support (ES 5.x-9.x) with comprehensive API access",
+          "version": "0.7.2",
+          "downloadUrl": "https://github.com/TocharianOU/elasticsearch-mcp/releases/download/v0.7.2/elasticsearch-mcp-v0.7.2.tar.gz",
+          "configSchema": {
+            "type": "object",
+            "required": [
+              "ES_URL",
+              "tlsMode"
+            ],
+            "properties": {
+              "ES_URL": {
+                "type": "string",
+                "title": "Elasticsearch URL",
+                "description": "Elasticsearch server endpoint (e.g., https://localhost:9200)",
+                "format": "uri"
+              },
+              "ES_API_KEY": {
+                "type": "string",
+                "title": "API Key",
+                "description": "Elasticsearch API key for authentication",
+                "sensitive": true
+              },
+              "ES_USERNAME": {
+                "type": "string",
+                "title": "Username",
+                "description": "Username for basic authentication"
+              },
+              "ES_PASSWORD": {
+                "type": "string",
+                "title": "Password",
+                "description": "Password for basic authentication",
+                "sensitive": true
+              },
+              "MAX_TOKEN_CALL": {
+                "type": "string",
+                "title": "Max Token Call",
+                "description": "Maximum token call limit",
+                "default": "8000"
+              },
+              "tlsMode": {
+                "type": "string",
+                "title": "SSL/TLS Verification",
+                "description": "Choose how to verify SSL/TLS certificates",
+                "enum": [
+                  "skip",
+                  "default",
+                  "ca-cert"
+                ],
+                "default": "skip"
+              },
+              "ES_CA_CERT": {
+                "type": "string",
+                "title": "CA Certificate",
+                "description": "Upload custom CA certificate file",
+                "format": "file"
+              }
+            },
+            "oneOf": [
+              {
+                "required": [
+                  "ES_URL",
+                  "ES_API_KEY"
+                ],
+                "title": "API Key Authentication"
+              },
+              {
+                "required": [
+                  "ES_URL",
+                  "ES_USERNAME",
+                  "ES_PASSWORD"
+                ],
+                "title": "Basic Authentication"
+              }
+            ],
+            "dependencies": {
+              "tlsMode": {
+                "oneOf": [
+                  {
+                    "properties": {
+                      "tlsMode": {
+                        "enum": [
+                          "ca-cert"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "ES_CA_CERT"
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "tlsMode": {
+                        "enum": [
+                          "skip",
+                          "default"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "logo": "/integrations/elasticsearch/logo-48.svg",
+          "banner": "/integrations/elasticsearch/logo-240.svg",
+          "installPath": "/Users/macbook2022/.attacktrace/mcp-packages/Elasticsearch@0.7.2"
+        }
+      },
+      "proxy": null,
+      "headers": null,
+      "exclude_tools": [],
+      "initialTimeout": 10
+    }
+  }
+}

@@ -3,23 +3,31 @@ import { useAtom, useSetAtom } from "jotai"
 import { sidebarVisibleAtom, toggleSidebarAtom } from "../atoms/sidebarState"
 import { useTranslation } from "react-i18next"
 import { keymapModalVisibleAtom } from "../atoms/modalState"
+import { openOverlayAtom } from "../atoms/layerState"
 import ModelSelect from "./ModelSelect"
+import ProjectSelector from "./ProjectSelector"
 import Tooltip from "./Tooltip"
 import UpdateButton from "./UpdateButton"
 
 type Props = {
   showHelpButton?: boolean
   showModelSelect?: boolean
+  showProjectSelector?: boolean
 }
 
-const Header = ({ showHelpButton = false, showModelSelect = false }: Props) => {
+const Header = ({ showHelpButton = false, showModelSelect = false, showProjectSelector = false }: Props) => {
   const toggleSidebar = useSetAtom(toggleSidebarAtom)
   const { t } = useTranslation()
   const setKeymapModalVisible = useSetAtom(keymapModalVisibleAtom)
+  const openOverlay = useSetAtom(openOverlayAtom)
   const [isSidebarVisible] = useAtom(sidebarVisibleAtom)
 
   const onClose = () => {
     toggleSidebar()
+  }
+
+  const handleProjectManage = () => {
+    openOverlay({ page: "Setting", tab: "Projects" })
   }
 
   return (
@@ -44,6 +52,7 @@ const Header = ({ showHelpButton = false, showModelSelect = false }: Props) => {
               </button>
             </Tooltip>
             <h1 style={{ fontSize: "0.8em" }}>{t("header.title")}</h1>
+            {showProjectSelector && <ProjectSelector onManageClick={handleProjectManage} />}
             {showModelSelect && <ModelSelect />}
           </div>
         </div>

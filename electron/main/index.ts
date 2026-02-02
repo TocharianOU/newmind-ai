@@ -15,6 +15,7 @@ import { deeplinkHandler, refreshConfig, setOAPTokenToHost, setupAppImageDeepLin
 import { oapClient } from "./oap"
 import electronDl from "electron-dl"
 import "./ipc/mcp.js"  // Import MCP IPC handlers
+import "./ipc/project.js"  // Import Project IPC handlers
 
 log.initialize()
 log.transports.file.resolvePathFn = () => path.join(logDir, "main-electron.log")

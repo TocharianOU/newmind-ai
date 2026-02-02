@@ -18,6 +18,11 @@ from pydantic import (
 from attacktrace_mcp_host.env import ATTACKTRACE_CONFIG_DIR
 from attacktrace_mcp_host.host.conf import ProxyUrl
 from attacktrace_mcp_host.httpd.conf.misc import write_then_replace
+from attacktrace_mcp_host.httpd.conf.project_context import (
+    get_current_project_id,
+    get_project_config_path,
+    ensure_default_project
+)
 from attacktrace_mcp_host.plugins.registry import HookInfo, PluginManager
 
 
@@ -90,16 +95,25 @@ logger = logging.getLogger(__name__)
 class MCPServerManager:
     """MCP Server Manager for configuration handling."""
 
-    def __init__(self, config_path: str | None = None) -> None:
+    def __init__(self, config_path: str | None = None, project_id: str | None = None) -> None:
         """Initialize the MCPServerManager.
 
         Args:
             config_path: Optional path to the configuration file.
-                If not provided, it will be set to "config.json" in current
-                working directory.
+                If not provided, it will use project-specific config path.
+            project_id: Optional project ID. If not provided, uses current project context.
         """
-        self._config_path: str = config_path or str(ATTACKTRACE_CONFIG_DIR / "mcp_config.json")
+        # Ensure default project exists (for migration)
+        ensure_default_project()
+        
+        if config_path:
+            self._config_path: str = config_path
+        else:
+            # Use project-specific config path
+            self._config_path: str = str(get_project_config_path(project_id))
+        
         self._current_config: Config | None = None
+        self._project_id = project_id
 
         self._update_config_callbacks: list[tuple[McpServerConfigCallback, str]] = []
         self._current_config_callbacks: list[tuple[McpServerConfigCallback, str]] = []

@@ -91,11 +91,42 @@
   },
   "setting": {
     "tabs": {
+      "Projects": "项目管理",
       "Tools": "安全集成",
       "Model": "服务提供者设置",
       "Account": "帐号",
       "System": "系统设置"
     }
+  },
+  "project": {
+    "title": "项目管理",
+    "selectProject": "选择项目",
+    "manageProjects": "管理项目",
+    "createNew": "创建项目",
+    "edit": "编辑",
+    "delete": "删除",
+    "name": "项目名称",
+    "description": "描述",
+    "namePlaceholder": "输入项目名称",
+    "descriptionPlaceholder": "输入项目描述（可选）",
+    "nameRequired": "项目名称不能为空",
+    "current": "当前",
+    "loading": "加载中...",
+    "noProjects": "暂无项目",
+    "sessions": "会话数",
+    "integrations": "集成数",
+    "cannotDeleteDefault": "无法删除默认项目",
+    "confirmDelete": "确定要删除项目 '{{name}}' 吗？此操作无法撤销。",
+    "deleteFailed": "删除项目失败"
+  },
+  "common": {
+    "cancel": "取消",
+    "save": "保存",
+    "create": "创建",
+    "delete": "删除",
+    "edit": "编辑",
+    "close": "关闭",
+    "confirm": "确认"
   },
   "tools": {
     "title": "安全集成",

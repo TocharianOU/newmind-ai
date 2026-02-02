@@ -5,6 +5,7 @@ import Model from "./Model"
 import Tools from "./Tools"
 import System from "./System"
 import Account from "./Account"
+import ProjectManagement from "./ProjectManagement"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { openOverlayAtom } from "../../atoms/layerState"
 import { useTranslation } from "react-i18next"
@@ -16,7 +17,7 @@ import { ENV_CONFIG } from "../../config/env"
 import { oapGetToken } from "../../ipc/oap"
 import { sidebarVisibleAtom, toggleSidebarAtom } from "../../atoms/sidebarState"
 
-const tabs = ["Tools", "Model", "Account", "System"] as const
+const tabs = ["Projects", "Tools", "Model", "Account", "System"] as const
 export type Tab = (typeof tabs)[number]
 
 const Setting = ({ _tab }: { _tab: Tab }) => {
@@ -127,6 +128,8 @@ const Setting = ({ _tab }: { _tab: Tab }) => {
         <div className="setting-content">
           {(() => {
             switch (_tab) {
+              case "Projects":
+                return <ProjectManagement />
               case "Model":
                 return <Model />
               case "Tools":

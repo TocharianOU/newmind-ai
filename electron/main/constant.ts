@@ -97,3 +97,58 @@ export const DEF_ATTACKTRACE_HTTPD_CONFIG = {
 }
 
 export const cwd = app.isPackaged ? path.join(__dirname, "../..") : process.cwd()
+
+// ===== Project Mode Support =====
+
+/**
+ * Get project directory path
+ * @param projectId Project ID, defaults to 'default'
+ * @returns Project directory path
+ */
+export function getProjectDir(projectId: string = 'default'): string {
+  return path.join(appDir, "projects", projectId)
+}
+
+/**
+ * Get project's config file path
+ * @param projectId Project ID
+ * @returns MCP config file path
+ */
+export function getProjectConfigPath(projectId: string = 'default'): string {
+  return path.join(getProjectDir(projectId), "mcp_config.json")
+}
+
+/**
+ * Get project's database file path
+ * @param projectId Project ID
+ * @returns Database file path
+ */
+export function getProjectDbPath(projectId: string = 'default'): string {
+  return path.join(getProjectDir(projectId), "db.sqlite")
+}
+
+/**
+ * Get project's cache directory path
+ * @param projectId Project ID
+ * @returns Cache directory path
+ */
+export function getProjectCacheDir(projectId: string = 'default'): string {
+  return path.join(getProjectDir(projectId), "cache")
+}
+
+/**
+ * Get project's reports directory path
+ * @param projectId Project ID
+ * @returns Reports directory path
+ */
+export function getProjectReportsDir(projectId: string = 'default'): string {
+  return path.join(getProjectDir(projectId), "reports")
+}
+
+/**
+ * Get current project file path
+ * @returns Current project config file path
+ */
+export function getCurrentProjectFilePath(): string {
+  return path.join(appDir, "current_project.json")
+}

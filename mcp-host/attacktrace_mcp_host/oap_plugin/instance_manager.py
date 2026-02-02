@@ -46,10 +46,11 @@ class InstanceInfo:
 class InstanceManager:
     """Manages CRUD operations for instances"""
     
-    def __init__(self, package_manager: PackageManager, device_token: str | None):
+    def __init__(self, package_manager: PackageManager, device_token: str | None, project_id: str | None = None):
         self.package_manager = package_manager
         self.device_token = device_token
-        logger.info("InstanceManager initialized")
+        self.project_id = project_id  # Project context
+        logger.info(f"InstanceManager initialized for project: {project_id or 'default'}")
     
     def _generate_unique_name(self, config: Config, base_name: str) -> str:
         """Generate unique instance name with auto-incrementing suffix

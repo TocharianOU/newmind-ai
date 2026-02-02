@@ -1,11 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Header
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import asyncio
 import json
+from typing import Optional
 
 from attacktrace_mcp_host.httpd.dependencies import get_app
 from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
+from attacktrace_mcp_host.httpd.conf.project_context import (
+    get_current_project_id,
+    set_current_project_id,
+    get_project_config_path
+)
+from attacktrace_mcp_host.httpd.conf.mcp_servers import MCPServerManager
 
 from .config_mcp_servers import MCPServerManagerPlugin, MCP_PACKAGES_DIR
 from .instance_manager import InstanceManager, InstanceRequest
@@ -57,12 +64,8 @@ class OAPHttpHandlers:
         self._mcp_server_manager = mcp_server_manager
         self._oap_store = oap_store
         
-        # Initialize PackageManager and InstanceManager
+        # Initialize PackageManager (global, not project-specific)
         self._package_manager = PackageManager(MCP_PACKAGES_DIR)
-        self._instance_manager = InstanceManager(
-            self._package_manager,
-            mcp_server_manager.device_token
-        )
         
         self._router = APIRouter(tags=["oap_plugin"])
         
@@ -83,6 +86,23 @@ class OAPHttpHandlers:
         self._router.get("/instances/{instance_name}")(self.get_instance_handler)
         self._router.patch("/instances/{instance_name}")(self.update_instance_handler)
         self._router.delete("/instances/{instance_name}")(self.delete_instance_handler)
+    
+    def _get_instance_manager(self, project_id: Optional[str] = None) -> InstanceManager:
+        """Get or create InstanceManager for the given project"""
+        return InstanceManager(
+            self._package_manager,
+            self._mcp_server_manager.device_token,
+            project_id
+        )
+    
+    async def _get_project_config_manager(
+        self, project_id: Optional[str] = None
+    ) -> MCPServerManager:
+        """Get MCPServerManager for the given project"""
+        config_path = str(get_project_config_path(project_id))
+        manager = MCPServerManager(config_path=config_path, project_id=project_id)
+        await manager.reload()
+        return manager
     
     async def auth_handler(
         self, token: str, app: AttackTraceHostAPI = Depends(get_app)
@@ -222,11 +242,19 @@ class OAPHttpHandlers:
     # ===== Instance Management API =====
     
     async def create_instance_handler(
-        self, request: CreateInstanceRequest, app: AttackTraceHostAPI = Depends(get_app)
+        self,
+        request: CreateInstanceRequest,
+        x_project_id: Optional[str] = Header(None, alias="X-Project-ID"),
+        app: AttackTraceHostAPI = Depends(get_app)
     ):
         """POST /instances - Create a new instance"""
         try:
-            config = await app.mcp_server_config_manager.get_current_config()
+            # Get project-specific config manager
+            config_manager = await self._get_project_config_manager(x_project_id)
+            config = await config_manager.get_current_config()
+            
+            # Get project-specific instance manager
+            instance_manager = self._get_instance_manager(x_project_id)
             
             instance_request = InstanceRequest(
                 tool_id=request.tool_id,
@@ -246,11 +274,11 @@ class OAPHttpHandlers:
                 banner=request.banner,
             )
             
-            instance_id, instance_name, install_path = await self._instance_manager.create_instance(
+            instance_id, instance_name, install_path = await instance_manager.create_instance(
                 config, instance_request
             )
             
-            await app.mcp_server_config_manager.update_all_configs(config)
+            await config_manager.update_all_configs(config)
             
             # Get the created instance configuration
             created_config = config.mcp_servers.get(instance_name)
@@ -271,11 +299,17 @@ class OAPHttpHandlers:
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to create instance: {str(e)}")
     
-    async def list_instances_handler(self, app: AttackTraceHostAPI = Depends(get_app)):
+    async def list_instances_handler(
+        self,
+        x_project_id: Optional[str] = Header(None, alias="X-Project-ID"),
+        app: AttackTraceHostAPI = Depends(get_app)
+    ):
         """GET /instances - List all instances"""
         try:
-            config = await app.mcp_server_config_manager.get_current_config()
-            instances = self._instance_manager.list_instances(config)
+            config_manager = await self._get_project_config_manager(x_project_id)
+            config = await config_manager.get_current_config()
+            instance_manager = self._get_instance_manager(x_project_id)
+            instances = instance_manager.list_instances(config)
             return {
                 "status": "success",
                 "instances": [
@@ -294,12 +328,17 @@ class OAPHttpHandlers:
             return {"status": "error", "message": f"Failed to list instances: {str(e)}"}
     
     async def get_instance_handler(
-        self, instance_name: str, app: AttackTraceHostAPI = Depends(get_app)
+        self,
+        instance_name: str,
+        x_project_id: Optional[str] = Header(None, alias="X-Project-ID"),
+        app: AttackTraceHostAPI = Depends(get_app)
     ):
         """GET /instances/{instance_name} - Get single instance information"""
         try:
-            config = await app.mcp_server_config_manager.get_current_config()
-            instance = self._instance_manager.get_instance(config, instance_name)
+            config_manager = await self._get_project_config_manager(x_project_id)
+            config = await config_manager.get_current_config()
+            instance_manager = self._get_instance_manager(x_project_id)
+            instance = instance_manager.get_instance(config, instance_name)
             if not instance:
                 raise HTTPException(status_code=404, detail=f"Instance {instance_name} not found")
             
@@ -324,17 +363,20 @@ class OAPHttpHandlers:
         self,
         instance_name: str,
         request: UpdateInstanceRequest,
+        x_project_id: Optional[str] = Header(None, alias="X-Project-ID"),
         app: AttackTraceHostAPI = Depends(get_app),
     ):
         """PATCH /instances/{instance_name} - Update an instance"""
         try:
-            config = await app.mcp_server_config_manager.get_current_config()
+            config_manager = await self._get_project_config_manager(x_project_id)
+            config = await config_manager.get_current_config()
+            instance_manager = self._get_instance_manager(x_project_id)
             updates = request.model_dump(exclude_unset=True)
-            success = self._instance_manager.update_instance(config, instance_name, updates)
+            success = instance_manager.update_instance(config, instance_name, updates)
             if not success:
                 raise HTTPException(status_code=404, detail=f"Instance {instance_name} not found")
             
-            await app.mcp_server_config_manager.update_all_configs(config)
+            await config_manager.update_all_configs(config)
             return {"status": "success", "message": f"Updated {instance_name}"}
         except HTTPException:
             raise
@@ -342,12 +384,17 @@ class OAPHttpHandlers:
             raise HTTPException(status_code=500, detail=f"Failed to update instance: {str(e)}")
     
     async def delete_instance_handler(
-        self, instance_name: str, app: AttackTraceHostAPI = Depends(get_app)
+        self,
+        instance_name: str,
+        x_project_id: Optional[str] = Header(None, alias="X-Project-ID"),
+        app: AttackTraceHostAPI = Depends(get_app)
     ):
         """DELETE /instances/{instance_name} - Delete an instance"""
         try:
-            config = await app.mcp_server_config_manager.get_current_config()
-            success = self._instance_manager.delete_instance(config, instance_name)
+            config_manager = await self._get_project_config_manager(x_project_id)
+            config = await config_manager.get_current_config()
+            instance_manager = self._get_instance_manager(x_project_id)
+            success = instance_manager.delete_instance(config, instance_name)
             if not success:
                 raise HTTPException(status_code=404, detail=f"Instance {instance_name} not found")
             

@@ -91,11 +91,42 @@
   },
   "setting": {
     "tabs": {
+      "Projects": "Projects",
       "Tools": "Security Integrations",
       "Model": "Provider Settings",
       "Account": "Account",
       "System": "System Settings"
     }
+  },
+  "project": {
+    "title": "Project Management",
+    "selectProject": "Select Project",
+    "manageProjects": "Manage Projects",
+    "createNew": "Create Project",
+    "edit": "Edit",
+    "delete": "Delete",
+    "name": "Project Name",
+    "description": "Description",
+    "namePlaceholder": "Enter project name",
+    "descriptionPlaceholder": "Enter project description (optional)",
+    "nameRequired": "Project name is required",
+    "current": "Current",
+    "loading": "Loading...",
+    "noProjects": "No projects found",
+    "sessions": "Sessions",
+    "integrations": "Integrations",
+    "cannotDeleteDefault": "Cannot delete the default project",
+    "confirmDelete": "Are you sure you want to delete '{{name}}'? This action cannot be undone.",
+    "deleteFailed": "Failed to delete project"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "create": "Create",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "confirm": "Confirm"
   },
   "tools": {
     "title": "Security Integrations",

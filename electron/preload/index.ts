@@ -44,6 +44,14 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
   getInstallHostDependenciesLog: () => ipcRenderer.invoke("util:getInstallHostDependenciesLog"),
   readLocalLogo: (logoPath: string) => ipcRenderer.invoke("util:readLocalLogo", logoPath),
 
+  // project
+  getCurrentProject: () => ipcRenderer.invoke("project:getCurrentProject"),
+  setCurrentProject: (projectId: string) => ipcRenderer.invoke("project:setCurrentProject", projectId),
+  projectList: (hubUrl?: string) => ipcRenderer.invoke("project:list", hubUrl),
+  projectCreate: (data: { name: string; description?: string }, hubUrl?: string) => ipcRenderer.invoke("project:create", data, hubUrl),
+  projectUpdate: (projectId: string, data: { name?: string; description?: string }, hubUrl?: string) => ipcRenderer.invoke("project:update", projectId, data, hubUrl),
+  projectDelete: (projectId: string, hubUrl?: string) => ipcRenderer.invoke("project:delete", projectId, hubUrl),
+
   // system
   openScriptsDir: () => ipcRenderer.invoke("system:openScriptsDir"),
   getAutoLaunch: () => ipcRenderer.invoke("system:getAutoLaunch"),
