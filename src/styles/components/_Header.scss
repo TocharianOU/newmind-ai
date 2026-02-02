@@ -59,24 +59,29 @@
     padding: 0 $page-h-padding;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 16px;
     margin-top: 5px;
+    position: relative;
 
     .left-side {
       display: flex;
       align-items: center;
       gap: 12px;
       flex-shrink: 0;
-      min-width: 0;
+      min-width: fit-content;
+      z-index: 2;
     }
 
     .center-side {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
       display: flex;
       align-items: center;
-      flex: 1;
-      min-width: 0;
-      max-width: 600px;
+      justify-content: center;
+      max-width: $chat-width;
+      width: fit-content;
+      z-index: 1;
     }
 
     .right-side {
@@ -84,6 +89,8 @@
       align-items: center;
       gap: 5px;
       flex-shrink: 0;
+      margin-left: auto;
+      z-index: 2;
 
       @media (max-width: $breakpoint-s) {
         display: none;
@@ -206,7 +213,7 @@
     letter-spacing: -0.01em;
   }
 
-  .menu-btn, .help-btn {
+  .menu-btn, .help-btn, .settings-btn {
     background: none;
     border: none;
     cursor: pointer;
@@ -238,24 +245,23 @@
       fill: currentColor;
     }
 
-    .open-sidebar-btn-icon {
-      opacity: 1;
+    .open-sidebar-btn-icon,
+    .close-sidebar-btn-icon {
       position: absolute;
-      transition: opacity $transition-normal ease;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
+      transition: opacity $transition-normal ease;
+      width: 24px;
+      height: 24px;
+    }
+
+    .open-sidebar-btn-icon {
+      opacity: 1;
     }
 
     .close-sidebar-btn-icon {
       opacity: 0;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      transition: opacity $transition-normal ease;
-      width: 32px;
-      height: 32px;
     }
   }
 
