@@ -201,21 +201,23 @@
 
   h1 {
     margin: 0;
-    font-size: 20px;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
 
   .menu-btn, .help-btn {
     background: none;
     border: none;
     cursor: pointer;
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
     &:hover {
       background: var(--bg-op-dark-ultraweak);

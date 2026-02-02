@@ -24,11 +24,19 @@ const Settings = () => {
   
   // Preferences
   const [preferences, setPreferences] = useState({
-    theme: theme,
+    theme: 'light',
     language: language,
     notifications: true,
     emailNotifications: true
   });
+
+  // Sync theme from context to preferences
+  useEffect(() => {
+    setPreferences(prev => ({
+      ...prev,
+      theme: theme
+    }));
+  }, [theme]);
 
   useEffect(() => {
     if (user) {
@@ -45,7 +53,12 @@ const Settings = () => {
     try {
       const response = await api.get('/api/v1/user/preferences');
       if (response.data.status === 'success') {
-        setPreferences(response.data.data);
+        const fetchedPrefs = response.data.data;
+        setPreferences(fetchedPrefs);
+        // Sync theme from server to context if different
+        if (fetchedPrefs.theme && fetchedPrefs.theme !== theme) {
+          setTheme(fetchedPrefs.theme);
+        }
       }
     } catch (error) {
       console.error('Error fetching preferences:', error);

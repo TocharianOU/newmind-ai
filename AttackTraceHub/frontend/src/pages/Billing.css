@@ -377,7 +377,7 @@
 }
 
 [data-theme="dark"] .package-card h3 {
-  color: #f1f5f9;
+  color: #FAFAFA;
 }
 
 [data-theme="dark"] .package-price .currency,
@@ -394,22 +394,22 @@
 }
 
 [data-theme="dark"] .package-tokens span {
-  color: #94a3b8;
+  color: #D4D4D8;
 }
 
 /* Dark mode - Headers & Subtitles */
 [data-theme="dark"] .billing-header .subtitle {
-  color: #94a3b8;
+  color: #D4D4D8;
 }
 
 [data-theme="dark"] .section-subtitle {
-  color: #94a3b8;
+  color: #D4D4D8;
 }
 
 [data-theme="dark"] .token-packages h2,
 [data-theme="dark"] .subscription-upgrade h2,
 [data-theme="dark"] .payment-history h2 {
-  color: #f1f5f9;
+  color: #FAFAFA;
 }
 
 /* Dark mode - Subscription Buttons */
@@ -435,12 +435,13 @@
 }
 
 [data-theme="dark"] .history-table th {
-  color: #cbd5e1;
+  color: #FAFAFA;
+  font-weight: 600;
 }
 
 [data-theme="dark"] .history-table td {
   border-top-color: #334155;
-  color: #cbd5e1;
+  color: #E4E4E7;
 }
 
 [data-theme="dark"] .no-history {

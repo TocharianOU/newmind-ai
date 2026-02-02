@@ -44,9 +44,9 @@
   --bg-tertiary: #3F3F46;         /* 中深灰 */
   
   /* 文本色 */
-  --text-primary: #FAFAFA;        /* 接近白 */
+  --text-primary: #F4F4F5;        /* 更亮的白色 */
   --text-secondary: #E4E4E7;      /* 浅灰 */
-  --text-tertiary: #C4C4C8;       /* 中浅灰 - 提高对比度 */
+  --text-tertiary: #D4D4D8;       /* 更亮的中浅灰 */
   
   /* 边框色 */
   --border-primary: #3F3F46;      /* 深灰 */

@@ -2,14 +2,16 @@
 
 .custom-button {
   background-color: var(--bg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
-  transition: all $transition-fast ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all $transition-fast cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
-  border-radius: 10px;
+  border-radius: 8px;
   font-weight: 500;
+  font-size: 14px;
+  line-height: 1.5;
 
   &:hover,
   &:focus {
@@ -19,7 +21,7 @@
 
   &:hover {
     background-color: var(--bg-btn-hover-white);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
     transform: translateY(-1px);
   }
 

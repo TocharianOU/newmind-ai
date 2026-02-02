@@ -134,10 +134,11 @@
 
 .message {
   max-width: 100%;
-  margin: 10px 0;
-  padding: 10px 15px;
-  border-radius: 18px;
+  margin: 12px 0;
+  padding: 12px 16px;
+  border-radius: 12px;
   word-wrap: break-word;
+  line-height: 1.6;
 
   // Document Card Compact Styles
   .document-card-compact {

@@ -2,11 +2,11 @@
 
 .sidebar {
   flex: 1;
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
   max-width: 768px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  padding: 30px 15px;
+  padding: 24px 16px;
   transform: translateX(50px);
   opacity: 0;
   flex: 0;
@@ -15,12 +15,13 @@
   
   .sidebar-content {
     height: 100%;
-    border-radius: 16px;
+    border-radius: 12px;
     background: var(--bg);
-    border: 2px solid var(--border-weak);
+    border: 1.5px solid var(--border-weak);
     box-shadow: 
-      0 4px 6px -1px rgba(0, 0, 0, 0.05),
-      0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      0 2px 8px rgba(0, 0, 0, 0.04),
+      0 1px 2px rgba(0, 0, 0, 0.02),
+      0 0 0 1px rgba(0, 0, 0, 0.02);
   }
 
   &.visible {
@@ -34,14 +35,14 @@
 
 .toggle-sidebar-btn {
   position: absolute;
-  top: 15px;
-  right: 15px;
+  top: 16px;
+  right: 16px;
   background: none;
   border: none;
   cursor: pointer;
   padding: 8px;
-  border-radius: 10px;
-  transition: all 0.2s ease;
+  border-radius: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   
   &:hover {
     background: var(--bg-btn-hover);
