@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { closeAllSidebarsAtom, sidebarVisibleAtom } from "../atoms/sidebarState"
 import { ChatHistoryItem, historiesAtom, loadHistoriesAtom } from "../atoms/historyState"
-import Header from "./Header"
 import { useTranslation } from "react-i18next"
 import { showToastAtom } from "../atoms/toastState"
 import Tooltip from "./Tooltip"
@@ -320,7 +319,7 @@ const HistorySidebar = ({ onNewConversation }: Props) => {
           ref={containerRef}
           tabIndex={0}
         >
-          <Header />
+          <div className="sidebar-top-spacer"></div>
           <div className="history-header">
             <Tooltip
               content={`${t("chat.newChatTooltip")} Ctrl + Shift + O`}

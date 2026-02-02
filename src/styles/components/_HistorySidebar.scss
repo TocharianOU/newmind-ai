@@ -21,6 +21,29 @@
     border-right: 1px solid var(--border-weak);
   }
 
+  .sidebar-top-spacer {
+    height: 50px;
+    flex-shrink: 0;
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--border-weak) 20%,
+        var(--border-weak) 80%,
+        transparent 100%
+      );
+      opacity: 0.5;
+    }
+  }
+
   @media (max-width: $breakpoint-m) {
     position: absolute;
     left: 0;
@@ -128,7 +151,12 @@
   }
 
   .history-header {
-    padding: 16px $page-h-padding;
+    padding: 0 $page-h-padding;
+    margin-top: 5px;
+    margin-bottom: 16px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
 
     .new-chat-btn {
       font-weight: 500;
