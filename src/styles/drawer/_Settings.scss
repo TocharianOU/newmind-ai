@@ -5,7 +5,7 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background: var(--bg);
+  background: #1a1a1a; // Pure gray background (no blue tint)
 }
 
 .settings-drawer-header {
@@ -30,7 +30,7 @@
 .settings-drawer-sidebar {
   min-width: 220px;
   max-width: 220px;
-  background: var(--bg-weak); // Lighter background for better contrast
+  background: #252525; // Pure gray sidebar (no blue tint)
   border-right: 1px solid var(--border-weak);
   display: flex;
   flex-direction: column;
