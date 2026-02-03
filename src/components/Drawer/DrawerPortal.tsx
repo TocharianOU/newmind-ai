@@ -4,8 +4,10 @@ import { drawerStackAtom, closeDrawerAtom } from "../../atoms/drawerState"
 import Drawer from "./Drawer"
 import Settings from "../../views/Drawer/Settings"
 import IntegrationMarket from "../../views/Drawer/IntegrationMarket"
+import { useTranslation } from "react-i18next"
 
 const DrawerPortal: React.FC = () => {
+  const { t } = useTranslation()
   const drawers = useAtomValue(drawerStackAtom)
   const closeDrawer = useSetAtom(closeDrawerAtom)
 
@@ -18,18 +20,18 @@ const DrawerPortal: React.FC = () => {
         switch (drawer.page) {
           case "Settings":
             content = <Settings tab={drawer.tab as any} />
-            title = "管理与设置"
+            title = t("sidebar.manageAndSettings")
             break
           case "IntegrationMarket":
             content = <IntegrationMarket 
               {...(drawer.props || {})} 
               onClose={() => closeDrawer(drawer.id)}
             />
-            title = "集成市场"
+            title = t("sidebar.integrationMarket") || "Integration Market"
             break
           default:
             content = <div>Unknown drawer: {drawer.page}</div>
-            title = "未知页面"
+            title = t("sidebar.unknownPage") || "Unknown Page"
         }
 
         return (

@@ -111,15 +111,17 @@
       min-width: 0;
       margin-right: 8px;
 
+      // Conversation title in sidebar list
       .history-title {
         font-weight: 500;
-        font-size: 15px;
+        font-size: 15px; // Slightly larger for better readability
         margin-bottom: 2px;
         white-space: nowrap;
         overflow: hidden;
-        text-overflow: ellipsis;
+        text-overflow: ellipsis; // Show "..." for long titles
       }
 
+      // Conversation timestamp
       .history-date {
         font-size: 12px;
         color: var(--text-weak);

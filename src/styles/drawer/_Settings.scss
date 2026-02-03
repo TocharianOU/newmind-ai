@@ -26,10 +26,11 @@
   overflow: hidden;
 }
 
+// Sidebar navigation for settings drawer
 .settings-drawer-sidebar {
   min-width: 220px;
   max-width: 220px;
-  background: var(--bg-op-dark-ultraweak);
+  background: var(--bg-weak); // Lighter background for better contrast
   border-right: 1px solid var(--border-weak);
   display: flex;
   flex-direction: column;
@@ -40,22 +41,23 @@
     margin: 0;
   }
 
+  // Sidebar menu items
   .settings-drawer-sidebar-item {
     padding: 14px 24px;
     cursor: pointer;
     transition: all 0.2s;
-    color: var(--text-weak);
+    color: var(--text); // Darker text for better readability
     font-size: 15px;
     line-height: 1.5;
 
     &:hover {
-      background: var(--bg-op-dark-weak);
+      background: var(--bg-op-dark-ultraweak); // Subtle hover effect
       color: var(--text);
     }
 
     &.active {
-      background: var(--bg-op-dark-weak);
-      color: var(--primary-color);
+      background: var(--bg-op-blue-ultraweak); // Blue tint for active state
+      color: var(--primary-color); // Primary color text
       font-weight: 500;
       border-left: 3px solid var(--primary-color);
     }

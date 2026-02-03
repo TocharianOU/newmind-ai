@@ -60,33 +60,41 @@
   }
 }
 
+// Fullscreen drawer header - matches main app header height
 .drawer-fullscreen-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 24px;
+  justify-content: space-between;
+  height: 56px; // Consistent with design system
+  padding: 0 24px;
   border-bottom: 1px solid var(--border-weak);
   background: var(--bg);
   flex-shrink: 0;
 }
 
-.drawer-back-button {
+// Close button - modern X icon in top right
+.drawer-close-button {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   background: transparent;
-  border: 1px solid var(--border);
+  border: none;
   border-radius: 8px;
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 500;
+  color: var(--text-weak);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 
   &:hover {
-    background: var(--bg-hover);
-    border-color: var(--border-hover);
+    background: var(--bg-op-dark-ultraweak);
+    color: var(--text);
+  }
+
+  &:active {
+    transform: scale(0.95);
   }
 
   svg {
@@ -94,11 +102,13 @@
   }
 }
 
+// Drawer title - positioned on left
 .drawer-fullscreen-title {
   font-size: 20px;
   font-weight: 600;
   color: var(--text);
   margin: 0;
+  flex: 1;
 }
 
 .drawer-fullscreen-content {
