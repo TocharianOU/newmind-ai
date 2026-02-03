@@ -90,8 +90,8 @@
 
       .current-badge {
         padding: 3px 8px;
-        background: var(--bg-pri-blue-strong);
-        color: #ffffff;
+        background: var(--bg-op-dark-weak); // Gray background (unified color scheme)
+        color: var(--text); // Normal text color
         font-size: 12px;
         border-radius: 4px;
         font-weight: 500;
