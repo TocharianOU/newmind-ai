@@ -5,7 +5,7 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background: #15202b; // Dark blue background (unified theme)
+  background: var(--bg); // Theme-aware background
 }
 
 .settings-drawer-header {
@@ -30,12 +30,17 @@
 .settings-drawer-sidebar {
   min-width: 220px;
   max-width: 220px;
-  background: #15202b; // Dark blue sidebar for visual hierarchy
+  background: var(--bg-weak); // Light in light mode, dark blue in dark mode
   border-right: 1px solid var(--border-weak);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   @include scrollbar;
+
+  // Dark mode: use dark blue for visual hierarchy
+  :root:has([data-theme='dark']) & {
+    background: #15202b;
+  }
 
   .settings-drawer-sidebar-item-wrap {
     margin: 0;

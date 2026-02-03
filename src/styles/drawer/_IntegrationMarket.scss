@@ -17,9 +17,14 @@
       border-right: 1px solid var(--border-weak);
       overflow-y: auto;
       flex-shrink: 0;
-      background: #15202b; // Dark blue sidebar for visual hierarchy  
+      background: var(--bg-weak); // Light in light mode, dark blue in dark mode
       padding: 16px 0;
       @include scrollbar;
+
+      // Dark mode: use dark blue for visual hierarchy
+      :root:has([data-theme='dark']) & {
+        background: #15202b;
+      }
 
       .integration-list-header {
         padding: 12px 20px;
