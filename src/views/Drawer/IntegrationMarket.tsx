@@ -12,6 +12,23 @@ import SchemaForm from "../Overlay/Tools/Popup/SchemaForm"
 import Tooltip from "../../components/Tooltip"
 import { OAP_ROOT_URL } from "../../../shared/oap"
 
+// Custom hook for debounced value
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value)
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [value, delay])
+
+  return debouncedValue
+}
+
 interface IntegrationMarketProps {
   onIntegrationAdded?: (instanceName: string, instanceConfig: any, fullConfig?: any) => void
   onClose?: () => void
@@ -22,7 +39,8 @@ interface ToolItem extends OAPMCPServer {
   isAdding?: boolean
   isInstalling?: boolean
   installProgress?: number
-  installedInstanceName?: string
+  installedInstanceCount?: number
+  installedInstanceNames?: string[]
   logoUrl?: string
 }
 
@@ -34,15 +52,20 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
   const [toolList, setToolList] = useState<ToolItem[]>([])
   const [installedInstances, setInstalledInstances] = useState<InstanceInfo[]>([])
   const [searchText, setSearchText] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState<string>("All")
+  const debouncedSearchText = useDebounce(searchText, 300) // 300ms debounce for instant feel
+  const [selectedCategory, setSelectedCategory] = useState<string>('All')
   const [hasNextPage, setHasNextPage] = useState(true)
   const [isFetching, setIsFetching] = useState(false)
   const pageRef = useRef(0)
   const isInitializedRef = useRef(false)
   const PAGE_SIZE = 25
-  
-  // Category list with common integration types
-  const categories = ["All", "SIEM", "AWS", "Cloud", "Database", "Monitoring", "Security", "Other"]
+
+  // Local cache for all tools
+  const [allToolsCache, setAllToolsCache] = useState<OAPMCPServer[]>([])
+  const [cacheLoaded, setCacheLoaded] = useState(false)
+  const [isLoadingCache, setIsLoadingCache] = useState(false)
+  const [cacheTimestamp, setCacheTimestamp] = useState<number>(0)
+  const CACHE_TTL = 30 * 60 * 1000
 
   const [viewMode, setViewMode] = useState<ViewMode>("browse")
   const [selectedTool, setSelectedTool] = useState<ToolItem | null>(null)
@@ -53,17 +76,182 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
   const [installStatus, setInstallStatus] = useState("")
   const installAbortControllerRef = useRef<AbortController | null>(null)
 
+  // Load all tools into cache (initial load)
+  const loadAllToolsCache = useCallback(async () => {
+    if (isLoadingCache) return
+    
+    setIsLoadingCache(true)
+    try {
+      console.log('[IntegrationMarket] Loading complete tools list into cache...')
+      const allTools: OAPMCPServer[] = []
+      let page = 0
+      let hasMore = true
+      
+      // Fetch all pages
+      while (hasMore) {
+        const params = {
+          page,
+          search_input: "", // Empty to get all tools
+          "mcp-sort-order": 0 as 0 | 1,
+          filter: 0 as 0 | 1 | 2,
+        }
+        
+        const res = await oapSearchMCPServer(params)
+        
+        if (res.status === "success" && res.data && res.data.length > 0) {
+          allTools.push(...res.data)
+          hasMore = res.data.length >= PAGE_SIZE
+          page++
+          console.log(`[IntegrationMarket] Loaded page ${page}, total tools: ${allTools.length}`)
+        } else {
+          hasMore = false
+        }
+      }
+      
+      console.log(`[IntegrationMarket] Cache loaded successfully: ${allTools.length} tools`)
+      setAllToolsCache(allTools)
+      setCacheLoaded(true)
+      setCacheTimestamp(Date.now())
+      
+      // Optional: Save to localStorage for persistence across reloads
+      try {
+        localStorage.setItem('oap_tools_cache', JSON.stringify({
+          tools: allTools,
+          timestamp: Date.now()
+        }))
+      } catch (e) {
+        console.warn('[IntegrationMarket] Failed to save cache to localStorage:', e)
+      }
+    } catch (error) {
+      console.error('[IntegrationMarket] Failed to load tools cache:', error)
+      showToast({
+        message: `${t("tools.marketplace.loadFailed") || "Failed to load integrations"}: ${error instanceof Error ? error.message : "Network error"}`,
+        type: "error"
+      })
+      setCacheLoaded(false)
+    } finally {
+      setIsLoadingCache(false)
+    }
+  }, [isLoadingCache, showToast, t])
+
+  // Load cache from localStorage on mount
+  const loadCacheFromStorage = useCallback(() => {
+    try {
+      const cached = localStorage.getItem('oap_tools_cache')
+      if (cached) {
+        const { tools, timestamp } = JSON.parse(cached)
+        const CACHE_TTL = 30 * 60 * 1000 // 30 minutes
+        
+        if (Date.now() - timestamp < CACHE_TTL && tools && tools.length > 0) {
+          console.log(`[IntegrationMarket] Restored ${tools.length} tools from localStorage cache`)
+          setAllToolsCache(tools)
+          setCacheLoaded(true)
+          setCacheTimestamp(timestamp)
+          return true
+        }
+      }
+    } catch (e) {
+      console.warn('[IntegrationMarket] Failed to restore cache from localStorage:', e)
+    }
+    return false
+  }, [])
+
+  // 加载完整工具列表到本地缓存
+  const loadAllToolsToCache = useCallback(async (forceRefresh = false) => {
+    // 检查缓存是否有效
+    if (!forceRefresh && cacheLoaded && Date.now() - cacheTimestamp < CACHE_TTL) {
+      console.log('[IntegrationMarket] Using cached tools list')
+      return
+    }
+    
+    setIsLoadingCache(true)
+    try {
+      console.log('[IntegrationMarket] Loading complete tools list to cache...')
+      const allTools: OAPMCPServer[] = []
+      let page = 0
+      let hasMore = true
+      
+      // 分页获取所有工具
+      while (hasMore) {
+        const params = {
+          page,
+          search_input: "",  // 空字符串获取全部
+          "mcp-sort-order": 0 as 0 | 1,
+          filter: 0 as 0 | 1 | 2,
+        }
+        
+        const res = await oapSearchMCPServer(params)
+        
+        if (res.status === "success" && res.data && res.data.length > 0) {
+          allTools.push(...res.data)
+          hasMore = res.data.length >= PAGE_SIZE
+          page++
+        } else {
+          hasMore = false
+        }
+        
+        // 防止无限循环
+        if (page > 50) {
+          console.warn('[IntegrationMarket] Reached max page limit')
+          break
+        }
+      }
+      
+      console.log(`[IntegrationMarket] Loaded ${allTools.length} tools to cache`)
+      setAllToolsCache(allTools)
+      setCacheLoaded(true)
+      setCacheTimestamp(Date.now())
+      
+      // 可选：保存到 localStorage 以支持离线访问
+      try {
+        localStorage.setItem('oap_tools_cache', JSON.stringify({
+          tools: allTools,
+          timestamp: Date.now()
+        }))
+      } catch (e) {
+        console.warn('[IntegrationMarket] Failed to save cache to localStorage:', e)
+      }
+    } catch (error) {
+      console.error('[IntegrationMarket] Failed to load tools cache:', error)
+      showToast({
+        message: `${t("tools.marketplace.loadFailed") || "Failed to load integrations"}: ${error instanceof Error ? error.message : "Network error"}`,
+        type: "error"
+      })
+    } finally {
+      setIsLoadingCache(false)
+    }
+  }, [cacheLoaded, cacheTimestamp, showToast, t, CACHE_TTL])
+  
   const loadInstalledInstances = useCallback(async () => {
     try {
+      console.log('[IntegrationMarket] Loading installed instances...')
       const res = await fetch("/api/plugins/oap-platform/instances")
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+      }
       const data = await res.json()
       if (data.status === "success") {
-        setInstalledInstances(data.instances)
+        console.log('[IntegrationMarket] Loaded instances:', data.instances)
+        // Log tool_id for debugging
+        data.instances.forEach((inst: InstanceInfo) => {
+          console.log(`[IntegrationMarket] Instance: ${inst.instance_name}, tool_id: ${inst.tool_id}`)
+        })
+        setInstalledInstances(data.instances || [])
+      } else {
+        console.error("Failed to load installed instances:", data.message)
+        showToast({
+          message: `${t("tools.marketplace.loadInstancesFailed") || "Failed to load installed integrations"}: ${data.message || "Unknown error"}`,
+          type: "error"
+        })
       }
     } catch (error) {
       console.error("Failed to load installed instances:", error)
+      showToast({
+        message: `${t("tools.marketplace.loadInstancesFailed") || "Failed to load installed integrations"}: ${error instanceof Error ? error.message : "Network error"}`,
+        type: "error"
+      })
     }
-  }, [])
+  }, [showToast, t])
 
   const resetState = useCallback(() => {
     pageRef.current = 0
@@ -82,17 +270,20 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
     try {
       const params = {
         page: pageRef.current,
-        search_input: searchText,
+        search_input: debouncedSearchText,
         "mcp-sort-order": 0 as 0 | 1,
         filter: 0 as 0 | 1 | 2,
       }
 
+      console.log('[IntegrationMarket] Searching with params:', params)
       const res = await oapSearchMCPServer(params)
+      console.log('[IntegrationMarket] Search response:', res)
       
       if (res.status !== "success" || !res.data) {
         console.error("Failed to fetch integrations:", res)
+        const errorMsg = res.message || "Unknown error"
         showToast({
-          message: "Failed to load integrations",
+          message: `${t("tools.marketplace.loadFailed") || "Failed to load integrations"}: ${errorMsg}`,
           type: "error"
         })
         setHasNextPage(false)
@@ -127,12 +318,28 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
             logoUrl: logoUrl,
             hasLogo: !!logoUrl
           })
-          const instance = installedInstances.find(inst => inst.tool_id === tool.id)
+          
+          // Find all instances of this tool
+          const instances = installedInstances.filter(inst => {
+            const match = inst.tool_id === tool.id
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`[IntegrationMarket] Matching tool ${tool.name}:`, { 
+                toolId: tool.id, 
+                instToolId: inst.tool_id, 
+                instName: inst.instance_name,
+                match 
+              })
+            }
+            return match
+          })
+          const instanceNames = instances.map(inst => inst.instance_name)
+          
           return {
             ...tool,
             logoUrl: logoUrl || undefined,
-            isInstalled: !!instance,
-            installedInstanceName: instance?.instance_name,
+            isInstalled: instances.length > 0,
+            installedInstanceCount: instances.length,
+            installedInstanceNames: instanceNames,
             isAdding: false,
           }
         })
@@ -152,29 +359,43 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
       }
     } catch (error) {
       console.error("Failed to load integrations:", error)
+      showToast({
+        message: `${t("tools.marketplace.loadFailed") || "Failed to load integrations"}: ${error instanceof Error ? error.message : "Network error"}`,
+        type: "error"
+      })
       setHasNextPage(false)
     } finally {
       setIsFetching(false)
     }
-  }, [isFetching, hasNextPage, searchText, installedInstances, showToast])
+  }, [isFetching, hasNextPage, debouncedSearchText, installedInstances, showToast])
 
   useEffect(() => {
     if (!isInitializedRef.current) {
       isInitializedRef.current = true
       const init = async () => {
         await loadInstalledInstances()
-        handleLoadNextPage()
+        
+        // Try to load from localStorage first
+        const hasCache = loadCacheFromStorage()
+        
+        // If no valid cache, load from API
+        if (!hasCache) {
+          await loadAllToolsCache()
+        }
       }
       init()
     }
-  }, [loadInstalledInstances, handleLoadNextPage])
+  }, [loadInstalledInstances, loadCacheFromStorage, loadAllToolsCache])
 
-  useEffect(() => {
-    if (isInitializedRef.current && searchText !== "") {
-      resetState()
-      handleLoadNextPage()
-    }
-  }, [searchText, resetState, handleLoadNextPage])
+  // Manual refresh cache function
+  const refreshCache = useCallback(async () => {
+    console.log('[IntegrationMarket] Manually refreshing cache...')
+    await loadAllToolsCache()
+    showToast({
+      message: t("tools.marketplace.cacheRefreshed") || "Marketplace refreshed",
+      type: "success"
+    })
+  }, [loadAllToolsCache, showToast, t])
 
   const handleAddClick = async (tool: ToolItem) => {
     setSelectedTool(tool)
@@ -252,7 +473,8 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
       })
       
       if (!response.ok) {
-        throw new Error(`Download failed: ${response.statusText}`)
+        const errorText = await response.text().catch(() => response.statusText)
+        throw new Error(`Download failed (HTTP ${response.status}): ${errorText}`)
       }
       
       const reader = response.body?.getReader()
@@ -425,15 +647,26 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
           }
         }
         
-        // Reload installed instances to update the UI
+        console.log('[IntegrationMarket] Instance created, reloading installed instances...')
+        // Reload installed instances to update the UI (this will trigger re-render of filteredTools)
         await loadInstalledInstances()
         
+        console.log('[IntegrationMarket] Updating tool list for tool_id:', tool.id)
+        // Note: filteredTools will automatically update via useMemo when installedInstances changes
         // Update tool list to mark this tool as installed
-        setToolList(prev => prev.map(t => 
-          t.id === tool.id 
-            ? { ...t, isInstalled: true, installedInstanceName: data.instance.instance_name, isAdding: false }
-            : t
-        ))
+        setToolList(prev => prev.map(t => {
+          if (t.id === tool.id) {
+            const newInstanceNames = [...(t.installedInstanceNames || []), data.instance.instance_name]
+            return { 
+              ...t, 
+              isInstalled: true, 
+              installedInstanceCount: newInstanceNames.length,
+              installedInstanceNames: newInstanceNames,
+              isAdding: false 
+            }
+          }
+          return t
+        }))
         
         // CRITICAL: Call callback with full_config from backend for immediate update
         if (onIntegrationAdded && data.instance.config) {
@@ -561,16 +794,100 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
     return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name
   }
 
-  // Filter tools by selected category
+  // Local search function
+  const localSearchTools = useCallback((tools: OAPMCPServer[], searchText: string) => {
+    if (!searchText.trim()) return tools
+    
+    const searchLower = searchText.toLowerCase().trim()
+    
+    return tools.filter(tool => {
+      // Multi-field matching
+      const nameMatch = tool.name.toLowerCase().includes(searchLower)
+      const descMatch = tool.description?.toLowerCase().includes(searchLower) || false
+      const tagMatch = tool.tags?.some(tag => tag.toLowerCase().includes(searchLower)) || false
+      
+      return nameMatch || descMatch || tagMatch
+    })
+  }, [])
+
+  // Get install status for a tool
+  const getToolInstallStatus = useCallback((tool: OAPMCPServer) => {
+    const instances = installedInstances.filter(inst => inst.tool_id === tool.id)
+    const instanceNames = instances.map(inst => inst.instance_name)
+    
+    return {
+      isInstalled: instances.length > 0,
+      installedInstanceCount: instances.length,
+      installedInstanceNames: instanceNames,
+    }
+  }, [installedInstances])
+
+  // Process tools with logo URLs and install status
+  const processTools = useCallback((tools: OAPMCPServer[]): ToolItem[] => {
+    return tools.map((tool: OAPMCPServer) => {
+      // Fix logo URL construction
+      let logoUrl = null
+      if (tool.logo) {
+        if (tool.logo.startsWith('http')) {
+          logoUrl = tool.logo
+        } else {
+          logoUrl = tool.logo.startsWith('/') ? `${OAP_ROOT_URL}${tool.logo}` : `${OAP_ROOT_URL}/${tool.logo}`
+        }
+      } else if (tool.banner) {
+        if (tool.banner.startsWith('http')) {
+          logoUrl = tool.banner
+        } else {
+          logoUrl = tool.banner.startsWith('/') ? `${OAP_ROOT_URL}${tool.banner}` : `${OAP_ROOT_URL}/${tool.banner}`
+        }
+      }
+      
+      // Get install status
+      const installStatus = getToolInstallStatus(tool)
+      
+      return {
+        ...tool,
+        logoUrl: logoUrl || undefined,
+        ...installStatus,
+        isAdding: false,
+      }
+    })
+  }, [getToolInstallStatus])
+
+  // Extract available categories from cached tools
+  const availableCategories = useMemo(() => {
+    const categorySet = new Set<string>()
+    allToolsCache.forEach(tool => {
+      if (tool.tags && Array.isArray(tool.tags) && tool.tags.length > 0) {
+        categorySet.add(tool.tags[0])  // Only use first tag as category
+      }
+    })
+    return ['All', ...Array.from(categorySet).sort()]
+  }, [allToolsCache])
+
+  // Filter and search tools using local cache
   const filteredTools = useMemo(() => {
-    if (selectedCategory === "All") {
+    if (!cacheLoaded) {
+      // Fallback to old behavior if cache not loaded
       return toolList
     }
-    return toolList.filter(tool => {
-      const category = (tool as any).category || "Other"
-      return category === selectedCategory
-    })
-  }, [toolList, selectedCategory])
+    
+    let filtered = allToolsCache
+    
+    // Apply search filter
+    if (debouncedSearchText) {
+      filtered = localSearchTools(filtered, debouncedSearchText)
+    }
+    
+    // Apply category filter
+    if (selectedCategory !== 'All') {
+      filtered = filtered.filter(tool => 
+        tool.tags && tool.tags.length > 0 && tool.tags[0] === selectedCategory
+      )
+    }
+    
+    // Process tools with install status and logo URLs
+    return processTools(filtered)
+  }, [cacheLoaded, allToolsCache, debouncedSearchText, selectedCategory, toolList, localSearchTools, processTools])
 
   const IntegrationList = useMemo(() => {
     return (
@@ -580,7 +897,8 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
             {t("tools.marketplace.available") || "Available"} ({filteredTools.length})
           </span>
         </div>
-        {filteredTools.slice(0, 30).map((tool) => (
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {filteredTools.map((tool) => (
           <Tooltip
             key={tool.id}
             content={tool.description || tool.name}
@@ -614,10 +932,11 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
               </div>
             </div>
           </Tooltip>
-        ))}
+          ))}
+        </div>
       </div>
     )
-  }, [filteredTools, selectedTool, t])
+  }, [filteredTools, selectedTool, t, handleAddClick])
 
   const ContentArea = useMemo(() => {
     if (viewMode === "installing" && selectedTool) {
@@ -828,29 +1147,76 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
                   placeholder={t("tools.marketplace.search") || "Search integrations..."}
                   className="oap-search-input"
                 />
+                {/* 刷新缓存按钮 */}
+                <Tooltip content={t("tools.marketplace.refreshCache") || "Refresh list"}>
+                  <button
+                    onClick={() => loadAllToolsToCache(true)}
+                    disabled={isLoadingCache}
+                    style={{
+                      marginLeft: '8px',
+                      padding: '6px 12px',
+                      background: 'var(--bg-op-dark-weak)',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: isLoadingCache ? 'not-allowed' : 'pointer',
+                      color: 'var(--text-normal)',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      opacity: isLoadingCache ? 0.6 : 1
+                    }}
+                  >
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      width="14" 
+                      height="14" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2"
+                      style={{ 
+                        animation: isLoadingCache ? 'spin 1s linear infinite' : 'none'
+                      }}
+                    >
+                      <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                    </svg>
+                    {isLoadingCache ? (t("tools.marketplace.refreshing") || "Refreshing...") : (t("tools.marketplace.refresh") || "Refresh")}
+                  </button>
+                </Tooltip>
               </div>
+              {cacheLoaded && (
+                <div style={{ 
+                  fontSize: '11px', 
+                  color: 'var(--text-weak)', 
+                  marginTop: '4px',
+                  textAlign: 'right'
+                }}>
+                  {t("tools.marketplace.cachedResults") || "Local search enabled"} • {allToolsCache.length} {t("tools.marketplace.tools") || "tools"}
+                </div>
+              )}
             </div>
 
-            {/* Category Filter */}
-            <div className="category-filter">
-              {categories.map(category => (
-                <button
-                  key={category}
-                  className={`category-tag ${selectedCategory === category ? 'active' : ''}`}
-                  onClick={() => setSelectedCategory(category)}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
+            {/* Category Filter (Single Selection) */}
+            {availableCategories.length > 1 && (
+              <div className="tag-filter-container">
+                {availableCategories.map(category => (
+                  <button
+                    key={category}
+                    className={`tag-chip ${selectedCategory === category ? 'active' : ''}`}
+                    onClick={() => setSelectedCategory(category)}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <div className="oap-item-wrapper">
               <div className="oap-grid">
-                <InfiniteScroll
-                  onNext={handleLoadNextPage}
-                  hasMore={hasNextPage}
-                >
-                  {filteredTools.map((tool) => (
+                {/* 本地缓存模式不需要无限滚动 */}
+                {cacheLoaded ? (
+                  filteredTools.map((tool) => (
                     <div key={tool.id} className="oap-item">
                       <div className="oap-item-container">
                         <div className="oap-item-img" style={{
@@ -912,8 +1278,8 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
                           <div className="oap-item-content-bottom">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                               <div style={{ fontSize: '12px', color: 'var(--text-weak)' }}>
-                                {tool.isInstalled && tool.version 
-                                  ? `${t("tools.marketplace.installed") || "已安装"} v${tool.version}`
+                                {tool.isInstalled && tool.installedInstanceCount
+                                  ? `${tool.installedInstanceCount} ${tool.installedInstanceCount > 1 ? (t("tools.marketplace.instances") || "instances") : (t("tools.marketplace.instance") || "instance")} ${t("tools.marketplace.installed") || "已安装"}`
                                   : t("tools.marketplace.notInstalled") || "未安装"
                                 }
                               </div>
@@ -938,15 +1304,111 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
                         </div>
                       </div>
                     </div>
-                  ))}
-                </InfiniteScroll>
+                  ))
+                ) : (
+                  /* 降级：使用无限滚动 */
+                  <InfiniteScroll
+                    onNext={handleLoadNextPage}
+                    hasMore={hasNextPage}
+                  >
+                    {filteredTools.map((tool) => (
+                      <div key={tool.id} className="oap-item">
+                        <div className="oap-item-container">
+                          <div className="oap-item-img" style={{
+                            background: tool.logoUrl ? 'var(--bg-op-dark-ultraweak)' : 'linear-gradient(135deg, var(--bg-pri-blue) 0%, var(--bg-hover-blue) 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontSize: '28px',
+                            fontWeight: '700',
+                            position: 'relative',
+                            overflow: 'hidden'
+                          }}>
+                            {tool.logoUrl ? (
+                              <img 
+                                src={tool.logoUrl} 
+                                alt={tool.name}
+                                style={{
+                                  width: '100%',
+                                  height: '100%',
+                                  objectFit: 'contain',
+                                  padding: '12px'
+                                }}
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none'
+                                  const parent = e.currentTarget.parentElement
+                                  if (parent) {
+                                    parent.style.background = 'linear-gradient(135deg, var(--bg-pri-blue) 0%, var(--bg-hover-blue) 100%)'
+                                    parent.textContent = tool.name.substring(0, 2).toUpperCase()
+                                  }
+                                }}
+                              />
+                            ) : (
+                              tool.name.substring(0, 2).toUpperCase()
+                            )}
+                          </div>
+                          <div className="oap-item-content">
+                            <div className="oap-item-content-top">
+                              <div className="oap-content">
+                                <div className="oap-content-title">
+                                  <div className="oap-title-text">{tool.name}</div>
+                                  {tool.version && (
+                                    <span style={{ 
+                                      fontSize: '11px',
+                                      padding: '2px 6px',
+                                      borderRadius: '4px',
+                                      background: 'var(--bg-op-dark-ultraweak)',
+                                      color: 'var(--text-weak)',
+                                      fontWeight: '500',
+                                      marginLeft: '8px'
+                                    }}>
+                                      v{tool.version}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="oap-description">{tool.description || 'No description available'}</div>
+                              </div>
+                            </div>
+                            <div className="oap-item-content-bottom">
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--text-weak)' }}>
+                                  {tool.isInstalled && tool.installedInstanceCount
+                                    ? `${tool.installedInstanceCount} ${tool.installedInstanceCount > 1 ? (t("tools.marketplace.instances") || "instances") : (t("tools.marketplace.instance") || "instance")} ${t("tools.marketplace.installed") || "已安装"}`
+                                    : t("tools.marketplace.notInstalled") || "未安装"
+                                  }
+                                </div>
+                                <Button
+                                  onClick={() => handleAddClick(tool)}
+                                  disabled={tool.isAdding}
+                                  color="blue"
+                                  size="fit"
+                                >
+                                  {tool.isAdding 
+                                    ? (
+                                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <div className="loading-spinner" style={{ width: '14px', height: '14px', borderWidth: '2px' }}></div>
+                                        {t("tools.marketplace.adding") || "Adding..."}
+                                      </span>
+                                    )
+                                    : (t("tools.marketplace.addButton") || "Add Integration")
+                                  }
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </InfiniteScroll>
+                )}
               </div>
             </div>
           </div>
         </div>
       </div>
     )
-  }, [viewMode, selectedTool, instanceName, configData, isSubmitting, searchText, filteredTools, hasNextPage, t, handleLoadNextPage, installProgress, installStatus, categories, selectedCategory])
+  }, [viewMode, selectedTool, instanceName, configData, isSubmitting, searchText, filteredTools, hasNextPage, t, handleLoadNextPage, installProgress, installStatus])
 
   return (
     <div className={`integration-market-drawer ${viewMode !== "browse" ? "single-column" : ""}`}>

@@ -204,7 +204,16 @@
       "ready": "准备就绪",
       "installationCancelled": "安装已取消",
       "preparing": "准备集成中...",
-      "preparing": "准备安装..."
+      "preparing": "准备安装...",
+      "refresh": "刷新",
+      "refreshing": "刷新中...",
+      "refreshCache": "刷新列表",
+      "cachedResults": "本地搜索已启用",
+      "tools": "工具",
+      "instance": "实例",
+      "instances": "实例",
+      "loadFailed": "加载集成失败",
+      "loadInstancesFailed": "加载已安装集成失败"
     },
     "packages": {
       "title": "包管理",

@@ -137,7 +137,7 @@
             }
           }
 
-          // Category filter tags
+          // Category filter tags (deprecated)
           .category-filter {
             display: flex;
             gap: 8px;
@@ -162,6 +162,41 @@
               &.active {
                 background: var(--bg-pri-blue);
                 color: var(--text-light);
+              }
+            }
+          }
+
+          // Tag filter (new)
+          .tag-filter-container {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            background: var(--bg-op-dark-ultraweak);
+            border-radius: 8px;
+
+            .tag-chip {
+              padding: 6px 12px;
+              border-radius: 16px;
+              border: 1px solid var(--border-weak);
+              background: var(--bg);
+              color: var(--text-normal);
+              font-size: 13px;
+              font-weight: 500;
+              cursor: pointer;
+              transition: all 0.2s;
+              white-space: nowrap;
+
+              &:hover {
+                background: var(--bg-hover-weak);
+                border-color: var(--border-normal);
+              }
+
+              &.active {
+                background: var(--bg-pri-blue);
+                color: white;
+                border-color: var(--bg-pri-blue);
               }
             }
           }

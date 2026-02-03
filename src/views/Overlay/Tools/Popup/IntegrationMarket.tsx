@@ -12,6 +12,23 @@ import PopupConfirm from "../../../../components/PopupConfirm"
 import SchemaForm from "./SchemaForm"
 import Tooltip from "../../../../components/Tooltip"
 
+// Custom hook for debounced value
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value)
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [value, delay])
+
+  return debouncedValue
+}
+
 interface IntegrationMarketProps {
   onClose: () => void
   onIntegrationAdded?: (instanceName: string, instanceConfig: any) => void
@@ -22,7 +39,8 @@ interface ToolItem extends OAPMCPServer {
   isAdding?: boolean
   isInstalling?: boolean
   installProgress?: number
-  installedInstanceName?: string
+  installedInstanceCount?: number
+  installedInstanceNames?: string[]
 }
 
 type ViewMode = "browse" | "configure" | "installing"
@@ -33,6 +51,8 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
   const [toolList, setToolList] = useState<ToolItem[]>([])
   const [installedInstances, setInstalledInstances] = useState<InstanceInfo[]>([])
   const [searchText, setSearchText] = useState("")
+  const debouncedSearchText = useDebounce(searchText, 500) // 500ms debounce delay
+  const [selectedCategory, setSelectedCategory] = useState<string>('All')
   const [hasNextPage, setHasNextPage] = useState(true)
   const [isFetching, setIsFetching] = useState(false)
   const pageRef = useRef(0)
@@ -50,15 +70,34 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
 
   const loadInstalledInstances = useCallback(async () => {
     try {
+      console.log('[IntegrationMarket] Loading installed instances...')
       const res = await fetch("/api/plugins/oap-platform/instances")
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+      }
       const data = await res.json()
       if (data.status === "success") {
-        setInstalledInstances(data.instances)
+        console.log('[IntegrationMarket] Loaded instances:', data.instances)
+        // Log tool_id for debugging
+        data.instances.forEach((inst: InstanceInfo) => {
+          console.log(`[IntegrationMarket] Instance: ${inst.instance_name}, tool_id: ${inst.tool_id}`)
+        })
+        setInstalledInstances(data.instances || [])
+      } else {
+        console.error("Failed to load installed instances:", data.message)
+        showToast({
+          message: `${t("tools.marketplace.loadInstancesFailed") || "Failed to load installed integrations"}: ${data.message || "Unknown error"}`,
+          type: "error"
+        })
       }
     } catch (error) {
       console.error("Failed to load installed instances:", error)
+      showToast({
+        message: `${t("tools.marketplace.loadInstancesFailed") || "Failed to load installed integrations"}: ${error instanceof Error ? error.message : "Network error"}`,
+        type: "error"
+      })
     }
-  }, [])
+  }, [showToast, t])
 
   const resetState = useCallback(() => {
     pageRef.current = 0
@@ -77,7 +116,7 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
     try {
       const params = {
         page: pageRef.current,
-        search_input: searchText,
+        search_input: debouncedSearchText,
         "mcp-sort-order": 0 as 0 | 1,
         filter: 0 as 0 | 1 | 2,
       }
@@ -86,8 +125,9 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
       
       if (res.status !== "success" || !res.data) {
         console.error("Failed to fetch integrations:", res)
+        const errorMsg = res.message || "Unknown error"
         showToast({
-          message: "Failed to load integrations",
+          message: `${t("tools.marketplace.loadFailed") || "Failed to load integrations"}: ${errorMsg}`,
           type: "error"
         })
         setHasNextPage(false)
@@ -96,11 +136,26 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
       
       if (res.data.length > 0) {
         const data = res.data.map((tool: OAPMCPServer) => {
-          const instance = installedInstances.find(inst => inst.tool_id === tool.id)
+          // Find all instances of this tool
+          const instances = installedInstances.filter(inst => {
+            const match = inst.tool_id === tool.id
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`[IntegrationMarket] Matching tool ${tool.name}:`, { 
+                toolId: tool.id, 
+                instToolId: inst.tool_id, 
+                instName: inst.instance_name,
+                match 
+              })
+            }
+            return match
+          })
+          const instanceNames = instances.map(inst => inst.instance_name)
+          
           return {
             ...tool,
-            isInstalled: !!instance,
-            installedInstanceName: instance?.instance_name,
+            isInstalled: instances.length > 0,
+            installedInstanceCount: instances.length,
+            installedInstanceNames: instanceNames,
             isAdding: false,
           }
         })
@@ -120,11 +175,15 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
       }
     } catch (error) {
       console.error("Failed to load integrations:", error)
+      showToast({
+        message: `${t("tools.marketplace.loadFailed") || "Failed to load integrations"}: ${error instanceof Error ? error.message : "Network error"}`,
+        type: "error"
+      })
       setHasNextPage(false)
     } finally {
       setIsFetching(false)
     }
-  }, [isFetching, hasNextPage, searchText, installedInstances, showToast])
+  }, [isFetching, hasNextPage, debouncedSearchText, installedInstances, showToast])
 
   useEffect(() => {
     if (!isInitializedRef.current) {
@@ -137,12 +196,13 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
     }
   }, [loadInstalledInstances, handleLoadNextPage])
 
+  // Reset and reload when debounced search text changes
   useEffect(() => {
-    if (isInitializedRef.current && searchText !== "") {
+    if (isInitializedRef.current) {
       resetState()
       handleLoadNextPage()
     }
-  }, [searchText, resetState, handleLoadNextPage])
+  }, [debouncedSearchText]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle Add button click - Start with installation
   const handleAddClick = async (tool: ToolItem) => {
@@ -217,7 +277,8 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
       })
       
       if (!response.ok) {
-        throw new Error(`Download failed: ${response.statusText}`)
+        const errorText = await response.text().catch(() => response.statusText)
+        throw new Error(`Download failed (HTTP ${response.status}): ${errorText}`)
       }
       
       const reader = response.body?.getReader()
@@ -365,17 +426,25 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
           type: "success"
         })
         
+        console.log('[IntegrationMarket] Instance created, reloading installed instances...')
         // Reload installed instances
         await loadInstalledInstances()
         
+        console.log('[IntegrationMarket] Updating tool list for tool_id:', tool.id)
         // Update local state
-        setToolList(prev =>
-          prev.map(item =>
-            item.id === tool.id 
-              ? { ...item, isInstalled: true, installedInstanceName: data.instance.instance_name, isAdding: false }
-              : item
-          )
-        )
+        setToolList(prev => prev.map(item => {
+          if (item.id === tool.id) {
+            const newInstanceNames = [...(item.installedInstanceNames || []), data.instance.instance_name]
+            return { 
+              ...item, 
+              isInstalled: true, 
+              installedInstanceCount: newInstanceNames.length,
+              installedInstanceNames: newInstanceNames,
+              isAdding: false 
+            }
+          }
+          return item
+        }))
         
         // Notify parent with instance name and configuration
         // Parent can directly use the config without reloading from file
@@ -491,16 +560,37 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
     return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name
   }
 
+  // Extract available categories from tool list (use first tag as primary category)
+  const availableCategories = useMemo(() => {
+    const categorySet = new Set<string>()
+    toolList.forEach(tool => {
+      if (tool.tags && Array.isArray(tool.tags) && tool.tags.length > 0) {
+        categorySet.add(tool.tags[0])  // Only use first tag as category
+      }
+    })
+    return ['All', ...Array.from(categorySet).sort()]
+  }, [toolList])
+
+  // Filter tools by selected category (single selection)
+  const filteredTools = useMemo(() => {
+    if (selectedCategory === 'All') {
+      return toolList
+    }
+    return toolList.filter(tool => 
+      tool.tags && tool.tags.length > 0 && tool.tags[0] === selectedCategory
+    )
+  }, [toolList, selectedCategory])
+
   // Left sidebar list
   const IntegrationList = useMemo(() => {
     return (
       <div className="tool-edit-list integration-list">
         <div className="integration-list-header">
           <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-weak)' }}>
-            {t("tools.marketplace.available") || "Available"} ({toolList.length})
+            {t("tools.marketplace.available") || "Available"} ({filteredTools.length})
           </span>
         </div>
-        {toolList.slice(0, 30).map((tool, index) => (
+        {filteredTools.slice(0, 30).map((tool, index) => (
           <Tooltip
             key={tool.id}
             content={tool.description || tool.name}
@@ -536,7 +626,7 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
         ))}
       </div>
     )
-  }, [toolList, selectedTool, handleAddClick, t])
+  }, [filteredTools, selectedTool, handleAddClick, t])
 
   // Right content area
   const ContentArea = useMemo(() => {
@@ -705,13 +795,28 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
               </div>
             </div>
 
+            {/* Category Filter (Single Selection) */}
+            {availableCategories.length > 1 && (
+              <div className="tag-filter-container">
+                {availableCategories.map(category => (
+                  <button
+                    key={category}
+                    className={`tag-chip ${selectedCategory === category ? 'active' : ''}`}
+                    onClick={() => setSelectedCategory(category)}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="oap-item-wrapper">
               <div className="oap-grid">
                 <InfiniteScroll
                   onNext={handleLoadNextPage}
                   hasMore={hasNextPage}
                 >
-                  {toolList.map((tool) => (
+                  {filteredTools.map((tool) => (
                     <div key={tool.id} className="oap-item">
                       <div className="oap-item-container">
                         <div className="oap-item-img" style={{
@@ -804,7 +909,7 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
         </div>
       </div>
     )
-  }, [viewMode, selectedTool, instanceName, configData, isSubmitting, searchText, toolList, hasNextPage, t, handleLoadNextPage, handleAddClick, installProgress, installStatus])
+  }, [viewMode, selectedTool, instanceName, configData, isSubmitting, searchText, filteredTools, hasNextPage, t, handleLoadNextPage, handleAddClick, installProgress, installStatus, availableCategories, selectedCategory])
 
   return (
     <PopupConfirm

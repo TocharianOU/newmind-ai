@@ -203,7 +203,16 @@
       "downloading": "Downloading package...",
       "ready": "Ready",
       "installationCancelled": "Installation cancelled",
-      "preparing": "Preparing installation..."
+      "preparing": "Preparing installation...",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing...",
+      "refreshCache": "Refresh list",
+      "cachedResults": "Local search enabled",
+      "tools": "tools",
+      "instance": "instance",
+      "instances": "instances",
+      "loadFailed": "Failed to load integrations",
+      "loadInstancesFailed": "Failed to load installed integrations"
     },
     "packages": {
       "title": "Package Manager",
