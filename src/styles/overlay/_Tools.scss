@@ -228,7 +228,7 @@
       flex: 1;
       padding: 12px;
       border: none;
-      border-radius: 6px;
+      border-radius: 10px; // Unified with Model page buttons
       font-size: 16px;
       cursor: pointer;
       transition: all 0.3s;
@@ -300,7 +300,7 @@
       width: fit-content;
       padding: 8px 16px;
       border: none;
-      border-radius: 6px;
+      border-radius: 10px; // Unified with Model page
       font-size: 14px;
       cursor: pointer;
       transition: all 0.2s;
@@ -385,7 +385,7 @@
         }
 
           .tool-name {
-            font-size: 15px;
+            font-size: 14px; // Unified with Model page
             font-weight: 500;
           }
 
@@ -790,7 +790,7 @@
       align-items: center;
       gap: 8px;
       border: none;
-      border-radius: 6px;
+      border-radius: 10px; // Unified with Model page buttons
       cursor: pointer;
       transition: all 0.2s;
       font-size: 14px;
@@ -860,7 +860,7 @@
     button {
       padding: 8px 16px;
       border: none;
-      border-radius: 6px;
+      border-radius: 10px; // Unified with Model page buttons
       cursor: pointer;
       transition: all 0.3s;
     }
