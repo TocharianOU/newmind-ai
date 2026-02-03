@@ -56,10 +56,10 @@
     }
 
     &.active {
-      background: var(--bg-op-blue-ultraweak); // Blue tint for active state
-      color: var(--primary-color); // Primary color text
+      background: var(--bg-op-dark-weak); // Gray background for active state (unified color scheme)
+      color: var(--text); // Normal text color (no blue accent)
       font-weight: 500;
-      border-left: 3px solid var(--primary-color);
+      border-left: 3px solid var(--text-weak); // Gray border instead of blue
     }
   }
 
