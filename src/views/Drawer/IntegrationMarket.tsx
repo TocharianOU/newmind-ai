@@ -34,11 +34,15 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
   const [toolList, setToolList] = useState<ToolItem[]>([])
   const [installedInstances, setInstalledInstances] = useState<InstanceInfo[]>([])
   const [searchText, setSearchText] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState<string>("All")
   const [hasNextPage, setHasNextPage] = useState(true)
   const [isFetching, setIsFetching] = useState(false)
   const pageRef = useRef(0)
   const isInitializedRef = useRef(false)
   const PAGE_SIZE = 25
+  
+  // Category list with common integration types
+  const categories = ["All", "SIEM", "AWS", "Cloud", "Database", "Monitoring", "Security", "Other"]
 
   const [viewMode, setViewMode] = useState<ViewMode>("browse")
   const [selectedTool, setSelectedTool] = useState<ToolItem | null>(null)
@@ -557,15 +561,26 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
     return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name
   }
 
+  // Filter tools by selected category
+  const filteredTools = useMemo(() => {
+    if (selectedCategory === "All") {
+      return toolList
+    }
+    return toolList.filter(tool => {
+      const category = (tool as any).category || "Other"
+      return category === selectedCategory
+    })
+  }, [toolList, selectedCategory])
+
   const IntegrationList = useMemo(() => {
     return (
       <div className="tool-edit-list integration-list">
         <div className="integration-list-header">
           <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-weak)' }}>
-            {t("tools.marketplace.available") || "Available"} ({toolList.length})
+            {t("tools.marketplace.available") || "Available"} ({filteredTools.length})
           </span>
         </div>
-        {toolList.slice(0, 30).map((tool) => (
+        {filteredTools.slice(0, 30).map((tool) => (
           <Tooltip
             key={tool.id}
             content={tool.description || tool.name}
@@ -602,7 +617,7 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
         ))}
       </div>
     )
-  }, [toolList, selectedTool, t])
+  }, [filteredTools, selectedTool, t])
 
   const ContentArea = useMemo(() => {
     if (viewMode === "installing" && selectedTool) {
@@ -799,17 +814,13 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
 
     return (
       <div className="tool-edit-popup-content integration-market-browse">
-        <div className="tool-edit-header">
-          <span>{t("tools.marketplace.title") || "Integration Marketplace"}</span>
-        </div>
-        
         <div className="tool-edit-content">
           <div className="oap-container">
             <div className="oap-search-wrapper">
               <div className="oap-search-container">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 22 22" width="22" height="22">
                   <path stroke="currentColor" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="2" d="m15 15 5 5"></path>
-                  <path stroke="currentColor" strokeMiterlimit="10" strokeWidth="2" d="M9.5 17a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15Z"></path>
+                  <path stroke="currentColor" strokeMiterlimit="10" strokeWidth="2" d="M9.5 17 a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15Z"></path>
                 </svg>
                 <WrappedInput
                   value={searchText}
@@ -820,13 +831,26 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
               </div>
             </div>
 
+            {/* Category Filter */}
+            <div className="category-filter">
+              {categories.map(category => (
+                <button
+                  key={category}
+                  className={`category-tag ${selectedCategory === category ? 'active' : ''}`}
+                  onClick={() => setSelectedCategory(category)}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+
             <div className="oap-item-wrapper">
               <div className="oap-grid">
                 <InfiniteScroll
                   onNext={handleLoadNextPage}
                   hasMore={hasNextPage}
                 >
-                  {toolList.map((tool) => (
+                  {filteredTools.map((tool) => (
                     <div key={tool.id} className="oap-item">
                       <div className="oap-item-container">
                         <div className="oap-item-img" style={{
@@ -922,7 +946,7 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
         </div>
       </div>
     )
-  }, [viewMode, selectedTool, instanceName, configData, isSubmitting, searchText, toolList, hasNextPage, t, handleLoadNextPage, installProgress, installStatus])
+  }, [viewMode, selectedTool, instanceName, configData, isSubmitting, searchText, filteredTools, hasNextPage, t, handleLoadNextPage, installProgress, installStatus, categories, selectedCategory])
 
   return (
     <div className={`integration-market-drawer ${viewMode !== "browse" ? "single-column" : ""}`}>
