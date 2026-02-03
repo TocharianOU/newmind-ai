@@ -83,7 +83,7 @@
       .tool-edit-header {
         padding: 24px 32px 20px;
         border-bottom: 1px solid var(--border-weak);
-        font-size: 18px;
+        font-size: 22px; // Unified with Tools/Model page headers
         font-weight: 600;
         background: var(--bg);
       }
@@ -108,7 +108,7 @@
               padding: 12px 16px;
               background: var(--bg-op-dark-ultraweak);
               border: 1px solid var(--border-weak);
-              border-radius: 12px;
+              border-radius: 8px; // Unified with other input fields
               transition: all 0.2s;
 
               &:focus-within {
@@ -149,7 +149,7 @@
           .oap-item-container {
             background: var(--bg);
             border: 1px solid var(--border-weak);
-            border-radius: 12px;
+            border-radius: 8px; // Unified with Tools page cards
             overflow: hidden;
             transition: all 0.3s;
             height: 100%;
@@ -184,7 +184,7 @@
                     margin-bottom: 12px;
 
                     .oap-title-text {
-                      font-size: 16px;
+                      font-size: 14px; // Unified with Tools/Model page item names
                       font-weight: 600;
                       color: var(--text);
                     }
