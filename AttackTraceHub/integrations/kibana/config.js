@@ -1,7 +1,7 @@
 export default {
   name: 'Kibana',
-  version: '0.7.2',
-  downloadUrl: 'https://github.com/TocharianOU/mcp-server-kibana/releases/download/v0.7.2/mcp-server-kibana-v0.7.2.tar.gz',
+  version: '0.7.3',
+  downloadUrl: 'https://github.com/TocharianOU/mcp-server-kibana/releases/download/v0.7.3/mcp-server-kibana-v0.7.3.tar.gz',
   
   description: 'Comprehensive Kibana management and visualization tools',
   descriptionI18n: {
@@ -9,7 +9,7 @@ export default {
     zh: 'Kibana MCP 服务器，提供仪表板、可视化和数据探索的全面 API 访问'
   },
   
-  tags: ['Visualization', 'Dashboard', 'Analytics', 'Monitoring'],
+  tags: ['SIEM'],  // Primary category only
   
   transport: 'stdio',
   command: 'node',

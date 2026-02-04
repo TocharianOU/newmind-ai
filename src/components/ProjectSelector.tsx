@@ -38,6 +38,9 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({ onManageClick }) => {
   }, [loadCurrentId, loadProjects, currentUser?.hubUrl])
 
   const handleProjectSwitch = async (projectId: string) => {
+    // If switching to the same project, do nothing
+    if (projectId === currentProjectId) return
+
     const result = await switchProject(projectId)
     if (result.success) {
       // Trigger reload of tools and configurations

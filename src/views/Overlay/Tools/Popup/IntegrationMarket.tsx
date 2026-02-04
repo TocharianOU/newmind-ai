@@ -1,8 +1,9 @@
 import { memo, useCallback, useEffect, useRef, useState, useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import React from "react"
-import { useSetAtom } from "jotai"
+import { useSetAtom, useAtomValue } from "jotai"
 import { showToastAtom } from "../../../../atoms/toastState"
+import { currentProjectIdAtom } from "../../../../atoms/projectState"
 import { OAPMCPServer, InstanceInfo } from "../../../../../types/oap"
 import { oapSearchMCPServer } from "../../../../ipc"
 import Button from "../../../../components/Button"
@@ -48,6 +49,7 @@ type ViewMode = "browse" | "configure" | "installing"
 const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketProps) => {
   const { t } = useTranslation()
   const showToast = useSetAtom(showToastAtom)
+  const currentProjectId = useAtomValue(currentProjectIdAtom)
   const [toolList, setToolList] = useState<ToolItem[]>([])
   const [installedInstances, setInstalledInstances] = useState<InstanceInfo[]>([])
   const [searchText, setSearchText] = useState("")
@@ -71,7 +73,9 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
   const loadInstalledInstances = useCallback(async () => {
     try {
       console.log('[IntegrationMarket] Loading installed instances...')
-      const res = await fetch("/api/plugins/oap-platform/instances")
+      const res = await fetch("/api/plugins/oap-platform/instances", {
+        headers: { "X-Project-ID": currentProjectId }
+      })
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`)
       }
@@ -97,7 +101,7 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
         type: "error"
       })
     }
-  }, [showToast, t])
+  }, [currentProjectId, showToast, t])
 
   const resetState = useCallback(() => {
     pageRef.current = 0
@@ -384,7 +388,10 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
       
       const res = await fetch("/api/plugins/oap-platform/instances", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-Project-ID": currentProjectId
+        },
         body: JSON.stringify(requestBody),
       })
       

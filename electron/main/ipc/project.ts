@@ -13,7 +13,15 @@ import { safeRegisterHandler } from "../utils/ipcRegistry"
 import { getToken } from "../oap"
 
 // Current project state (in-memory cache)
+// Initialize from file immediately to ensure correct initial state
 let currentProjectId: string = "default"
+try {
+  currentProjectId = loadCurrentProjectId()
+  console.log(`[Project] Initialized with project: ${currentProjectId}`)
+  ensureProjectDir(currentProjectId)
+} catch (e) {
+  console.error("[Project] Initialization error:", e)
+}
 
 /**
  * Load current project ID from file
@@ -52,13 +60,19 @@ function ensureProjectDir(projectId: string) {
   fs.ensureDirSync(projectDir)
   fs.ensureDirSync(path.join(projectDir, "cache"))
   fs.ensureDirSync(path.join(projectDir, "reports"))
+  
+  // Create initial mcp_config.json if it doesn't exist
+  const configPath = getProjectConfigPath(projectId)
+  if (!fs.existsSync(configPath)) {
+    fs.writeJSONSync(configPath, { mcpServers: {} }, { spaces: 2 })
+    console.log(`[Project] Created initial config for project: ${projectId}`)
+  }
 }
 
-// Initialize current project on startup
-currentProjectId = loadCurrentProjectId()
-ensureProjectDir(currentProjectId)
-
-console.log(`[Project] Initialized with project: ${currentProjectId}`)
+// Initialize current project on startup (MOVED UP)
+// currentProjectId = loadCurrentProjectId()
+// ensureProjectDir(currentProjectId)
+// console.log(`[Project] Initialized with project: ${currentProjectId}`)
 
 export function ipcProjectHandler(_win: BrowserWindow) {
   safeRegisterHandler("project:getCurrentProject", async () => {

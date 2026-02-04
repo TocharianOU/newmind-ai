@@ -149,8 +149,41 @@ export default defineConfig(({ command }) => {
           ignored: ["**/mcp-host/**"],
           exclude: ["**/mcp-host/**"],
         },
+        proxy: {
+          '/api': {
+            target: 'http://127.0.0.1:61990',
+            changeOrigin: true,
+            configure: (proxy, _options) => {
+              proxy.on('error', (err, _req, _res) => {
+                console.log('[Vite Proxy] Error:', err);
+              });
+              proxy.on('proxyReq', (proxyReq, req, _res) => {
+                console.log('[Vite Proxy] Proxying:', req.method, req.url, '→', proxyReq.getHeader('host'));
+              });
+            },
+          },
+        },
       }
-    })() : undefined,
+    })() : {
+      watch: {
+        ignored: ["**/mcp-host/**"],
+        exclude: ["**/mcp-host/**"],
+      },
+      proxy: {
+        '/api': {
+          target: 'http://127.0.0.1:61990',
+          changeOrigin: true,
+          configure: (proxy, _options) => {
+            proxy.on('error', (err, _req, _res) => {
+              console.log('[Vite Proxy] Error:', err);
+            });
+            proxy.on('proxyReq', (proxyReq, req, _res) => {
+              console.log('[Vite Proxy] Proxying:', req.method, req.url, '→', proxyReq.getHeader('host'));
+            });
+          },
+        },
+      },
+    },
     clearScreen: false,
   }
 })

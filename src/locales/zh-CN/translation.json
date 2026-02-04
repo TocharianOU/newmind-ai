@@ -213,7 +213,12 @@
       "instance": "实例",
       "instances": "实例",
       "loadFailed": "加载集成失败",
-      "loadInstancesFailed": "加载已安装集成失败"
+      "loadInstancesFailed": "加载已安装集成失败",
+      "downloaded": "已下载，未配置",
+      "updateAvailable": "更新可用",
+      "installedVersion": "已安装版本",
+      "verifyingIntegrity": "验证包完整性...",
+      "integrityCheckFailed": "包完整性验证失败"
     },
     "packages": {
       "title": "包管理",

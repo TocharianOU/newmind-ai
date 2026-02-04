@@ -1,11 +1,13 @@
 from logging import getLogger
+from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
 
 from attacktrace_mcp_host.host.tools.model_types import ClientState
-from attacktrace_mcp_host.httpd.conf.mcp_servers import Config
+from attacktrace_mcp_host.httpd.conf.mcp_servers import Config, MCPServerManager
+from attacktrace_mcp_host.httpd.conf.project_context import get_project_config_path
 from attacktrace_mcp_host.httpd.dependencies import get_app
 from attacktrace_mcp_host.httpd.routers.models import (
     McpTool,
@@ -44,6 +46,7 @@ async def initialized(
 
 @tools.get("/")
 async def list_tools(  # noqa: PLR0912, C901
+    x_project_id: Optional[str] = Header(None, alias="X-Project-ID"),
     app: AttackTraceHostAPI = Depends(get_app),
 ) -> ToolsResult:
     """Lists all available MCP tools.
@@ -53,8 +56,16 @@ async def list_tools(  # noqa: PLR0912, C901
     """
     result: dict[str, McpTool] = {}
 
+    # Get project-specific config manager
+    if x_project_id:
+        config_path = str(get_project_config_path(x_project_id))
+        config_manager = MCPServerManager(config_path=config_path, project_id=x_project_id)
+        config_manager.initialize()
+    else:
+        config_manager = app.mcp_server_config_manager
+
     # get full list of servers from config
-    if (config := await app.mcp_server_config_manager.get_current_config()) is not None:
+    if (config := await config_manager.get_current_config()) is not None:
         all_server_configs = config
     else:
         all_server_configs = Config()

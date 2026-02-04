@@ -160,7 +160,14 @@ class MCPServerManager:
             with Path(self._config_path).open(encoding="utf-8") as f:
                 config_content = f.read()
         else:
-            logger.warning("MCP server configuration not found")
+            logger.warning("MCP server configuration not found, creating default config")
+            # Create default empty config if not exists
+            default_config = Config(mcp_servers={})
+            config_path = Path(self._config_path)
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+            with config_path.open("w", encoding="utf-8") as f:
+                json.dump(default_config.model_dump(exclude_none=True), f, indent=2, ensure_ascii=False)
+            self._current_config = default_config
             return
 
         config_dict = json.loads(config_content)

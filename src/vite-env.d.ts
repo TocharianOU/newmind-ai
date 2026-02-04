@@ -40,8 +40,6 @@ declare global {
       oapGetToken: () => Promise<string>
       oapSearchMCPServer: (params: MCPServerSearchParam) => Promise<ApiResponse<OAPMCPServer[]>>
       oapModelDescription: (params?: OAPModelDescriptionParam) => Promise<ApiResponse<OAPModelDescription[]>>
-      oapApplyMCPServer: (ids: string[]) => Promise<void>
-      oapGetMCPServers: () => Promise<ApiResponse<OAPMCPServer[]>>
       oapGetMe: () => Promise<ApiResponse<OAPUser>>
       oapRegistEvent: (event: "login" | "logout", callback: () => void) => () => void
       oapGetUsage: () => Promise<OAPUsage>

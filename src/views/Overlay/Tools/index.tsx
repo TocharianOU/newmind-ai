@@ -11,10 +11,10 @@ import Dropdown from "../../../components/DropDown"
 import { imgPrefix } from "../../../ipc"
 import Tabs from "../../../components/Tabs"
 import { OAPMCPServer } from "../../../types/oap"
-import { isLoggedInOAPAtom, loadOapToolsAtom, oapToolsAtom } from "../../../atoms/oapState"
+import { isLoggedInOAPAtom } from "../../../atoms/oapState"
+import { currentProjectIdAtom } from "../../../atoms/projectState"
 import { OAP_ROOT_URL } from "../../../../shared/oap"
 import { openUrl, readLocalLogo } from "../../../ipc/util"
-import { oapApplyMCPServer } from "../../../ipc"
 import cloneDeep from "lodash/cloneDeep"
 import { ClickOutside } from "../../../components/ClickOutside"
 import Button from "../../../components/Button"
@@ -63,7 +63,6 @@ export interface mcpServersProps {
 const Tools = () => {
   const { t } = useTranslation()
   const [tools, setTools] = useAtom(toolsAtom)
-  const [oapTools, setOapTools] = useAtom(oapToolsAtom)
   const [mcpConfig, setMcpConfig] = useAtom(mcpConfigAtom)
   const [isLoading, setIsLoading] = useState(false)
   const showToast = useSetAtom(showToastAtom)
@@ -79,8 +78,8 @@ const Tools = () => {
   const [toolLog, setToolLog] = useState<LogType[]>([])
   const [toolType, setToolType] = useState<"all" | "oap" | "custom">("all")
   const isLoggedInOAP = useAtomValue(isLoggedInOAPAtom)
+  const currentProjectId = useAtomValue(currentProjectIdAtom)
   const loadMcpConfig = useSetAtom(loadMcpConfigAtom)
-  const loadOapTools = useSetAtom(loadOapToolsAtom)
   const [isResort, setIsResort] = useState(true)
   const sortedConfigOrderRef = useRef<string[]>([])
   const [expandedSections, setExpandedSections] = useState<string[]>([])
@@ -123,16 +122,19 @@ const Tools = () => {
 
   useEffect(() => {
     (async () => {
+      const cacheKey = `toolsCache_${currentProjectId}`
       // Check if we should clear cache (useful after OAP integration)
       const shouldClearCache = sessionStorage.getItem("clearToolsCache")
       if (shouldClearCache === "true") {
-        localStorage.removeItem("toolsCache")
+        localStorage.removeItem(cacheKey)
         sessionStorage.removeItem("clearToolsCache")
         toolsCacheRef.current = {}
       } else {
-        const cachedTools = localStorage.getItem("toolsCache")
+        const cachedTools = localStorage.getItem(cacheKey)
         if (cachedTools) {
           toolsCacheRef.current = JSON.parse(cachedTools)
+        } else {
+          toolsCacheRef.current = {}
         }
       }
 
@@ -153,16 +155,16 @@ const Tools = () => {
     return !!mcpServer?.extraData?.oap
   }
 
-  const updateToolsCache = async () => {
-    await loadTools()
+  const getOapData = (toolName: string) => {
+    const mcpServer = mcpConfig.mcpServers?.[toolName]
+    return mcpServer?.extraData?.oap || null
+  }
+
+  const updateToolsCache = async (skipLoadTools = false) => {
+    if (!skipLoadTools) {
+      await loadTools()
+    }
     const _mcpConfig = await getMcpConfig()
-
-
-    let _oapTools: OAPMCPServer[] = []
-    setOapTools((oapTools) => {
-      _oapTools = oapTools
-      return oapTools
-    })
 
     const newCache: ToolsCache = {}
     setTools(prevTools => {
@@ -186,8 +188,9 @@ const Tools = () => {
         }
       })
 
-      toolsCacheRef.current = {...toolsCacheRef.current, ...newCache}
-      localStorage.setItem("toolsCache", JSON.stringify(toolsCacheRef.current))
+      // Replace cache entirely instead of merging to prevent stale entries
+      toolsCacheRef.current = newCache
+      localStorage.setItem(`toolsCache_${currentProjectId}`, JSON.stringify(toolsCacheRef.current))
       return prevTools
     })
   }
@@ -370,48 +373,76 @@ const Tools = () => {
     
     try {
       if (isOapTool(toolName)) {
+        console.log(`[deleteTool] Starting deletion for OAP tool: ${toolName}`)
+        
         // Delete OAP instance via new instance API
         const res = await fetch(`/api/plugins/oap-platform/instances/${toolName}`, {
           method: "DELETE",
+          headers: {
+            "X-Project-ID": currentProjectId
+          }
         })
         
         if (!res.ok) {
-          throw new Error("Failed to delete instance")
+          const errorText = await res.text()
+          console.error(`[deleteTool] Delete failed with status ${res.status}: ${errorText}`)
+          throw new Error(`Failed to delete instance: ${errorText}`)
         }
+        
+        const data = await res.json()
+        console.log(`[deleteTool] Delete response:`, data)
+        
+        // Use the full_config from backend response if available (fast path)
+        if (data.full_config) {
+          console.log(`[deleteTool] Using full_config from backend response`)
+          setMcpConfig(data.full_config)
+        }
+        
+        // Clear cache for deleted tool
+        const newCache = { ...toolsCacheRef.current }
+        delete newCache[toolName]
+        toolsCacheRef.current = newCache
+        localStorage.setItem(`toolsCache_${currentProjectId}`, JSON.stringify(newCache))
+        console.log(`[deleteTool] Cleared cache for ${toolName}`)
+        
+        // Wait a bit for backend to fully complete reload
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        // Reload tools to get fresh state from backend
+        console.log(`[deleteTool] Reloading tools...`)
+        await loadTools()
+        
+        // Update cache after loading fresh data
+        await updateToolsCache(true)
+        console.log(`[deleteTool] Cache updated`)
+        
+        // Verify deletion
+        const currentConfig = await getMcpConfig()
+        if (currentConfig.mcpServers && currentConfig.mcpServers[toolName]) {
+          console.error(`[deleteTool] VERIFICATION FAILED: ${toolName} still exists in frontend config!`)
+          throw new Error("Deletion verification failed - tool still exists")
+        }
+        
+        console.log(`[deleteTool] ✓ Deletion verified: ${toolName} no longer exists`)
         
         showToast({
           message: t("tools.instance.deleted") || "Instance deleted successfully",
           type: "success"
         })
-        
-        // Force immediate UI refresh by removing from local state first (Optimistic UI)
-        setMcpConfig(prev => {
-          const newConfig = { ...prev, mcpServers: { ...prev.mcpServers } }
-          delete newConfig.mcpServers[toolName]
-          return newConfig
-        })
-        
-        // Reload all configs and tools after deletion - AWAIT to ensure state updates
-        await loadMcpConfig()
-        loadOapTools()
-        loadTools()
-        updateToolsCache()
-        
-        // Force immediate UI refresh
-        setMcpConfig(prev => ({...prev}))
       } else {
         // Delete custom MCP (old logic)
+        console.log(`[deleteTool] Deleting custom MCP: ${toolName}`)
         const newConfig = JSON.parse(JSON.stringify(mcpConfig))
         delete newConfig.mcpServers[toolName]
         await updateMCPConfig(newConfig)
         setMcpConfig(newConfig)
-        loadTools()
-        updateToolsCache()
+        await loadTools()
+        await updateToolsCache()
       }
       
       setIsResort(true)
     } catch (error) {
-      console.error("Error deleting tool:", error)
+      console.error("[deleteTool] Error:", error)
       showToast({
         message: t("tools.deleteFailed") || "Failed to delete",
         type: "error"
@@ -467,7 +498,6 @@ const Tools = () => {
 
       if (data.success) {
         setMcpConfig(newConfig)
-        await loadOapTools()
         await updateToolsCache()
         handleUpdateConfigResponse(data, false)
       }
@@ -595,7 +625,7 @@ const Tools = () => {
     setIsLoading(true)
     
     // Clear tool cache to prevent duplicates
-    localStorage.removeItem("toolsCache")
+    localStorage.removeItem(`toolsCache_${currentProjectId}`)
     toolsCacheRef.current = {}
     
     try {
@@ -606,7 +636,6 @@ const Tools = () => {
       // Reload everything fresh
       await loadMcpConfig()
       await updateMCPConfig(mcpConfig, true)
-      await loadOapTools()
       await loadTools()
       await updateToolsCache()
       
@@ -694,7 +723,7 @@ const Tools = () => {
     const deduplicatedConfigOrder = Array.from(uniqueNamesMap.values());
 
     const toolSort = (a: string, b: string) => {
-      const aIsOap = oapTools?.find(oapTool => oapTool.name === a)
+      const aIsOap = isOapTool(a)
       const aEnabled = tools.find(tool => tool.name === a)?.enabled
       const bEnabled = tools.find(tool => tool.name === b)?.enabled
       if (isResort) {
@@ -723,14 +752,16 @@ const Tools = () => {
     )
 
     const configTools = sortedConfigOrder.map(name => {
+      const oapData = getOapData(name)
+      
       if (toolMap.has(name)) {
         const tool = toolMap.get(name)!
         return {
           ...tool,
           disabled: Boolean(tool?.error),
           type: isOapTool(name) ? "oap" : "custom",
-          plan: isOapTool(name) ? oapTools?.find(oapTool => oapTool.name === name)?.plan : undefined,
-          oapId: isOapTool(name) ? oapTools?.find(oapTool => oapTool.name === name)?.id : undefined,
+          plan: oapData?.planTag,
+          oapId: oapData?.id,
         }
       }
 
@@ -751,8 +782,8 @@ const Tools = () => {
           error: mcpServers[name]?.error,
           disabled: Boolean(mcpServers[name]?.disabled || mcpServers[name]?.error),
           type: isOapTool(name) ? "oap" : "custom",
-          plan: isOapTool(name) ? oapTools?.find(oapTool => oapTool.name === name)?.plan : undefined,
-          oapId: isOapTool(name) ? oapTools?.find(oapTool => oapTool.name === name)?.id : undefined
+          plan: oapData?.planTag,
+          oapId: oapData?.id
         }
       }
 
@@ -763,13 +794,13 @@ const Tools = () => {
         url: mcpServers[name]?.url,
         disabled: Boolean(mcpServers[name]?.disabled || mcpServers[name]?.error),
         type: isOapTool(name) ? "oap" : "custom",
-        plan: isOapTool(name) ? oapTools?.find(oapTool => oapTool.name === name)?.plan : undefined,
-        oapId: isOapTool(name) ? oapTools?.find(oapTool => oapTool.name === name)?.id : undefined
+        plan: oapData?.planTag,
+        oapId: oapData?.id
       }
     })
 
     return [...configTools].filter(tool => toolType === "all" || tool.type === toolType)
-  }, [tools, oapTools, mcpConfig.mcpServers, toolType])
+  }, [tools, mcpConfig.mcpServers, toolType])
 
   const toolMenu = (tool: Tool & { type: string }) => {
     return [

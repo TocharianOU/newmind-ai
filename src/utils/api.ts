@@ -11,8 +11,8 @@ export async function apiFetch(
 
   const headers = new Headers(init?.headers || {})
   
-  // Inject X-Project-ID header for project-scoped requests
-  if (currentProjectId && currentProjectId !== 'default') {
+  // Inject X-Project-ID header for all project-scoped requests
+  if (currentProjectId) {
     headers.set('X-Project-ID', currentProjectId)
   }
 

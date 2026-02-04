@@ -56,6 +56,7 @@ def create_app(
                 "Content-Type",
                 "Accept",
                 "Authorization",
+                "X-Project-ID",
             ],
         )
     app.add_middleware(BaseHTTPMiddleware, dispatch=default_state)

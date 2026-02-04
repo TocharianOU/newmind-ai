@@ -41,7 +41,7 @@ export const authenticateToken = async (req, res, next) => {
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       include: { 
-        subscription: true 
+        Subscription: true 
       }
     });
 
@@ -50,7 +50,7 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     // Check if subscription is active
-    if (user.subscription && !user.subscription.isActive) {
+    if (user.Subscription && !user.Subscription.isActive) {
       return res.status(403).json(createResponse(null, 'Subscription inactive'));
     }
 
@@ -58,7 +58,7 @@ export const authenticateToken = async (req, res, next) => {
       id: user.id,
       email: user.email,
       username: user.username,
-      planName: user.subscription?.planName || 'BASE'
+      planName: user.Subscription?.planName || 'BASE'
     };
 
     next();

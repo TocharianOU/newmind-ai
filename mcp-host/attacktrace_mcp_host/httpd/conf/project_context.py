@@ -19,6 +19,9 @@ DEFAULT_PROJECT_ID = "default"
 
 def get_current_project_id() -> str:
     """Get current thread's project ID"""
+    # If thread-local not set, try to load from file
+    if not hasattr(_thread_local, 'project_id'):
+        _thread_local.project_id = load_current_project()
     return getattr(_thread_local, 'project_id', DEFAULT_PROJECT_ID)
 
 

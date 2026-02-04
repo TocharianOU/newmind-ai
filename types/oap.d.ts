@@ -21,6 +21,8 @@ export interface OAPMCPServer {
   args?: string[] | null
   logo?: string | null
   banner?: string | null
+  sha256?: string | null
+  sha512?: string | null
 }
 
 export interface OAPModelDescription {

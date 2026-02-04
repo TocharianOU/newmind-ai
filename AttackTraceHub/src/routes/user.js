@@ -12,7 +12,7 @@ router.get('/me', authenticateToken, async (req, res) => {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       include: {
-        subscription: true
+        Subscription: true
       }
     });
 
@@ -29,12 +29,12 @@ router.get('/me', authenticateToken, async (req, res) => {
       team: user.team || '',
       tokenBalance: user.tokenBalance || 0,
       subscription: {
-        PlanName: user.subscription?.planName || 'BASE',
-        IsDefaultPlan: user.subscription?.isDefaultPlan || true,
-        StartDate: user.subscription?.startDate?.toISOString() || new Date().toISOString(),
-        Start: user.subscription?.startDate?.toISOString() || new Date().toISOString(),
-        End: user.subscription?.endDate?.toISOString() || null,
-        NextBillingDate: user.subscription?.nextBillingDate?.toISOString() || null
+        PlanName: user.Subscription?.planName || 'BASE',
+        IsDefaultPlan: user.Subscription?.isDefaultPlan || true,
+        StartDate: user.Subscription?.startDate?.toISOString() || new Date().toISOString(),
+        Start: user.Subscription?.startDate?.toISOString() || new Date().toISOString(),
+        End: user.Subscription?.endDate?.toISOString() || null,
+        NextBillingDate: user.Subscription?.nextBillingDate?.toISOString() || null
       }
     };
 
@@ -51,10 +51,10 @@ router.get('/usage', authenticateToken, async (req, res) => {
     // Get user's plan limits
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      include: { subscription: true }
+      include: { Subscription: true }
     });
 
-    const planName = user?.subscription?.planName || 'BASE';
+    const planName = user?.Subscription?.planName || 'BASE';
 
     // Calculate usage for current month
     const startOfMonth = new Date();

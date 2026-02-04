@@ -19,7 +19,7 @@ export async function checkExpiredSubscriptions() {
         }
       },
       include: {
-        user: {
+        User: {
           select: {
             email: true
           }
@@ -48,7 +48,7 @@ export async function checkExpiredSubscriptions() {
         }
       });
       
-      logger.info(`📉 Downgraded subscription for user ${subscription.user.email} to BASE plan (expired)`);
+      logger.info(`📉 Downgraded subscription for user ${subscription.User.email} to BASE plan (expired)`);
     }
     
     logger.info(`✅ Processed ${expiredSubscriptions.length} expired subscriptions`);

@@ -1,9 +1,11 @@
 from logging import getLogger
+from typing import Optional
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Header, Request
 from pydantic import BaseModel, Field
 
-from attacktrace_mcp_host.httpd.conf.mcp_servers import Config as McpServers
+from attacktrace_mcp_host.httpd.conf.mcp_servers import Config as McpServers, MCPServerManager
+from attacktrace_mcp_host.httpd.conf.project_context import get_project_config_path
 from attacktrace_mcp_host.httpd.dependencies import get_app
 from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 
@@ -56,6 +58,7 @@ class SaveModelSettingsRequest(BaseModel):
 
 @config.get("/mcpserver")
 async def get_mcp_server(
+    x_project_id: Optional[str] = Header(None, alias="X-Project-ID"),
     app: AttackTraceHostAPI = Depends(get_app),
 ) -> ConfigResult[McpServers]:
     """Get MCP server configurations.
@@ -63,7 +66,15 @@ async def get_mcp_server(
     Returns:
         ConfigResult[McpServers]: Configuration for MCP servers.
     """
-    config = await app.mcp_server_config_manager.get_current_config()
+    # Get project-specific config manager
+    if x_project_id:
+        config_path = str(get_project_config_path(x_project_id))
+        config_manager = MCPServerManager(config_path=config_path, project_id=x_project_id)
+        config_manager.initialize()
+    else:
+        config_manager = app.mcp_server_config_manager
+    
+    config = await config_manager.get_current_config()
     if config is None:
         logger.warning("MCP server configuration not found")
         return ConfigResult(

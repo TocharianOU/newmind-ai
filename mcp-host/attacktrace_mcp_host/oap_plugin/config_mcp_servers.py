@@ -33,14 +33,17 @@ MCP_PACKAGES_DIR = Path.home() / ".attacktrace" / "mcp-packages"
 
 
 class MCPServerManagerPlugin:
-    """Manage MCP Server configurations in OAP Plugin."""
+    """Manage MCP Server package downloads and installations.
+    
+    Note: Tool configuration is now fully local. This plugin only handles:
+    - Package downloads from tool marketplace
+    - Device token management for authentication
+    - No cloud synchronization of tool configurations
+    """
 
     def __init__(self, device_token: str | None, oap_root_url: str) -> None:
-        """Initialize the MCPServerConfigs from OAP."""
+        """Initialize the MCPServerManagerPlugin."""
         self.device_token: str | None = device_token
-        self._user_mcp_configs: list[UserMcpConfig] | None = []
-        self._refresh_ts: float = 0
-        self._rate_limit_until: float = 0  # Track when rate limit will be lifted
         self._http_client = httpx.AsyncClient(
             base_url=oap_root_url,
             headers={"Authorization": f"bearer {self.device_token}"}
@@ -51,59 +54,24 @@ class MCPServerManagerPlugin:
     async def update_device_token(
         self, device_token: str | None, mcp_server_manager: MCPServerManager
     ) -> None:
-        """Update the device token and refresh the configs."""
+        """Update the device token (no longer triggers config refresh)."""
         self.device_token = device_token
         self._http_client.headers = {"Authorization": f"bearer {self.device_token}"}
         update_oap_token(self.device_token)
-        await self.refresh(mcp_server_manager)
+        # No longer refreshes tool configs from cloud - configs are fully local
+        logger.info("Device token updated. Tool configurations remain local.")
 
     async def refresh(self, mcp_server_manager: MCPServerManager, instances: list[dict] | None = None) -> None:
-        """Refresh the MCP server configs.
+        """Refresh method - now a no-op since configs are fully local.
+        
+        Kept for backward compatibility but does nothing.
+        Tool configurations are managed locally via instance APIs.
         
         Args:
-            mcp_server_manager: The MCP server manager
-            instances: Optional list of {id: str, instanceId: str} for creating multiple instances
+            mcp_server_manager: The MCP server manager (unused)
+            instances: Optional list (unused)
         """
-        # Clear local cache first
-        self._user_mcp_configs = None
-        self._refresh_ts = 0
-        logger.info("Cleared local MCP config cache")
-        
-        # Force refresh from remote
-        mcp_servers = await self._get_user_mcp_configs(refresh=True)
-        
-        # If instances provided, duplicate servers for multi-instance support
-        if instances and mcp_servers:
-            instance_map = {}  # instanceId -> toolId
-            for inst in instances:
-                instance_map[inst["instanceId"]] = inst["id"]
-            
-            # Create server entries for each instance
-            expanded_servers = []
-            for server in mcp_servers:
-                matching_instances = [
-                    inst_id for inst_id, tool_id in instance_map.items()
-                    if tool_id == server.id
-                ]
-                
-                if matching_instances:
-                    # Create a server entry for each instance
-                    for inst_id in matching_instances:
-                        from copy import deepcopy
-                        server_copy = deepcopy(server)
-                        server_copy.instanceId = inst_id
-                        expanded_servers.append(server_copy)
-                else:
-                    # Keep original server if no instance info
-                    expanded_servers.append(server)
-            
-            self._user_mcp_configs = expanded_servers
-        
-        cfg = await mcp_server_manager.get_current_config()
-        # we already merged the configuration in callback function
-        assert cfg is not None
-        await mcp_server_manager.update_all_configs(cfg)
-        logger.info("MCP server configs refreshed and updated")
+        logger.info("Refresh called but skipped - tool configurations are fully local")
 
     def update_all_config_callback(self, new_config: Config) -> Config:
         """Callback function for updating all configs."""
@@ -200,56 +168,6 @@ class MCPServerManagerPlugin:
                     temp_path.unlink()
                     
         return install_dir
-
-    async def _get_user_mcp_configs(
-        self, refresh: bool = False
-    ) -> list[UserMcpConfig] | None:
-        """Get the user MCP configs."""
-        url = "/api/v1/user/mcp/configs"
-        current_time = time.time()
-        
-        # Check if we're still in rate limit backoff period
-        if current_time < self._rate_limit_until:
-            remaining = int(self._rate_limit_until - current_time)
-            logger.debug("Rate limited, skipping request. Retry in %d seconds", remaining)
-            return self._user_mcp_configs or []
-        
-        if (
-            refresh
-            or not self._user_mcp_configs
-            or current_time - self._refresh_ts > MIN_REFRESH_INTERVAL
-        ):
-            r, code = await self._send_api_request(url, "get", list[UserMcpConfig])
-            
-            if code == httpx.codes.OK:
-                # Success - update configs and clear rate limit
-                self._refresh_ts = current_time
-                self._user_mcp_configs = r
-                self._rate_limit_until = 0  # Clear any rate limit
-                logger.info("Successfully fetched %d MCP configs from OAP", len(r) if r else 0)
-            elif code == httpx.codes.TOO_MANY_REQUESTS:
-                # Rate limited - back off for longer period
-                self._rate_limit_until = current_time + RATE_LIMIT_BACKOFF
-                logger.warning(
-                    "Rate limited by OAP (HTTP 429). Backing off for %d seconds. "
-                    "Consider increasing MIN_REFRESH_INTERVAL or disabling OAP sync.",
-                    RATE_LIMIT_BACKOFF
-                )
-                if not self._user_mcp_configs:
-                    self._user_mcp_configs = []
-            elif code in [httpx.codes.UNAUTHORIZED, httpx.codes.FORBIDDEN]:
-                # Auth error - don't update configs, keep existing ones
-                logger.error("OAP authentication failed (HTTP %d). Please check auth_key in oap_config.json", code)
-                if not self._user_mcp_configs:
-                    # If no existing configs, return empty list
-                    self._user_mcp_configs = []
-            else:
-                # Other errors - don't update configs
-                logger.error("Failed to fetch MCP configs from OAP (HTTP %d)", code)
-                if not self._user_mcp_configs:
-                    self._user_mcp_configs = []
-                    
-        return self._user_mcp_configs
 
 
 def read_oap_config() -> OAPConfig:

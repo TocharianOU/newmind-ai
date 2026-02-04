@@ -112,15 +112,28 @@ export function ipcUtilHandler(win: BrowserWindow) {
   })
 
   safeRegisterHandler("util:getModelSettings", async (_) => {
-    if (!fse.existsSync(path.join(configDir, "model_settings.json"))) {
-      return null
+    const modelSettingsPath = path.join(configDir, "model_settings.json")
+    
+    // Auto-create with default settings if not exists
+    if (!fse.existsSync(modelSettingsPath)) {
+      await fse.ensureDir(configDir)
+      const defaultSettings = {
+        groups: [],
+        common: {},
+        disableDiveSystemPrompt: false
+      }
+      await fse.writeJson(modelSettingsPath, defaultSettings, { spaces: 2 })
+      return defaultSettings
     }
 
-    return fse.readJson(path.join(configDir, "model_settings.json"))
+    return fse.readJson(modelSettingsPath)
   })
 
   safeRegisterHandler("util:setModelSettings", async (_, settings: ModelGroupSetting) => {
-    return fse.writeJson(path.join(configDir, "model_settings.json"), settings, { spaces: 2 })
+    const modelSettingsPath = path.join(configDir, "model_settings.json")
+    // Ensure config directory exists before writing
+    await fse.ensureDir(configDir)
+    return fse.writeJson(modelSettingsPath, settings, { spaces: 2 })
   })
 
   safeRegisterHandler("util:refreshConfig", async () => {

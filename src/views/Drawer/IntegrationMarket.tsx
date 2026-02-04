@@ -1,8 +1,9 @@
 import { memo, useCallback, useEffect, useRef, useState, useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import React from "react"
-import { useSetAtom } from "jotai"
+import { useSetAtom, useAtomValue } from "jotai"
 import { showToastAtom } from "../../atoms/toastState"
+import { currentProjectIdAtom } from "../../atoms/projectState"
 import { OAPMCPServer, InstanceInfo } from "../../../types/oap"
 import { oapSearchMCPServer } from "../../ipc"
 import Button from "../../components/Button"
@@ -49,6 +50,7 @@ type ViewMode = "browse" | "configure" | "installing"
 const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketProps) => {
   const { t } = useTranslation()
   const showToast = useSetAtom(showToastAtom)
+  const currentProjectId = useAtomValue(currentProjectIdAtom)
   const [toolList, setToolList] = useState<ToolItem[]>([])
   const [installedInstances, setInstalledInstances] = useState<InstanceInfo[]>([])
   const [searchText, setSearchText] = useState("")
@@ -251,7 +253,7 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
         type: "error"
       })
     }
-  }, [showToast, t])
+  }, [currentProjectId, showToast, t])
 
   const resetState = useCallback(() => {
     pageRef.current = 0
@@ -588,7 +590,10 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
       
       const res = await fetch("/api/plugins/oap-platform/instances", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-Project-ID": currentProjectId
+        },
         body: JSON.stringify(requestBody),
       })
       
@@ -733,12 +738,7 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
 
       await createInstance(selectedTool, config)
       
-      // Show success message briefly
-      showToast({
-        message: t("tools.instance.created") || "Integration added successfully!",
-        type: "success"
-      })
-      
+      // Success message is already shown by createInstance()
       // Success - close drawer and show tools list
       if (onClose) {
         onClose()

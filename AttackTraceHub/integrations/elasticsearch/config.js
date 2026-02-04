@@ -1,7 +1,7 @@
 export default {
   name: 'Elasticsearch',
-  version: '0.7.2',
-  downloadUrl: 'https://github.com/TocharianOU/elasticsearch-mcp/releases/download/v0.7.2/elasticsearch-mcp-v0.7.2.tar.gz',
+  version: '0.7.3',
+  downloadUrl: 'https://github.com/TocharianOU/elasticsearch-mcp/releases/download/v0.7.3/elasticsearch-mcp-v0.7.3.tar.gz',
   
   description: 'Full version support (ES 5.x-9.x) with comprehensive API access',
   descriptionI18n: {
@@ -9,7 +9,7 @@ export default {
     zh: 'Elasticsearch MCP 服务器，支持完整版本（ES 5.x-9.x）和全面的 API 访问'
   },
   
-  tags: ['Search', 'Database', 'Analytics'],
+  tags: ['SIEM'],  // Primary category only
   
   transport: 'stdio',
   command: 'node',

@@ -23,7 +23,8 @@ import { Writable } from "node:stream"
 import crypto from "node:crypto"
 import { hostCache } from "./store.js"
 
-const baseConfigDir = app.isPackaged ? configDir : path.join(__dirname, "..", "..", ".config")
+// Always use the same configDir as defined in constant.ts for consistency
+const baseConfigDir = configDir
 
 const onServiceUpCallbacks: ((ip: string, port: number) => Promise<void>)[] = []
 export const clearServiceUpCallbacks = () => onServiceUpCallbacks.length = 0

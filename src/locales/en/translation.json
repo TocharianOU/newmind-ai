@@ -212,7 +212,12 @@
       "instance": "instance",
       "instances": "instances",
       "loadFailed": "Failed to load integrations",
-      "loadInstancesFailed": "Failed to load installed integrations"
+      "loadInstancesFailed": "Failed to load installed integrations",
+      "downloaded": "Downloaded, not configured",
+      "updateAvailable": "Update available",
+      "installedVersion": "Installed version",
+      "verifyingIntegrity": "Verifying package integrity...",
+      "integrityCheckFailed": "Package integrity verification failed"
     },
     "packages": {
       "title": "Package Manager",

@@ -4,6 +4,7 @@ import { drawerStackAtom, closeDrawerAtom } from "../../atoms/drawerState"
 import Drawer from "./Drawer"
 import Settings from "../../views/Drawer/Settings"
 import IntegrationMarket from "../../views/Drawer/IntegrationMarket"
+import ProjectSelector from "../ProjectSelector"
 import { useTranslation } from "react-i18next"
 
 const DrawerPortal: React.FC = () => {
@@ -16,11 +17,13 @@ const DrawerPortal: React.FC = () => {
       {drawers.map((drawer) => {
         let content: React.ReactNode = null
         let title = ""
+        let headerExtra: React.ReactNode = null
 
         switch (drawer.page) {
           case "Settings":
             content = <Settings tab={drawer.tab as any} />
             title = t("sidebar.manageAndSettings")
+            headerExtra = <ProjectSelector />
             break
           case "IntegrationMarket":
             content = <IntegrationMarket 
@@ -41,6 +44,7 @@ const DrawerPortal: React.FC = () => {
             onClose={() => closeDrawer(drawer.id)}
             fullscreen={true}
             title={title}
+            headerExtra={headerExtra}
           >
             {content}
           </Drawer>

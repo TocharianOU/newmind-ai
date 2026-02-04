@@ -7,172 +7,115 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  username     String
-  password     String? // 改为可空，支持 SSO-only 用户
-  picture      String?  @db.VarChar(500)
-  team         String?
-  tokenBalance Int      @default(0) // 用户 Token 余额
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  subscription         Subscription?
-  preferences          UserPreferences?
-  usageRecords         UsageRecord[]
-  mcpConfigs           UserMcpConfig[]
-  refreshTokens        RefreshToken[]
-  tokenPurchases       TokenPurchase[]
-  subscriptionPayments SubscriptionPayment[]
-  authIdentities       AuthIdentity[] // SSO 身份绑定
-  // 预留聊天关系（暂时不使用）
-  chatSessions         ChatSession[]
-  messages             Message[]
-  projects             Project[]
-  auditLogs            AuditLog[]
-
-  @@index([email])
-}
-
-model Subscription {
-  id                   String    @id @default(uuid())
-  userId               String    @unique
-  planName             String    @default("BASE") // BASE, PRO, ENTERPRISE
-  isDefaultPlan        Boolean   @default(true)
-  startDate            DateTime  @default(now())
-  endDate              DateTime?
-  nextBillingDate      DateTime?
-  isActive             Boolean   @default(true)
-  stripeCustomerId     String?
-  stripeSubscriptionId String?
-  stripePriceId        String?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-
-  user     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  payments SubscriptionPayment[]
-
-  @@index([userId])
-}
-
-model UsageRecord {
-  id           String   @id @default(uuid())
+model AuditLog {
+  id           String   @id
+  projectId    String
   userId       String
-  modelName    String // Changed from 'model' to 'modelName' to avoid reserved keyword
-  inputTokens  Int      @default(0)
-  outputTokens Int      @default(0)
-  cost         Float    @default(0)
+  action       String
+  resourceType String
+  resourceId   String?
+  metadata     Json?
+  ipAddress    String?  @db.VarChar(50)
+  userAgent    String?  @db.VarChar(500)
   createdAt    DateTime @default(now())
+  Project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  @@index([action])
+  @@index([projectId, createdAt])
+  @@index([resourceType])
   @@index([userId, createdAt])
-  @@index([userId, modelName])
 }
 
-model UserPreferences {
-  id                 String   @id @default(uuid())
-  userId             String   @unique
-  theme              String   @default("light") // light, dark, auto
-  language           String   @default("en") // en, zh, ja, etc
-  notifications      Boolean  @default(true)
-  emailNotifications Boolean  @default(true)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+model AuthIdentity {
+  id             String   @id
+  userId         String
+  provider       String
+  providerUserId String
+  email          String?
+  displayName    String?
+  profilePicture String?  @db.VarChar(500)
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime
+  User           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  @@unique([provider, providerUserId])
+  @@index([provider])
   @@index([userId])
+}
+
+model ChatSession {
+  id        String    @id
+  userId    String
+  projectId String?
+  title     String
+  isStarred Boolean   @default(false)
+  starredAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  Project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  User      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Message   Message[]
+
+  @@index([projectId, createdAt])
+  @@index([userId, createdAt])
+  @@index([userId, isStarred])
+  @@index([userId, updatedAt])
 }
 
 model McpServer {
-  id              String   @id @default(uuid())
+  id              String   @id
   name            String   @unique
   description     String?
   tags            Json?
-  transport       String   @default("stdio") // stdio, http, sse, streamable
-  command         String?  @db.VarChar(200) // Command to execute (e.g., "npx")
-  args            Json? // Command arguments as JSON array
-  url             String?  @db.VarChar(500) // URL for http/sse/streamable transport
-  env             Json? // Environment variables as JSON object
-  headers         Json? // HTTP headers for http transport
-  planRequired    String   @default("BASE") // BASE, PRO, ENTERPRISE
+  transport       String   @default("stdio")
+  command         String?  @db.VarChar(200)
+  args            Json?
+  url             String?  @db.VarChar(500)
+  env             Json?
+  headers         Json?
+  planRequired    String   @default("BASE")
   isActive        Boolean  @default(true)
-  logo            String?  @db.VarChar(500) // Logo image URL (48px)
-  banner          String?  @db.VarChar(500) // Banner image URL (240px)
-  document        String? // Markdown documentation
-  tokenCost       Float    @default(0) // Token cost per unit
-  tokenRequired   Float    @default(0) // Required tokens
-  tokenPriceUnit  String?  @default("request") // Pricing unit
-  popular         Boolean  @default(false) // Popular flag
-  new             Boolean  @default(false) // New flag
-  version         String?  @db.VarChar(50) // Version e.g. "0.6.2"
-  downloadUrl     String?  @db.VarChar(1000) // GitHub Release download URL
-  configSchema    Json? // Configuration schema for frontend form generation
-  descriptionI18n Json? // Multi-language descriptions {"en": "...", "zh": "..."}
-  documentI18n    Json? // Multi-language documentation {"en": "...", "zh": "..."}
+  logo            String?  @db.VarChar(500)
+  banner          String?  @db.VarChar(500)
+  document        String?
+  tokenCost       Float    @default(0)
+  tokenRequired   Float    @default(0)
+  tokenPriceUnit  String?  @default("request")
+  popular         Boolean  @default(false)
+  new             Boolean  @default(false)
+  version         String?  @db.VarChar(50)
+  downloadUrl     String?  @db.VarChar(1000)
+  configSchema    Json?
+  descriptionI18n Json?
+  documentI18n    Json?
   createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  userConfigs UserMcpConfig[]
+  updatedAt       DateTime
 
   @@index([planRequired])
 }
 
-model UserMcpConfig {
-  id          String   @id @default(uuid())
-  userId      String
-  mcpServerId String
-  projectId   String? // 项目隔离（可空以支持向后兼容）
-  enabled     Boolean  @default(true)
-  config      Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model Message {
+  id            String      @id
+  chatSessionId String
+  userId        String
+  role          MessageRole
+  content       String
+  messageId     String?
+  toolCalls     Json?
+  resourceUsage Json?
+  attachments   Json?
+  createdAt     DateTime    @default(now())
+  ChatSession   ChatSession @relation(fields: [chatSessionId], references: [id], onDelete: Cascade)
+  User          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mcpServer McpServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
-  project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, mcpServerId, projectId])
-  @@index([projectId])
-}
-
-model RefreshToken {
-  id        String   @id @default(uuid())
-  userId    String
-  token     String   @unique @db.VarChar(500)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([token])
-  @@index([expiresAt])
-}
-
-// SSO 身份绑定表
-model AuthIdentity {
-  id             String   @id @default(uuid())
-  userId         String
-  provider       String // google, azure, aws, etc.
-  providerUserId String // SSO provider 的用户 ID
-  email          String? // SSO 返回的邮箱（可能与 User.email 不同）
-  displayName    String? // SSO 返回的显示名
-  profilePicture String?  @db.VarChar(500)
-  metadata       Json? // 额外的 SSO 元数据
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerUserId])
-  @@index([userId])
-  @@index([provider])
+  @@index([chatSessionId, createdAt])
+  @@index([userId, createdAt])
 }
 
 model ModelDescription {
-  id          String   @id @default(uuid())
+  id          String   @id
   modelId     String   @unique
   name        String
   icon        String?  @db.VarChar(500)
@@ -181,49 +124,149 @@ model ModelDescription {
   description String?
   extra       Json?
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime
 
   @@index([modelId])
 }
 
-// 预留的聊天相关表结构（参考老版本，为将来云同步准备）
-model ChatSession {
-  id        String    @id @default(uuid())
-  userId    String
-  projectId String? // 项目隔离（可空以支持向后兼容）
-  title     String
-  isStarred Boolean   @default(false)
-  starredAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+model Project {
+  id                     String        @id
+  name                   String
+  description            String?
+  userId                 String
+  isDefault              Boolean       @default(false)
+  organizationId         String?
+  inheritOrgIntegrations Boolean       @default(true)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime
+  AuditLog               AuditLog[]
+  ChatSession            ChatSession[]
+  User                   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project  Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  messages Message[]
-
-  @@index([userId, createdAt])
-  @@index([userId, isStarred])
-  @@index([userId, updatedAt])
-  @@index([projectId, createdAt])
+  @@unique([userId, name])
+  @@index([organizationId])
+  @@index([userId])
 }
 
-model Message {
-  id            String      @id @default(uuid())
-  chatSessionId String
-  userId        String
-  role          MessageRole
-  content       String
-  messageId     String? // 前端生成的临时ID
-  toolCalls     Json? // 工具调用数据
-  resourceUsage Json? // 资源使用统计 {model, total_input_tokens, total_output_tokens, total_run_time}
-  attachments   Json? // 文件附件信息
-  createdAt     DateTime    @default(now())
+model RefreshToken {
+  id        String   @id
+  userId    String
+  token     String   @unique @db.VarChar(500)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  chatSession ChatSession @relation(fields: [chatSessionId], references: [id], onDelete: Cascade)
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([expiresAt])
+  @@index([token])
+}
 
-  @@index([chatSessionId, createdAt])
+model Subscription {
+  id                   String                @id
+  userId               String                @unique
+  planName             String                @default("BASE")
+  isDefaultPlan        Boolean               @default(true)
+  startDate            DateTime              @default(now())
+  endDate              DateTime?
+  nextBillingDate      DateTime?
+  isActive             Boolean               @default(true)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  stripePriceId        String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime
+  User                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  SubscriptionPayment  SubscriptionPayment[]
+
+  @@index([userId])
+}
+
+model SubscriptionPayment {
+  id              String        @id
+  userId          String
+  subscriptionId  String
+  stripePaymentId String        @unique
+  stripeInvoiceId String?
+  amount          Float
+  amountInEur     Float?
+  period          String
+  status          PaymentStatus @default(PENDING)
+  createdAt       DateTime      @default(now())
+  paidAt          DateTime?
+  Subscription    Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  User            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId, createdAt])
+}
+
+model TokenPurchase {
+  id              String        @id
+  userId          String
+  stripePaymentId String        @unique
+  stripeSessionId String?       @unique
+  amount          Float
+  amountInEur     Float?
+  tokensAmount    Int
+  status          PaymentStatus @default(PENDING)
+  metadata        Json?
+  createdAt       DateTime      @default(now())
+  completedAt     DateTime?
+  User            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([userId, createdAt])
+}
+
+model UsageRecord {
+  id           String   @id
+  userId       String
+  modelName    String
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  cost         Float    @default(0)
+  createdAt    DateTime @default(now())
+  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, modelName])
+}
+
+model User {
+  id                  String                @id
+  email               String                @unique
+  username            String
+  password            String?
+  picture             String?               @db.VarChar(500)
+  team                String?
+  tokenBalance        Int                   @default(0)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  AuditLog            AuditLog[]
+  AuthIdentity        AuthIdentity[]
+  ChatSession         ChatSession[]
+  Message             Message[]
+  Project             Project[]
+  RefreshToken        RefreshToken[]
+  Subscription        Subscription?
+  SubscriptionPayment SubscriptionPayment[]
+  TokenPurchase       TokenPurchase[]
+  UsageRecord         UsageRecord[]
+  UserPreferences     UserPreferences?
+
+  @@index([email])
+}
+
+model UserPreferences {
+  id                 String   @id
+  userId             String   @unique
+  theme              String   @default("light")
+  language           String   @default("en")
+  notifications      Boolean  @default(true)
+  emailNotifications Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime
+  User               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 enum MessageRole {
@@ -233,99 +276,10 @@ enum MessageRole {
   tool_result
 }
 
-// Token 包充值记录
-model TokenPurchase {
-  id              String        @id @default(uuid())
-  userId          String
-  stripePaymentId String        @unique
-  stripeSessionId String?       @unique
-  amount          Float // 支付金额（美元）
-  amountInEur     Float? // 实际收到金额（欧元）
-  tokensAmount    Int // 购买的 Token 数量
-  status          PaymentStatus @default(PENDING)
-  metadata        Json? // 额外元数据
-  createdAt       DateTime      @default(now())
-  completedAt     DateTime?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt])
-  @@index([status])
-}
-
-// 订阅支付记录
-model SubscriptionPayment {
-  id              String        @id @default(uuid())
-  userId          String
-  subscriptionId  String
-  stripePaymentId String        @unique
-  stripeInvoiceId String?
-  amount          Float // 支付金额（美元）
-  amountInEur     Float? // 实际收到金额（欧元）
-  period          String // monthly, yearly
-  status          PaymentStatus @default(PENDING)
-  createdAt       DateTime      @default(now())
-  paidAt          DateTime?
-
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt])
-}
-
 enum PaymentStatus {
   PENDING
   COMPLETED
   FAILED
   REFUNDED
   CANCELLED
-}
-
-// 项目表 - 核心隔离单元
-model Project {
-  id          String  @id @default(uuid())
-  name        String
-  description String?
-  userId      String // 项目所有者
-  isDefault   Boolean @default(false)
-
-  // 企业版功能（预留）
-  organizationId         String? // 所属组织
-  inheritOrgIntegrations Boolean @default(true) // 是否继承组织级集成
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // 关联
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  chatSessions   ChatSession[]
-  userMcpConfigs UserMcpConfig[]
-  auditLogs      AuditLog[]
-
-  @@unique([userId, name])
-  @@index([userId])
-  @@index([organizationId])
-}
-
-// 审计日志表（企业版核心功能）
-model AuditLog {
-  id           String  @id @default(uuid())
-  projectId    String
-  userId       String
-  action       String // CREATE_INSTANCE, UPDATE_CONFIG, DELETE_INTEGRATION, CHAT_QUERY, TOOL_CALL 等
-  resourceType String // PROJECT, MCP_INSTANCE, CHAT, TOOL 等
-  resourceId   String?
-  metadata     Json? // 详细操作数据
-  ipAddress    String? @db.VarChar(50)
-  userAgent    String? @db.VarChar(500)
-
-  createdAt DateTime @default(now())
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([projectId, createdAt])
-  @@index([userId, createdAt])
-  @@index([action])
-  @@index([resourceType])
 }

@@ -32,7 +32,8 @@ export const cacheDir = envPath.cache
 export const homeDir = os.homedir()
 export const appDir = path.join(homeDir, ".attacktrace")
 export const scriptsDir = path.join(appDir, "scripts")
-export const configDir = app.isPackaged ? path.join(appDir, "config") : path.join(process.cwd(), ".config")
+// Always use ~/.attacktrace/config for consistency between dev and production
+export const configDir = path.join(appDir, "config")
 export const hostCacheDir = path.join(appDir, "host_cache")
 export const logDir = path.join(appDir, "log")
 

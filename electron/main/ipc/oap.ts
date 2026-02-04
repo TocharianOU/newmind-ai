@@ -32,14 +32,6 @@ export function ipcOapHandler(_win: BrowserWindow) {
     return await oapClient.modelDescription(params)
   })
 
-  safeRegisterHandler("oap:applyMCPServer", async (_, ids: string[]) => {
-    return await oapClient.applyMCPServer(ids)
-  })
-
-  safeRegisterHandler("oap:getMCPServers", async () => {
-    return await oapClient.getMCPServers()
-  })
-
   safeRegisterHandler("oap:getMe", async () => {
     return await oapClient.getMe()
   })

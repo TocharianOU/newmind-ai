@@ -99,6 +99,16 @@
           max-width: 1200px;
           margin: 0 auto;
 
+          .oap-market-toolbar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+            
+            .project-selector {
+              flex-shrink: 0;
+            }
+          }
+
           .oap-search-wrapper {
             margin-bottom: 24px; // Reduced spacing
 

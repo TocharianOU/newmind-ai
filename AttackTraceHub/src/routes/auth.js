@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import CryptoJS from 'crypto-js';
+import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../config/database.js';
 import { createResponse } from '../config/constants.js';
 import logger from '../utils/logger.js';
@@ -88,13 +89,16 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user with default subscription
+    const userId = uuidv4();
     const user = await prisma.user.create({
       data: {
+        id: userId,
         email,
         username,
         password: hashedPassword,
-        subscription: {
+        Subscription: {
           create: {
+            id: uuidv4(),
             planName: 'BASE',
             isDefaultPlan: true,
             isActive: true
@@ -102,7 +106,7 @@ router.post('/register', async (req, res) => {
         }
       },
       include: {
-        subscription: true
+        Subscription: true
       }
     });
 
@@ -173,7 +177,9 @@ router.post('/login', async (req, res) => {
     // Find user
     const user = await prisma.user.findUnique({
       where: { email },
-      include: { subscription: true }
+      include: { 
+        Subscription: true 
+      }
     });
 
     if (!user) {
@@ -207,6 +213,7 @@ router.post('/login', async (req, res) => {
     // Save refresh token
     await prisma.refreshToken.create({
       data: {
+        id: uuidv4(),
         userId: user.id,
         token: refreshToken,
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
@@ -226,12 +233,12 @@ router.post('/login', async (req, res) => {
           email: user.email,
           username: user.username,
           subscription: {
-            PlanName: user.subscription.planName,
-            IsDefaultPlan: user.subscription.isDefaultPlan,
-            StartDate: user.subscription.startDate,
-            Start: user.subscription.startDate,
-            End: user.subscription.endDate,
-            NextBillingDate: user.subscription.nextBillingDate
+            PlanName: user.Subscription.planName,
+            IsDefaultPlan: user.Subscription.isDefaultPlan,
+            StartDate: user.Subscription.startDate,
+            Start: user.Subscription.startDate,
+            End: user.Subscription.endDate,
+            NextBillingDate: user.Subscription.nextBillingDate
           }
         }
       },

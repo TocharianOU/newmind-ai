@@ -104,20 +104,34 @@ User Input → Desktop → MCP Host → OAP Plugin → OAP Model Proxy
 User ← Desktop ← MCP Host ← OAP Plugin ← Model Proxy ←┘
 ```
 
-### MCP 工具安装流程
+### MCP 工具安装流程（本地优先架构）
 ```
 User → Desktop → Browse Marketplace → Select Tool
                                           ↓
-                                  OAP Platform API
+                                  OAP Platform API (Search)
                                           ↓
-                            Download Tool Package
+                            Return Tool Metadata (read-only)
+                            (version, downloadUrl, configSchema, logo)
                                           ↓
-                              Install to MCP Host
+                              User Configures Tool
                                           ↓
-                          Sync Config to Desktop
+                              Download Tool Package
+                            (from GitHub Release)
+                                          ↓
+                  Store Config in Local mcp_config.json
+                  (~/.attacktrace/projects/{project_id}/)
+                                          ↓
+                              MCP Host Loads Tool
                                           ↓
                                     Tool Ready
 ```
+
+**关键变化**：
+- ❌ 不再调用 `/api/v1/user/mcp/apply` 到云端
+- ❌ 不再存储到云端 UserMcpConfig 表
+- ✅ 配置直接写入本地（按项目隔离）
+- ✅ 密码和密钥完全本地存储
+- ✅ 工具市场只提供元数据（只读）
 
 ## 安全设计
 

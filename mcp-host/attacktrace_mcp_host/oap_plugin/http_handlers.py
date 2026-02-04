@@ -50,6 +50,8 @@ class DownloadPackageRequest(BaseModel):
     name: str
     version: str
     download_url: str
+    sha256: str | None = None
+    sha512: str | None = None
 
 
 class OAPHttpHandlers:
@@ -69,14 +71,13 @@ class OAPHttpHandlers:
         
         self._router = APIRouter(tags=["oap_plugin"])
         
-        # Existing routes
+        # Auth routes
         self._router.post("/auth")(self.auth_handler)
         self._router.delete("/auth")(self.logout_handler)
-        self._router.post("/config/refresh")(self.refresh_config_handler)
-        self._router.post("/config/force-refresh")(self.force_refresh_config_handler)
         
-        # New: Package management API
+        # Package management API
         self._router.get("/packages")(self.list_packages_handler)
+        self._router.get("/packages/check/{name}/{version}")(self.check_package_handler)
         self._router.post("/packages/download")(self.download_package_handler)
         self._router.delete("/packages/{name}/{version}")(self.delete_package_handler)
         
@@ -126,40 +127,6 @@ class OAPHttpHandlers:
         )
         if not no_revoke:
             await self._mcp_server_manager.revoke_device_token()
-
-    async def refresh_config_handler(self, app: AttackTraceHostAPI = Depends(get_app)) -> dict:
-        """Refresh the config."""
-        try:
-            await self._mcp_server_manager.refresh(app.mcp_server_config_manager)
-            return {"status": "success", "message": "Configuration refreshed successfully"}
-        except Exception as e:
-            return {"status": "error", "message": f"Configuration refresh failed: {str(e)}"}
-
-    async def force_refresh_config_handler(self, request: Request, app: AttackTraceHostAPI = Depends(get_app)) -> dict:
-        """Force refresh the config, clearing all caches.
-        
-        Accepts optional JSON body with:
-        - instances: List of {id: str, instanceId: str} for creating multiple instances
-        """
-        try:
-            # Parse request body if present
-            instances = None
-            if request.headers.get("content-type") == "application/json":
-                try:
-                    body = await request.json()
-                    instances = body.get("instances")
-                except Exception:
-                    pass  # No body or invalid JSON, continue without instances
-            
-            # Clear local cache
-            self._mcp_server_manager._user_mcp_configs = None
-            self._mcp_server_manager._refresh_ts = 0
-            
-            # Force refresh with optional instances
-            await self._mcp_server_manager.refresh(app.mcp_server_config_manager, instances=instances)
-            return {"status": "success", "message": "Configuration force refreshed successfully", "cache_cleared": True}
-        except Exception as e:
-            return {"status": "error", "message": f"Configuration force refresh failed: {str(e)}"}
     
     # ===== Package Management API =====
     
@@ -181,6 +148,22 @@ class OAPHttpHandlers:
             }
         except Exception as e:
             return {"status": "error", "message": f"Failed to list packages: {str(e)}"}
+    
+    async def check_package_handler(self, name: str, version: str):
+        """GET /packages/check/{name}/{version} - Check if package exists"""
+        try:
+            pkg = self._package_manager.get_package(name, version)
+            return {
+                "status": "success",
+                "exists": pkg is not None,
+                "package": {
+                    "name": pkg.name,
+                    "version": pkg.version,
+                    "path": str(pkg.install_path),
+                } if pkg else None
+            }
+        except Exception as e:
+            return {"status": "error", "message": f"Failed to check package: {str(e)}"}
     
     async def download_package_handler(self, request: DownloadPackageRequest):
         """POST /packages/download - Download a package with progress"""
@@ -205,7 +188,8 @@ class OAPHttpHandlers:
                 # Start download task
                 download_task = asyncio.create_task(
                     self._package_manager.download_package_with_progress(
-                        request.name, request.version, request.download_url, progress_callback
+                        request.name, request.version, request.download_url, progress_callback,
+                        sha256=request.sha256, sha512=request.sha512
                     )
                 )
                 
@@ -279,6 +263,10 @@ class OAPHttpHandlers:
             )
             
             await config_manager.update_all_configs(config)
+
+            # Reload host to apply changes (start processes)
+            host_config = await app.load_host_config()
+            await app.attacktrace_host["default"].reload(new_config=host_config, force_mcp=True)
             
             # Get the created instance configuration
             created_config = config.mcp_servers.get(instance_name)
@@ -308,7 +296,10 @@ class OAPHttpHandlers:
         """GET /instances - List all instances"""
         try:
             config_manager = await self._get_project_config_manager(x_project_id)
+            # CRITICAL: Initialize config manager to load config from file
+            config_manager.initialize()
             config = await config_manager.get_current_config()
+            
             instance_manager = self._get_instance_manager(x_project_id)
             instances = instance_manager.list_instances(config)
             return {
@@ -337,7 +328,10 @@ class OAPHttpHandlers:
         """GET /instances/{instance_name} - Get single instance information"""
         try:
             config_manager = await self._get_project_config_manager(x_project_id)
+            # CRITICAL: Initialize config manager to load config from file
+            config_manager.initialize()
             config = await config_manager.get_current_config()
+            
             instance_manager = self._get_instance_manager(x_project_id)
             instance = instance_manager.get_instance(config, instance_name)
             if not instance:
@@ -378,6 +372,11 @@ class OAPHttpHandlers:
                 raise HTTPException(status_code=404, detail=f"Instance {instance_name} not found")
             
             await config_manager.update_all_configs(config)
+
+            # Reload host to apply changes
+            host_config = await app.load_host_config()
+            await app.attacktrace_host["default"].reload(new_config=host_config, force_mcp=True)
+
             return {"status": "success", "message": f"Updated {instance_name}"}
         except HTTPException:
             raise
@@ -392,18 +391,58 @@ class OAPHttpHandlers:
     ):
         """DELETE /instances/{instance_name} - Delete an instance"""
         try:
+            import logging
+            logger = logging.getLogger("OAPHttpHandlers")
+            
+            logger.info(f"[DELETE] Starting deletion of instance: {instance_name}")
+            
             config_manager = await self._get_project_config_manager(x_project_id)
             config = await config_manager.get_current_config()
-            instance_manager = self._get_instance_manager(x_project_id)
-            success = instance_manager.delete_instance(config, instance_name)
-            if not success:
+            
+            # Check if instance exists before deletion
+            if instance_name not in config.mcp_servers:
+                logger.warning(f"[DELETE] Instance {instance_name} not found in config")
                 raise HTTPException(status_code=404, detail=f"Instance {instance_name} not found")
             
-            await app.mcp_server_config_manager.update_all_configs(config)
-            return {"status": "success", "message": f"Deleted {instance_name}"}
+            logger.info(f"[DELETE] Found instance {instance_name}, proceeding with deletion")
+            
+            instance_manager = self._get_instance_manager(x_project_id)
+            success = instance_manager.delete_instance(config, instance_name)
+            
+            if not success:
+                logger.error(f"[DELETE] Failed to delete instance {instance_name}")
+                raise HTTPException(status_code=500, detail=f"Failed to delete instance {instance_name}")
+            
+            logger.info(f"[DELETE] Instance {instance_name} removed from config object")
+            
+            # Write updated config to file
+            await config_manager.update_all_configs(config)
+            logger.info(f"[DELETE] Config file updated, instance {instance_name} removed from disk")
+
+            # Reload host to apply changes (stop processes)
+            logger.info(f"[DELETE] Reloading host to stop processes for {instance_name}")
+            host_config = await app.load_host_config()
+            await app.attacktrace_host["default"].reload(new_config=host_config, force_mcp=True)
+            logger.info(f"[DELETE] Host reload completed for {instance_name}")
+            
+            # Verify deletion by re-loading config
+            verification_config = await config_manager.get_current_config()
+            if instance_name in verification_config.mcp_servers:
+                logger.error(f"[DELETE] VERIFICATION FAILED: {instance_name} still exists in config after deletion!")
+                raise HTTPException(status_code=500, detail=f"Deletion verification failed for {instance_name}")
+            
+            logger.info(f"[DELETE] Verification passed: {instance_name} successfully deleted")
+
+            return {
+                "status": "success", 
+                "message": f"Deleted {instance_name}",
+                "full_config": verification_config.model_dump(by_alias=True)  # Return updated config
+            }
         except HTTPException:
             raise
         except Exception as e:
+            import logging
+            logging.getLogger("OAPHttpHandlers").error(f"[DELETE] Exception during deletion: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail=f"Failed to delete instance: {str(e)}")
     
     def get_router(self) -> APIRouter:

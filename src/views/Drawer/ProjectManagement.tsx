@@ -34,7 +34,12 @@ const ProjectManagement: React.FC = () => {
   const handleCreate = () => {
     openModal({
       config: { type: "createProject" },
-      size: "medium"
+      size: "medium",
+      // Reload projects after creation
+      onClose: async () => {
+        const hubUrl = currentUser?.hubUrl
+        await loadProjects(hubUrl)
+      }
     })
   }
 

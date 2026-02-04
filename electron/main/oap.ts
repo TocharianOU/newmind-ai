@@ -137,10 +137,6 @@ class OAPClient {
     })
   }
 
-  getMCPServers() {
-    return this.fetch<ApiResponse<OAPMCPServer[]>>("/api/v1/user/mcp/configs")
-  }
-
   searchMCPServer(params: MCPServerSearchParam) {
     const form = new FormData()
     Object.entries(params).forEach(([key, value]) => {
@@ -162,16 +158,6 @@ class OAPClient {
     } else {
       return this.fetch<ApiResponse<OAPModelDescription[]>>("/api/v1/llms")
     }
-  }
-
-  applyMCPServer(ids: string[]) {
-    return this.fetch<ApiResponse<OAPMCPServer>>("/api/v1/user/mcp/apply", {
-      method: "POST",
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(ids),
-    })
   }
 
   getMe() {

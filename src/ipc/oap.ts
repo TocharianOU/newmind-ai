@@ -110,22 +110,6 @@ export function oapSearchMCPServer(params: MCPServerSearchParam): Promise<ApiRes
     return invoke("oap_search_mcp_server", { params })
 }
 
-export function oapApplyMCPServer(ids: string[]): Promise<void> {
-    if (isElectron) {
-        return window.ipcRenderer.oapApplyMCPServer(ids)
-    }
-
-    return invoke("oap_apply_mcp_server", { ids })
-}
-
-export function oapGetMCPServers(): Promise<ApiResponse<OAPMCPServer[]>> {
-    if (isElectron) {
-        return window.ipcRenderer.oapGetMCPServers()
-    }
-
-    return invoke("oap_get_mcp_servers")
-}
-
 type BackendEvent = "login" | "logout" | "refresh" | "mcp.install"
 export function registBackendEvent(event: BackendEvent, callback: (...args: any[]) => void) {
     if (isElectron) {
