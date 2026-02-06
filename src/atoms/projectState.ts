@@ -40,6 +40,7 @@ export const loadCurrentProjectIdAtom = atom(
   async (get, set) => {
     try {
       const projectId = await getCurrentProject()
+      console.log(`[ProjectState] Loaded project ID: ${projectId}`)
       set(currentProjectIdAtom, projectId)
       return projectId
     } catch (error) {
@@ -84,18 +85,23 @@ export const switchProjectAtom = atom(
   null,
   async (get, set, projectId: string) => {
     try {
+      console.log(`[ProjectState] Switching project to: ${projectId}`)
       const result = await setCurrentProject(projectId)
       
       if (result.success) {
+        console.log(`[ProjectState] Project switch successful, updating atom to: ${result.projectId}`)
         set(currentProjectIdAtom, result.projectId)
         
         // Reload tools and configs for new project context
         // This will trigger re-fetching with new X-Project-ID header
         if (typeof window !== 'undefined') {
+          console.log(`[ProjectState] Dispatching project-switched event`)
           window.dispatchEvent(new CustomEvent('project-switched', { 
             detail: { projectId: result.projectId } 
           }))
         }
+      } else {
+        console.error(`[ProjectState] Project switch failed`)
       }
       
       return result

@@ -122,6 +122,7 @@ const Tools = () => {
 
   useEffect(() => {
     (async () => {
+      console.log(`[Tools] Cache reload triggered for project: ${currentProjectId}`)
       const cacheKey = `toolsCache_${currentProjectId}`
       // Check if we should clear cache (useful after OAP integration)
       const shouldClearCache = sessionStorage.getItem("clearToolsCache")
@@ -132,8 +133,10 @@ const Tools = () => {
       } else {
         const cachedTools = localStorage.getItem(cacheKey)
         if (cachedTools) {
+          console.log(`[Tools] Loaded cache for project ${currentProjectId}:`, Object.keys(JSON.parse(cachedTools)))
           toolsCacheRef.current = JSON.parse(cachedTools)
         } else {
+          console.log(`[Tools] No cache found for project ${currentProjectId}`)
           toolsCacheRef.current = {}
         }
       }
@@ -146,7 +149,28 @@ const Tools = () => {
         abortControllerRef.current.abort()
       }
     }
-  }, [showCustomEditPopup])
+  }, [currentProjectId, showCustomEditPopup])
+
+  // Listen for project-switched event (alternative to page reload)
+  useEffect(() => {
+    const handleProjectSwitch = (event: CustomEvent) => {
+      const newProjectId = event.detail?.projectId
+      console.log(`[Tools] Project switched event received: ${newProjectId}`)
+      
+      // Clear old cache reference to force reload
+      toolsCacheRef.current = {}
+      
+      // Reload tools and config for new project
+      loadMcpConfig()
+      loadTools()
+    }
+
+    window.addEventListener('project-switched', handleProjectSwitch as EventListener)
+    
+    return () => {
+      window.removeEventListener('project-switched', handleProjectSwitch as EventListener)
+    }
+  }, [loadMcpConfig, loadTools])
 
   const isOapTool = (toolName: string) => {
     // Check by extraData.oap metadata, not by name matching

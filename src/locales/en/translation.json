@@ -573,5 +573,9 @@
     "deleteAllWarning": "This action will permanently delete all memories and cannot be undone.",
     "deleteAllSuccess": "All memories cleared",
     "deleteAllFailed": "Clear failed"
+  },
+  "projects": {
+    "restarting": "Switching...",
+    "restartingHost": "Switching project..."
   }
 }

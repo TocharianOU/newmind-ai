@@ -49,6 +49,7 @@ declare global {
       listenRefresh: (cb: () => void) => () => void
       listenMcpApply: (cb: (id: string) => void) => () => void
       refreshConfig: () => Promise<void>
+      restartHost: () => Promise<{ success: boolean; port?: number; error?: string }>
       onReceiveInstallHostDependenciesLog: (callback: (data: string) => void) => () => void
       getInstallHostDependenciesLog: () => Promise<string[]>
     }

@@ -5,7 +5,7 @@ import { configDir, scriptsDir } from "../constant"
 import { CancelError, download } from "electron-dl"
 import { ModelGroupSetting } from "../../../types/model"
 import { refreshConfig } from "../deeplink"
-import { getInstallHostDependenciesLog } from "../service"
+import { getInstallHostDependenciesLog, restartHost } from "../service"
 import { safeRegisterHandler } from "../utils/ipcRegistry"
 
 export function ipcUtilHandler(win: BrowserWindow) {
@@ -138,6 +138,11 @@ export function ipcUtilHandler(win: BrowserWindow) {
 
   safeRegisterHandler("util:refreshConfig", async () => {
     return refreshConfig()
+  })
+
+  safeRegisterHandler("util:restartHost", async () => {
+    console.log("[IPC] Received restartHost request")
+    return restartHost()
   })
 
   safeRegisterHandler("util:getInstallHostDependenciesLog", async () => {

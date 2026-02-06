@@ -8,3 +8,11 @@ export function refreshConfig() {
 
   return invoke("host_refresh_config")
 }
+
+export function restartHost(): Promise<{ success: boolean; port?: number; error?: string }> {
+  if (isElectron) {
+    return window.ipcRenderer.restartHost()
+  }
+
+  return invoke("host_restart")
+}

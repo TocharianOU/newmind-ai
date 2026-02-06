@@ -54,10 +54,13 @@ function App() {
   useEffect(() => {
     // CRITICAL: Load current project ID FIRST before any other API calls
     const init = async () => {
+      console.log("[App] Starting initialization...")
       await loadCurrentProjectId()
+      console.log("[App] Project ID loaded, now loading configs and tools...")
       // Only load configs AFTER project ID is set
       loadMcpConfig()
       loadTools()
+      console.log("[App] Initialization complete")
     }
     init()
   }, [loadCurrentProjectId, loadTools, loadMcpConfig])

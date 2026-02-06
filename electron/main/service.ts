@@ -157,6 +157,75 @@ export async function cleanup() {
   await fse.writeFile(path.join(hostCacheDir, "bus"), "")
 }
 
+/**
+ * Restart Host process (for project switching)
+ * Kills the current host and starts a new one with the current project context
+ */
+export async function restartHost(): Promise<{ success: boolean; port?: number; error?: string }> {
+  try {
+    console.log("[restartHost] Starting host restart process...")
+    
+    // Create a promise that resolves when the new host is ready
+    const hostReadyPromise = new Promise<number>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        ipcEventEmitter.off("ipc", handler)
+        reject(new Error("Host startup timeout after 30 seconds"))
+      }, 30000)
+      
+      const handler = (message: any) => {
+        if (message.server?.listen?.port) {
+          clearTimeout(timeout)
+          ipcEventEmitter.off("ipc", handler)
+          console.log(`[restartHost] Received port from new host: ${message.server.listen.port}`)
+          serviceStatus.ip = message.server.listen.ip
+          serviceStatus.port = message.server.listen.port
+          resolve(message.server.listen.port)
+        }
+      }
+      
+      ipcEventEmitter.on("ipc", handler)
+    })
+    
+    // Step 1: Kill current host process
+    if (hostProcess && !hostProcess.killed) {
+      console.log("[restartHost] Killing current host process...")
+      hostProcess.kill("SIGTERM")
+      await new Promise(resolve => setTimeout(resolve, 200))
+      
+      if (!hostProcess.killed) {
+        console.log("[restartHost] Force killing host process...")
+        hostProcess.kill("SIGKILL")
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+    }
+    
+    // Step 2: Reset bus file
+    const busPath = path.join(hostCacheDir, "bus")
+    await fse.writeFile(busPath, "")
+    console.log("[restartHost] Bus file reset")
+    
+    // Step 3: Reset service status
+    serviceStatus.port = 0
+    
+    // Step 4: Start new host process
+    console.log("[restartHost] Starting new host process...")
+    await startHostService()
+    
+    // Step 5: Wait for host to be ready
+    const port = await hostReadyPromise
+    
+    console.log(`[restartHost] Host restarted successfully on port ${port}`)
+    return { success: true, port }
+    
+  } catch (error) {
+    console.error("[restartHost] Failed to restart host:", error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Unknown error" 
+    }
+  }
+}
+
 async function migrateLegacyConfig() {
   const files = [
     "config.json",

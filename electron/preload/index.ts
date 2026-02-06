@@ -41,6 +41,7 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
   getModelSettings: () => ipcRenderer.invoke("util:getModelSettings"),
   setModelSettings: (settings: ModelGroupSetting) => ipcRenderer.invoke("util:setModelSettings", settings),
   refreshConfig: () => ipcRenderer.invoke("util:refreshConfig"),
+  restartHost: () => ipcRenderer.invoke("util:restartHost"),
   getInstallHostDependenciesLog: () => ipcRenderer.invoke("util:getInstallHostDependenciesLog"),
   readLocalLogo: (logoPath: string) => ipcRenderer.invoke("util:readLocalLogo", logoPath),
 
