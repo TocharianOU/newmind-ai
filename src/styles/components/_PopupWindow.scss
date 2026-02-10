@@ -17,4 +17,31 @@
       pointer-events: auto;
     }
   }
+
+  &.popup-overlay {
+    background-color: var(--bg-op-dark-ultrastrong);
+    position: fixed;
+    left: $sidebar-width;
+    top: 0;
+    width: calc(100vw - $sidebar-width);
+    height: 100vh;
+    transition: width $transition-normal ease, left $transition-normal ease;
+    // Remove flexbox alignment to let content fill naturally
+    display: block;
+
+    &.full-width {
+      left: 0;
+      width: 100vw;
+    }
+
+    > div {
+      width: 100%;
+      height: 100%;
+    }
+
+    @media (max-width: $breakpoint-m) {
+      left: 0;
+      width: 100vw;
+    }
+  }
 }

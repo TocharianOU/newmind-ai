@@ -187,6 +187,15 @@
       "skip": "跳过验证（不安全）",
       "caCert": "自定义 CA 证书"
     },
+    "keychain": {
+      "useKeychain": "加密存储密钥",
+      "storedAs": "存储为",
+      "enterNewPassword": "输入新密码以更新...",
+      "save": "💾 保存",
+      "saved": "已保存到密钥链",
+      "saveFailed": "保存失败",
+      "pleaseEnterPassword": "请输入密码"
+    },
     "viewJsonConfig": "查看底层 JSON 配置",
     "copyJsonConfig": "复制配置",
     "managePackages": "管理包",

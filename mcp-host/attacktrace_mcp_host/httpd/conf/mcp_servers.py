@@ -171,6 +171,11 @@ class MCPServerManager:
             return
 
         config_dict = json.loads(config_content)
+        
+        # Resolve keychain references before creating Config object
+        from .keychain import resolve_keychain_in_mcp_config
+        config_dict = resolve_keychain_in_mcp_config(config_dict)
+        
         self._current_config = Config(**config_dict)
 
     async def get_enabled_servers(self) -> dict[str, MCPServerConfig]:

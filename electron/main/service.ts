@@ -22,9 +22,104 @@ import { EventEmitter } from "node:events"
 import { Writable } from "node:stream"
 import crypto from "node:crypto"
 import { hostCache } from "./store.js"
+import { getPassword } from "./ipc/keychain"
 
 // Always use the same configDir as defined in constant.ts for consistency
 const baseConfigDir = configDir
+
+/**
+ * Parse keychain reference from value
+ * Format: @keychain:service:account
+ */
+function parseKeychainReference(value: string): { service: string; account: string } | null {
+  if (typeof value !== "string" || !value.startsWith("@keychain:")) {
+    return null
+  }
+  
+  const match = value.match(/^@keychain:([^:]+):([^:]+)$/)
+  if (!match) {
+    return null
+  }
+  
+  return {
+    service: match[1],
+    account: match[2]
+  }
+}
+
+/**
+ * Extract all keychain references from MCP config
+ * Returns a map of keychain refs to their service/account info
+ */
+async function extractKeychainReferences(mcpConfigPath: string): Promise<Map<string, { service: string; account: string }>> {
+  const keychainRefs = new Map<string, { service: string; account: string }>()
+  
+  if (!(await fse.pathExists(mcpConfigPath))) {
+    return keychainRefs
+  }
+  
+  try {
+    const config = await fse.readJSON(mcpConfigPath)
+    const servers = config.mcpServers || {}
+    
+    // Recursively search for keychain references in the config
+    const searchForKeychainRefs = (obj: any, path: string = "") => {
+      if (typeof obj === "string") {
+        const parsed = parseKeychainReference(obj)
+        if (parsed) {
+          const refKey = `${parsed.service}:${parsed.account}`
+          keychainRefs.set(refKey, parsed)
+        }
+      } else if (Array.isArray(obj)) {
+        obj.forEach((item, index) => searchForKeychainRefs(item, `${path}[${index}]`))
+      } else if (obj && typeof obj === "object") {
+        Object.entries(obj).forEach(([key, value]) => searchForKeychainRefs(value, path ? `${path}.${key}` : key))
+      }
+    }
+    
+    searchForKeychainRefs(servers)
+    
+    return keychainRefs
+  } catch (error) {
+    console.error("[Keychain] Failed to parse MCP config:", error)
+    return keychainRefs
+  }
+}
+
+/**
+ * Load keychain credentials and inject as environment variables
+ * Environment variable format: ATTACKTRACE_KEYCHAIN_<SERVICE>_<ACCOUNT> = password
+ */
+async function injectKeychainCredentials(projectId: string, env: Record<string, string>): Promise<void> {
+  try {
+    const projectsDir = path.join(configDir, "..", "projects")
+    const mcpConfigPath = path.join(projectsDir, projectId, "mcp_config.json")
+    
+    const keychainRefs = await extractKeychainReferences(mcpConfigPath)
+    
+    if (keychainRefs.size === 0) {
+      console.log("[Keychain] No keychain references found in MCP config")
+      return
+    }
+    
+    console.log(`[Keychain] Found ${keychainRefs.size} keychain reference(s) in project ${projectId}`)
+    
+    for (const [refKey, { service, account }] of keychainRefs) {
+      const result = await getPassword(service, account)
+      
+      if (result.success && result.password) {
+        // Convert to safe environment variable name
+        const envKey = `ATTACKTRACE_KEYCHAIN_${service.toUpperCase().replace(/[^A-Z0-9]/g, "_")}_${account.toUpperCase().replace(/[^A-Z0-9]/g, "_")}`
+        env[envKey] = result.password
+        console.log(`[Keychain] Injected credential: ${envKey} (from ${service}:${account})`)
+      } else {
+        console.warn(`[Keychain] Failed to load credential for ${service}:${account}:`, result.error)
+      }
+    }
+  } catch (error) {
+    console.error("[Keychain] Failed to inject keychain credentials:", error)
+  }
+}
 
 const onServiceUpCallbacks: ((ip: string, port: number) => Promise<void>)[] = []
 export const clearServiceUpCallbacks = () => onServiceUpCallbacks.length = 0
@@ -405,6 +500,19 @@ async function startHostService() {
     ...process.env,
     ATTACKTRACE_CONFIG_DIR: baseConfigDir,
     RESOURCE_DIR: hostCacheDir,
+  }
+
+  // Inject keychain credentials as environment variables
+  try {
+    const currentProjectFile = path.join(configDir, "..", "current_project.json")
+    if (await fse.pathExists(currentProjectFile)) {
+      const { projectId } = await fse.readJSON(currentProjectFile)
+      if (projectId) {
+        await injectKeychainCredentials(projectId, httpdEnv)
+      }
+    }
+  } catch (error) {
+    console.error("[Keychain] Failed to load current project for keychain injection:", error)
   }
 
   console.log("httpd executing path: ", httpdExec)

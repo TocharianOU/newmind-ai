@@ -937,27 +937,14 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
   // Calculate currentMcpServers at component top level
   const currentMcpServers = useMemo(() => {
     const result = type.includes("add") ? tmpCustom.mcpServers : customList[currentIndex]?.mcpServers
-    // Debug: Log currentMcpServers structure to trace configSchema data flow
-    if (result) {
-      console.log('[CustomEdit] currentMcpServers structure:', {
-        hasConfigSchema: !!result.configSchema,
-        configSchema: result.configSchema,
-        hasExtraData: !!result.extraData,
-        extraDataOap: result.extraData?.oap,
-        extraDataOapConfigSchema: result.extraData?.oap?.configSchema,
-        fullStructure: result
-      })
-    }
     return result
   }, [type, tmpCustom.mcpServers, customList, currentIndex])
 
   // Convert env to array format for SchemaForm - moved to component top level
   const envConfig = useMemo(() => {
     const env = currentMcpServers?.env;
-    console.log('[CustomEdit] envConfig useMemo - currentMcpServers?.env:', env);
     
     if (!env) {
-      console.log('[CustomEdit] envConfig useMemo - env is empty, returning []');
       return [];
     }
     
@@ -986,11 +973,9 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
         // Remove NODE_TLS_REJECT_UNAUTHORIZED from form config and add tlsMode
         const filtered = result.filter(([key]) => key !== 'NODE_TLS_REJECT_UNAUTHORIZED');
         filtered.push(['tlsMode', tlsMode, false]);
-        console.log('[CustomEdit] envConfig useMemo - array result:', filtered);
         return filtered;
       }
       
-      console.log('[CustomEdit] envConfig useMemo - array result:', result);
       return result;
     }
     
@@ -1018,15 +1003,12 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
         
         const filtered = result.filter(([key]) => key !== 'NODE_TLS_REJECT_UNAUTHORIZED');
         filtered.push(['tlsMode', tlsMode, false]);
-        console.log('[CustomEdit] envConfig useMemo - object result:', filtered);
         return filtered;
       }
       
-      console.log('[CustomEdit] envConfig useMemo - object result:', result);
       return result;
     }
     
-    console.log('[CustomEdit] envConfig useMemo - env type not recognized, returning []');
     return [];
   }, [currentMcpServers?.env]);
 
@@ -1050,8 +1032,6 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
       || null;
 
     const handleEnvChange = (newEnv: [string, unknown, boolean][]) => {
-      console.log('[CustomEdit] handleEnvChange - received newEnv:', newEnv);
-      
       const keys = newEnv.map(([key]) => key)
       keys.forEach((key, index) => {
         newEnv[index][2] = false
@@ -1072,8 +1052,6 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
         // Preserve all other keys and values as-is
         return [key, value, error] as [string, unknown, boolean];
       });
-      
-      console.log('[CustomEdit] handleEnvChange - processedEnv:', processedEnv);
       
       handleCustomChange("env", processedEnv)
     }

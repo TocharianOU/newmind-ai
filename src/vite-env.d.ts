@@ -52,6 +52,17 @@ declare global {
       restartHost: () => Promise<{ success: boolean; port?: number; error?: string }>
       onReceiveInstallHostDependenciesLog: (callback: (data: string) => void) => () => void
       getInstallHostDependenciesLog: () => Promise<string[]>
+      
+      // Keychain
+      keychainSetPassword: (service: string, account: string, password: string) => Promise<{ success: boolean; error?: string }>
+      keychainGetPassword: (service: string, account: string) => Promise<{ success: boolean; password?: string; error?: string }>
+      keychainDeletePassword: (service: string, account: string) => Promise<{ success: boolean; error?: string }>
+      keychainList: () => Promise<{ 
+        success: boolean
+        credentials?: Array<{ service: string; account: string; createdAt: string; updatedAt: string }>
+        error?: string 
+      }>
+      keychainIsAvailable: () => Promise<{ success: boolean; available: boolean }>
     }
 
     PLATFORM: "darwin" | "win32" | "linux"

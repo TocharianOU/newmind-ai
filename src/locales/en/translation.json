@@ -187,6 +187,15 @@
       "skip": "Skip Verification (Insecure)",
       "caCert": "Custom CA Certificate"
     },
+    "keychain": {
+      "useKeychain": "Encryption enabled",
+      "storedAs": "Stored as",
+      "enterNewPassword": "Enter new password to update...",
+      "save": "💾 Save",
+      "saved": "Saved to Keychain successfully",
+      "saveFailed": "Failed to save",
+      "pleaseEnterPassword": "Please enter a password"
+    },
     "viewJsonConfig": "View Underlying JSON Configuration",
     "copyJsonConfig": "Copy Configuration",
     "managePackages": "Manage Packages",

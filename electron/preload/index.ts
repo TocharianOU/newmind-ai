@@ -104,6 +104,18 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
     ipcRenderer.on("mcp.install", listener as any)
     return () => ipcRenderer.off("mcp.install", listener as any)
   },
+
+  // keychain
+  keychainSetPassword: (service: string, account: string, password: string) => 
+    ipcRenderer.invoke("keychain:setPassword", service, account, password),
+  keychainGetPassword: (service: string, account: string) => 
+    ipcRenderer.invoke("keychain:getPassword", service, account),
+  keychainDeletePassword: (service: string, account: string) => 
+    ipcRenderer.invoke("keychain:deletePassword", service, account),
+  keychainList: () => 
+    ipcRenderer.invoke("keychain:list"),
+  keychainIsAvailable: () => 
+    ipcRenderer.invoke("keychain:isAvailable"),
 })
 
 // --------- Preload scripts loading ---------

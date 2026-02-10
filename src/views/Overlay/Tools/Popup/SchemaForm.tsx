@@ -4,6 +4,13 @@ import { useTranslation } from "react-i18next"
 import Select from "../../../../components/Select"
 import Switch from "../../../../components/Switch"
 import Tooltip from "../../../../components/Tooltip"
+import { 
+  isKeychainReference, 
+  parseKeychainReference, 
+  generateKeychainReference,
+  setPassword as keychainSetPassword,
+  isKeychainAvailable
+} from "../../../../ipc/keychain"
 
 interface SchemaFormProps {
   schema: Record<string, any>
@@ -15,13 +22,26 @@ interface SchemaFormProps {
 const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disabled }) => {
   const { t } = useTranslation()
   const [formData, setFormData] = useState<Record<string, any>>({})
+  const [useKeychainForField, setUseKeychainForField] = useState<Record<string, boolean>>({})
+  const [keychainAvailable, setKeychainAvailable] = useState(false)
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+
+  // Check if keychain is available
+  useEffect(() => {
+    isKeychainAvailable().then(setKeychainAvailable)
+  }, [])
 
   // Initialize form data from config array
   useEffect(() => {
     const initialData: Record<string, any> = {}
+    const initialKeychainFlags: Record<string, boolean> = {}
+    
     config.forEach(([key, value]) => {
       initialData[key] = value
+      // Check if this field uses keychain
+      if (typeof value === "string" && isKeychainReference(value)) {
+        initialKeychainFlags[key] = true
+      }
     })
     
     // 只在数据真正变化时才更新，避免覆盖用户输入
@@ -29,6 +49,34 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
       const isEqual = Object.keys(prev).length === Object.keys(initialData).length &&
         Object.keys(initialData).every(k => prev[k] === initialData[k])
       return isEqual ? prev : initialData
+    })
+    
+    // Only update keychain flags for fields that are newly added or changed from/to keychain reference
+    setUseKeychainForField(prev => {
+      const updated = { ...prev }
+      let hasChanges = false
+      
+      Object.keys(initialKeychainFlags).forEach(key => {
+        if (prev[key] === undefined || prev[key] !== initialKeychainFlags[key]) {
+          // Only update if the field is new OR the value changed from non-keychain to keychain
+          const oldValue = formData[key]
+          const newValue = initialData[key]
+          if (!oldValue || !isKeychainReference(oldValue)) {
+            updated[key] = initialKeychainFlags[key]
+            hasChanges = true
+          }
+        }
+      })
+      
+      // Don't override user's manual toggle if they turned it off and value is now empty
+      Object.keys(prev).forEach(key => {
+        if (prev[key] === false && initialData[key] === "") {
+          updated[key] = false
+          hasChanges = true
+        }
+      })
+      
+      return hasChanges ? updated : prev
     })
   }, [config])
 
@@ -109,6 +157,45 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
     
     // Secret/Password field
     if (fieldSchema.format === "password" || key.includes("KEY") || key.includes("PASSWORD") || key.includes("SECRET")) {
+      const useKeychain = useKeychainForField[key] || false
+      const parsedKeychain = isKeychainReference(value) ? parseKeychainReference(value) : null
+      
+      const handleKeychainToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const checked = e.target.checked
+        if (!checked) {
+          // Switch to plain text mode - clear the keychain reference
+          setUseKeychainForField(prev => ({ ...prev, [key]: false }))
+          handleChange(key, "")
+        } else {
+          // Switch to keychain mode - generate reference
+          const service = `attacktrace-${key.toLowerCase()}`
+          const account = "default"
+          setUseKeychainForField(prev => ({ ...prev, [key]: true }))
+          handleChange(key, generateKeychainReference(service, account))
+        }
+      }
+      
+      const handleKeychainSave = async () => {
+        if (!parsedKeychain) return
+        
+        const passwordInput = (document.getElementById(`keychain-password-${key}`) as HTMLInputElement)?.value
+        if (!passwordInput) {
+          alert(t("tools.keychain.pleaseEnterPassword") || "Please enter a password")
+          return
+        }
+        
+        const result = await keychainSetPassword(parsedKeychain.service, parsedKeychain.account, passwordInput)
+        if (result.success) {
+          alert(t("tools.keychain.saved") || "Saved to Keychain successfully")
+          // Clear the input for security
+          if (document.getElementById(`keychain-password-${key}`)) {
+            (document.getElementById(`keychain-password-${key}`) as HTMLInputElement).value = ""
+          }
+        } else {
+          alert(`${t("tools.keychain.saveFailed") || "Failed to save"}: ${result.error}`)
+        }
+      }
+      
       return (
         <div key={key} className="field-item">
           <label>
@@ -119,14 +206,55 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
               </Tooltip>
             )}
           </label>
-          <input
-            type="password"
-            value={value}
-            onChange={(e) => handleChange(key, e.target.value)}
-            disabled={disabled}
-            placeholder={fieldSchema.placeholder || t("tools.enterValue")}
-            className="schema-form-input"
-          />
+          
+          {keychainAvailable && (
+            <div className="keychain-toggle" style={{ marginBottom: "8px" }}>
+              <Switch
+                checked={useKeychain}
+                onChange={handleKeychainToggle}
+                disabled={disabled}
+              />
+              <span style={{ marginLeft: "8px", fontSize: "14px" }}>
+                {t("tools.keychain.useKeychain") || "🔐 Use System Keychain"}
+              </span>
+            </div>
+          )}
+          
+          {useKeychain && parsedKeychain ? (
+            <div className="keychain-field">
+              <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px" }}>
+                {t("tools.keychain.storedAs") || "Stored as"}: <code>{parsedKeychain.service}:{parsedKeychain.account}</code>
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <input
+                  id={`keychain-password-${key}`}
+                  type="password"
+                  placeholder={t("tools.keychain.enterNewPassword") || "Enter new password to update..."}
+                  disabled={disabled}
+                  className="schema-form-input"
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="button"
+                  onClick={handleKeychainSave}
+                  disabled={disabled}
+                  className="schema-form-browse-btn"
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  {t("tools.keychain.save") || "💾 Save"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <input
+              type="password"
+              value={value}
+              onChange={(e) => handleChange(key, e.target.value)}
+              disabled={disabled}
+              placeholder={fieldSchema.placeholder || t("tools.enterValue")}
+              className="schema-form-input"
+            />
+          )}
         </div>
       )
     }
@@ -236,7 +364,7 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
           <div className="schema-form-switch">
             <Switch
               checked={isChecked}
-              onChange={(checked) => handleChange(key, checked)}
+              onChange={(e) => handleChange(key, e.target.checked)}
               disabled={disabled}
             />
           </div>

@@ -16,6 +16,7 @@ import { oapClient } from "./oap"
 import electronDl from "electron-dl"
 import "./ipc/mcp.js"  // Import MCP IPC handlers
 import "./ipc/project.js"  // Import Project IPC handlers
+import { registerKeychainHandlers } from "./ipc/keychain"  // Import Keychain IPC handlers
 
 log.initialize()
 log.transports.file.resolvePathFn = () => path.join(logDir, "main-electron.log")
@@ -178,6 +179,9 @@ export async function createWindow() {
 
   // ipc handler
   ipcHandler(win)
+
+  // Register keychain handlers
+  registerKeychainHandlers()
 
   const shouldAutoLaunch = preferencesStore.get("autoLaunch")
   app.setLoginItemSettings({
