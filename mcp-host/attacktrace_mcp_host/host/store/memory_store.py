@@ -12,6 +12,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select, delete as sqla_delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# Import project context functions
+from ...httpd.conf.project_context import get_current_project_id
+
 logger = logging.getLogger(__name__)
 
 
@@ -55,7 +58,7 @@ class LongTermMemoryStore:
         self._db_session = db_session
 
     def _get_namespace(self, user_id: str, entity_type: EntityType) -> tuple[str, ...]:
-        """Get namespace for entity storage.
+        """Get namespace for entity storage with project isolation.
 
         Args:
             user_id: User ID.
@@ -63,8 +66,13 @@ class LongTermMemoryStore:
 
         Returns:
             Namespace tuple (must be tuple for InMemoryStore).
+            
+        Note:
+            Includes project_id for complete isolation between projects.
+            Each project has its own memory namespace.
         """
-        return ("user", user_id, "entities", entity_type.value)
+        project_id = get_current_project_id()
+        return ("project", project_id, "user", user_id, "entities", entity_type.value)
 
     async def save_entity(
         self,

@@ -175,27 +175,6 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
         }
       }
       
-      const handleKeychainSave = async () => {
-        if (!parsedKeychain) return
-        
-        const passwordInput = (document.getElementById(`keychain-password-${key}`) as HTMLInputElement)?.value
-        if (!passwordInput) {
-          alert(t("tools.keychain.pleaseEnterPassword") || "Please enter a password")
-          return
-        }
-        
-        const result = await keychainSetPassword(parsedKeychain.service, parsedKeychain.account, passwordInput)
-        if (result.success) {
-          alert(t("tools.keychain.saved") || "Saved to Keychain successfully")
-          // Clear the input for security
-          if (document.getElementById(`keychain-password-${key}`)) {
-            (document.getElementById(`keychain-password-${key}`) as HTMLInputElement).value = ""
-          }
-        } else {
-          alert(`${t("tools.keychain.saveFailed") || "Failed to save"}: ${result.error}`)
-        }
-      }
-      
       return (
         <div key={key} className="field-item">
           <label>
@@ -221,34 +200,21 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
           )}
           
           {useKeychain && parsedKeychain ? (
-            <div className="keychain-field">
-              <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px" }}>
-                {t("tools.keychain.storedAs") || "Stored as"}: <code>{parsedKeychain.service}:{parsedKeychain.account}</code>
-              </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <input
-                  id={`keychain-password-${key}`}
-                  type="password"
-                  placeholder={t("tools.keychain.enterNewPassword") || "Enter new password to update..."}
-                  disabled={disabled}
-                  className="schema-form-input"
-                  style={{ flex: 1 }}
-                />
-                <button
-                  type="button"
-                  onClick={handleKeychainSave}
-                  disabled={disabled}
-                  className="schema-form-browse-btn"
-                  style={{ whiteSpace: "nowrap" }}
-                >
-                  {t("tools.keychain.save") || "💾 Save"}
-                </button>
-              </div>
-            </div>
+            <input
+              id={`keychain-password-${key}`}
+              type="password"
+              value={passwordValue}
+              onChange={(e) => setPasswordValue(e.target.value)}
+              placeholder={t("tools.keychain.enterPassword") || "Enter password"}
+              disabled={disabled}
+              className="schema-form-input"
+              data-keychain-service={parsedKeychain.service}
+              data-keychain-account={parsedKeychain.account}
+            />
           ) : (
             <input
               type="password"
-              value={value}
+              value={value || ""}
               onChange={(e) => handleChange(key, e.target.value)}
               disabled={disabled}
               placeholder={fieldSchema.placeholder || t("tools.enterValue")}
@@ -531,6 +497,56 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
       {renderOneOfGroups()}
     </div>
   )
+}
+
+/**
+ * Collect and save all keychain passwords from the form
+ * This should be called before saving the configuration
+ */
+export async function saveAllKeychainPasswords(): Promise<{ success: boolean; errors: string[] }> {
+  const errors: string[] = []
+  
+  // Find all keychain password inputs
+  const keychainInputs = document.querySelectorAll('input[data-keychain-service][data-keychain-account]')
+  
+  for (const input of keychainInputs) {
+    const passwordInput = input as HTMLInputElement
+    const service = passwordInput.getAttribute('data-keychain-service')
+    const account = passwordInput.getAttribute('data-keychain-account')
+    const password = passwordInput.value
+    
+    if (!service || !account) continue
+    
+    // Skip if password is empty (means user didn't fill it, keep existing keychain value)
+    if (!password || password.trim() === '') {
+      console.log(`[Keychain] Skipping empty password for ${service}:${account}`)
+      continue
+    }
+    
+    try {
+      const { setPassword } = await import('../../../../ipc/keychain')
+      const result = await setPassword(service, account, password)
+      
+      if (result.success) {
+        console.log(`[Keychain] Saved password for ${service}:${account}`)
+        // Clear the input for security
+        passwordInput.value = ''
+      } else {
+        const error = `Failed to save ${service}:${account}: ${result.error}`
+        console.error(`[Keychain] ${error}`)
+        errors.push(error)
+      }
+    } catch (error) {
+      const errorMsg = `Failed to save ${service}:${account}: ${error}`
+      console.error(`[Keychain] ${errorMsg}`)
+      errors.push(errorMsg)
+    }
+  }
+  
+  return {
+    success: errors.length === 0,
+    errors
+  }
 }
 
 export default SchemaForm

@@ -330,6 +330,23 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
 
   // Create instance
   const createInstance = async (tool: ToolItem, config: Record<string, any>) => {
+    // Save all keychain passwords before creating instance
+    try {
+      const { saveAllKeychainPasswords } = await import('./SchemaForm')
+      const keychainResult = await saveAllKeychainPasswords()
+      
+      if (!keychainResult.success) {
+        showToast({
+          message: `${t("tools.keychain.saveFailed") || "Failed to save passwords"}: ${keychainResult.errors.join(", ")}`,
+          type: "error"
+        })
+        return
+      }
+    } catch (error) {
+      console.error('[Keychain] Failed to save keychain passwords:', error)
+      // Continue anyway - passwords might not be required
+    }
+    
     setToolList(prev => {
       const newList = [...prev]
       const index = newList.findIndex(t => t.id === tool.id)

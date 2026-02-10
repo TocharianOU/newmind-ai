@@ -191,9 +191,11 @@
       "useKeychain": "加密存储密钥",
       "storedAs": "存储为",
       "enterNewPassword": "输入新密码以更新...",
+      "enterPassword": "输入密码",
       "save": "💾 保存",
       "saved": "已保存到密钥链",
       "saveFailed": "保存失败",
+      "saveOnSubmit": "保存配置时，密码将被安全地保存到密钥链",
       "pleaseEnterPassword": "请输入密码"
     },
     "viewJsonConfig": "查看底层 JSON 配置",
@@ -296,6 +298,11 @@
       "AttackTrace": "请选择要使用的 AttackTrace MCP Server。",
       "custom": "请新增自定义的 MCP Server。"
     },
+    "no_oap_tool_message": {
+      "all": "请选择要使用的集成工具，或新增自定义的 MCP Server。",
+      "oap": "请选择要使用的集成工具。",
+      "custom": "请新增自定义的 MCP Server。"
+    },
     "no_tool_message": "请新增 MCP Server。",
     "tab": {
       "all": "所有工具",
@@ -366,6 +373,12 @@
     "close": "关闭",
     "confirm": "确认",
     "cancel": "取消",
+    "ok": "确定",
+    "create": "创建",
+    "creating": "创建中...",
+    "saving": "保存中...",
+    "confirming": "确认中...",
+    "edit": "编辑",
     "delete": "删除",
     "copy": "复制",
     "copySuccess": "已复制",

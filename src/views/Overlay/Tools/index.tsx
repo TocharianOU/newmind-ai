@@ -224,6 +224,23 @@ const Tools = () => {
       abortControllerRef.current.abort()
     }
 
+    // Save all keychain passwords before updating config
+    try {
+      const { saveAllKeychainPasswords } = await import('./Popup/SchemaForm')
+      const keychainResult = await saveAllKeychainPasswords()
+      
+      if (!keychainResult.success) {
+        showToast({
+          message: `保存密码失败: ${keychainResult.errors.join(", ")}`,
+          type: "error"
+        })
+        return { success: false, error: "Failed to save keychain passwords" }
+      }
+    } catch (error) {
+      console.error('[Keychain] Failed to save keychain passwords:', error)
+      // Continue anyway - passwords might not be required
+    }
+
     abortControllerRef.current = new AbortController()
     const config = typeof newConfig === "string" ? JSON.parse(newConfig) : newConfig
     Object.keys(config.mcpServers).forEach(key => {

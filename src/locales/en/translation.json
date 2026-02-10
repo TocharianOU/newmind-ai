@@ -191,9 +191,11 @@
       "useKeychain": "Encryption enabled",
       "storedAs": "Stored as",
       "enterNewPassword": "Enter new password to update...",
+      "enterPassword": "Enter password",
       "save": "💾 Save",
       "saved": "Saved to Keychain successfully",
       "saveFailed": "Failed to save",
+      "saveOnSubmit": "Password will be securely saved to Keychain when you save the configuration",
       "pleaseEnterPassword": "Please enter a password"
     },
     "viewJsonConfig": "View Underlying JSON Configuration",
@@ -295,6 +297,11 @@
       "AttackTrace": "Please select a AttackTrace MCP Server to use.",
       "custom": "Please add a custom MCP Server."
     },
+    "no_oap_tool_message": {
+      "all": "Please select an integration tool to use, or add a custom MCP Server.",
+      "oap": "Please select an integration tool to use.",
+      "custom": "Please add a custom MCP Server."
+    },
     "no_tool_message": "Please add an MCP Server.",
     "tab": {
       "all": "All Tools",
@@ -365,6 +372,12 @@
     "close": "Close",
     "confirm": "Confirm",
     "cancel": "Cancel",
+    "ok": "OK",
+    "create": "Create",
+    "creating": "Creating...",
+    "saving": "Saving...",
+    "confirming": "Confirming...",
+    "edit": "Edit",
     "delete": "Delete",
     "copy": "Copy",
     "copySuccess": "Copied",
