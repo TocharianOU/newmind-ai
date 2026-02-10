@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useEffect } from "react"
 import { useAtomValue, useSetAtom } from "jotai"
 import {
   projectsAtom,
@@ -34,12 +34,7 @@ const ProjectManagement: React.FC = () => {
   const handleCreate = () => {
     openModal({
       config: { type: "createProject" },
-      size: "medium",
-      // Reload projects after creation
-      onClose: async () => {
-        const hubUrl = currentUser?.hubUrl
-        await loadProjects(hubUrl)
-      }
+      size: "medium"
     })
   }
 
@@ -104,7 +99,7 @@ const ProjectManagement: React.FC = () => {
     <div className="project-management-drawer-container">
       <div className="project-management-drawer-header">
         <h2>{t("project.title")}</h2>
-        <Button onClick={handleCreate} size="small">
+        <Button onClick={handleCreate} size="fit" padding="s">
           {t("project.createNew")}
         </Button>
       </div>

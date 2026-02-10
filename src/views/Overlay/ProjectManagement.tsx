@@ -1,23 +1,17 @@
-import React, { useState, useEffect } from "react"
-import { useAtom, useAtomValue, useSetAtom } from "jotai"
+import React, { useEffect } from "react"
+import { useAtomValue, useSetAtom } from "jotai"
 import {
   projectsAtom,
   projectsLoadingAtom,
   projectsErrorAtom,
   loadProjectsAtom,
-  createProjectAtom,
-  updateProjectAtom,
   deleteProjectAtom,
   currentProjectIdAtom,
-  type Project,
-  type CreateProjectRequest,
-  type UpdateProjectRequest
+  type Project
 } from "@/atoms/projectState"
 import { oapUserAtom } from "@/atoms/oapState"
+import { openModalAtom } from "@/atoms/unifiedModalState"
 import Button from "@/components/Button"
-import Modal from "@/components/Modal/KeymapModal"
-import WrappedInput from "@/components/WrappedInput"
-import WrappedTextarea from "@/components/WrappedTextarea"
 import { useTranslation } from "react-i18next"
 import "../../styles/overlay/_ProjectManagement.scss"
 
@@ -29,85 +23,76 @@ const ProjectManagement: React.FC = () => {
   const currentProjectId = useAtomValue(currentProjectIdAtom)
   const currentUser = useAtomValue(oapUserAtom)
   const loadProjects = useSetAtom(loadProjectsAtom)
-  const createProject = useSetAtom(createProjectAtom)
-  const updateProject = useSetAtom(updateProjectAtom)
   const deleteProject = useSetAtom(deleteProjectAtom)
-
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
-  const [formData, setFormData] = useState<CreateProjectRequest | UpdateProjectRequest>({
-    name: "",
-    description: ""
-  })
-  const [formError, setFormError] = useState<string>("")
+  const openModal = useSetAtom(openModalAtom)
 
   useEffect(() => {
     const hubUrl = currentUser?.hubUrl
     loadProjects(hubUrl)
-  }, [currentUser])
+  }, [currentUser, loadProjects])
 
   const handleCreate = () => {
-    setFormData({ name: "", description: "" })
-    setFormError("")
-    setShowCreateModal(true)
+    openModal({
+      config: { type: "createProject" },
+      size: "medium"
+    })
   }
 
   const handleEdit = (project: Project) => {
-    setSelectedProject(project)
-    setFormData({ name: project.name, description: project.description || "" })
-    setFormError("")
-    setShowEditModal(true)
+    openModal({
+      config: {
+        type: "editProject",
+        data: {
+          id: project.id,
+          name: project.name,
+          description: project.description || ""
+        }
+      },
+      size: "medium"
+    })
   }
 
   const handleDelete = async (project: Project) => {
     if (project.isDefault) {
-      alert(t("project.cannotDeleteDefault"))
+      openModal({
+        config: {
+          type: "alert",
+          data: {
+            title: t("project.error"),
+            message: t("project.cannotDeleteDefault")
+          }
+        }
+      })
       return
     }
 
-    if (!confirm(t("project.confirmDelete", { name: project.name }))) {
-      return
-    }
-
-    try {
-      const hubUrl = currentUser?.hubUrl
-      await deleteProject(project.id, hubUrl)
-    } catch (error) {
-      alert(t("project.deleteFailed") + ": " + (error instanceof Error ? error.message : "Unknown error"))
-    }
-  }
-
-  const handleSubmitCreate = async () => {
-    if (!formData.name?.trim()) {
-      setFormError(t("project.nameRequired"))
-      return
-    }
-
-    try {
-      const hubUrl = currentUser?.hubUrl
-      await createProject(formData as CreateProjectRequest, hubUrl)
-      setShowCreateModal(false)
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Failed to create project")
-    }
-  }
-
-  const handleSubmitEdit = async () => {
-    if (!selectedProject) return
-
-    if (!formData.name?.trim()) {
-      setFormError(t("project.nameRequired"))
-      return
-    }
-
-    try {
-      const hubUrl = currentUser?.hubUrl
-      await updateProject(selectedProject.id, formData as UpdateProjectRequest, hubUrl)
-      setShowEditModal(false)
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Failed to update project")
-    }
+    openModal({
+      config: {
+        type: "confirm",
+        data: {
+          title: t("project.deleteConfirmTitle"),
+          message: t("project.confirmDelete", { name: project.name }),
+          confirmText: t("project.delete"),
+          cancelText: t("common.cancel"),
+          onConfirm: async () => {
+            try {
+              const hubUrl = currentUser?.hubUrl
+              await deleteProject(project.id, hubUrl)
+            } catch (error) {
+              openModal({
+                config: {
+                  type: "alert",
+                  data: {
+                    title: t("project.error"),
+                    message: t("project.deleteFailed") + ": " + (error instanceof Error ? error.message : "Unknown error")
+                  }
+                }
+              })
+            }
+          }
+        }
+      }
+    })
   }
 
   return (
@@ -159,7 +144,9 @@ const ProjectManagement: React.FC = () => {
                       onClick={() => handleEdit(project)}
                       title={t("project.edit")}
                     >
-                      <img src="/image/icon_edit.svg" alt="编辑" width="18" height="18" />
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                      </svg>
                     </button>
                     {!project.isDefault && (
                       <button
@@ -167,7 +154,9 @@ const ProjectManagement: React.FC = () => {
                         onClick={() => handleDelete(project)}
                         title={t("project.delete")}
                       >
-                        <img src="/image/icon_delete.svg" alt="删除" width="18" height="18" />
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
                       </button>
                     )}
                   </div>
@@ -186,86 +175,6 @@ const ProjectManagement: React.FC = () => {
               </div>
             ))
           )}
-        </div>
-      )}
-
-      {/* Create Modal */}
-      {showCreateModal && (
-        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{t("project.createNew")}</h3>
-              <button className="close-btn" onClick={() => setShowCreateModal(false)}>×</button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>{t("project.name")}</label>
-                <WrappedInput
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder={t("project.namePlaceholder")}
-                />
-              </div>
-              <div className="form-group">
-                <label>{t("project.description")}</label>
-                <WrappedTextarea
-                  value={formData.description || ""}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder={t("project.descriptionPlaceholder")}
-                  rows={3}
-                />
-              </div>
-              {formError && <div className="form-error">{formError}</div>}
-            </div>
-            <div className="modal-footer">
-              <Button onClick={() => setShowCreateModal(false)} color="gray" size="fit">
-                {t("common.cancel")}
-              </Button>
-              <Button onClick={handleSubmitCreate} color="blue" size="fit">
-                {t("common.create")}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      {showEditModal && selectedProject && (
-        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{t("project.edit")}</h3>
-              <button className="close-btn" onClick={() => setShowEditModal(false)}>×</button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>{t("project.name")}</label>
-                <WrappedInput
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder={t("project.namePlaceholder")}
-                />
-              </div>
-              <div className="form-group">
-                <label>{t("project.description")}</label>
-                <WrappedTextarea
-                  value={formData.description || ""}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder={t("project.descriptionPlaceholder")}
-                  rows={3}
-                />
-              </div>
-              {formError && <div className="form-error">{formError}</div>}
-            </div>
-            <div className="modal-footer">
-              <Button onClick={() => setShowEditModal(false)} color="gray" size="fit">
-                {t("common.cancel")}
-              </Button>
-              <Button onClick={handleSubmitEdit} color="blue" size="fit">
-                {t("common.save")}
-              </Button>
-            </div>
-          </div>
         </div>
       )}
     </div>
