@@ -81,10 +81,13 @@ export const DEF_PLUGIN_CONFIG = [
   }
 ]
 
-const dbPath = path.join(configDir, "db.sqlite")
+// Legacy global db.sqlite path (for reference only)
+const legacyDbPath = path.join(configDir, "db.sqlite")
+
+// Default config uses a placeholder path - will be dynamically set based on current project
 export const DEF_ATTACKTRACE_HTTPD_CONFIG = {
   "db": {
-    "uri": `sqlite:///${dbPath}`,
+    "uri": `sqlite:///${legacyDbPath}`,  // Placeholder, will be overridden at runtime
     "pool_size": 5,
     "pool_recycle": 60,
     "max_overflow": 10,
@@ -93,7 +96,30 @@ export const DEF_ATTACKTRACE_HTTPD_CONFIG = {
     "migrate": true
   },
   "checkpointer": {
-    "uri": `sqlite:///${dbPath}`
+    "uri": `sqlite:///${legacyDbPath}`  // Placeholder, will be overridden at runtime
+  }
+}
+
+/**
+ * Generate attacktrace_httpd config for a specific project
+ * @param projectId Project ID, defaults to 'default'
+ * @returns Config object with project-specific database path
+ */
+export function getProjectHttpdConfig(projectId: string = 'default') {
+  const projectDbPath = getProjectDbPath(projectId)
+  return {
+    "db": {
+      "uri": `sqlite:///${projectDbPath}`,
+      "pool_size": 5,
+      "pool_recycle": 60,
+      "max_overflow": 10,
+      "echo": false,
+      "pool_pre_ping": true,
+      "migrate": true
+    },
+    "checkpointer": {
+      "uri": `sqlite:///${projectDbPath}`
+    }
   }
 }
 

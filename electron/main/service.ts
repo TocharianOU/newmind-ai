@@ -15,6 +15,10 @@ import {
   envPath,
   VITE_DEV_SERVER_URL,
   DEF_PLUGIN_CONFIG,
+  getProjectHttpdConfig,
+  getCurrentProjectFilePath,
+  getProjectDir,
+  getProjectDbPath,
 } from "./constant.js"
 import spawn from "cross-spawn"
 import { ChildProcess, SpawnOptions, StdioOptions } from "node:child_process"
@@ -144,6 +148,7 @@ async function initApp() {
 
   await migratePrebuiltScripts().catch(console.error)
   await migrateLegacyConfig().catch(console.error)
+  await migrateLegacyDatabase().catch(console.error)
 
   // NOTE: mcp_config.json is now managed by backend in project-specific directory
   // (projects/default/mcp_config.json), not in .config directory
@@ -318,6 +323,62 @@ export async function restartHost(): Promise<{ success: boolean; port?: number; 
       success: false, 
       error: error instanceof Error ? error.message : "Unknown error" 
     }
+  }
+}
+
+/**
+ * Migrate legacy database from global config directory to default project
+ * This ensures backward compatibility when upgrading to project-based architecture
+ */
+async function migrateLegacyDatabase() {
+  try {
+    console.log("[Migration] Checking for legacy database migration...")
+    
+    // Legacy database path (old global location)
+    const legacyDbPath = path.join(configDir, "db.sqlite")
+    
+    // Default project database path (new project-specific location)
+    const defaultProjectDir = getProjectDir("default")
+    const defaultProjectDbPath = getProjectDbPath("default")
+    
+    // Ensure default project directory exists
+    await fse.ensureDir(defaultProjectDir)
+    await fse.ensureDir(path.join(defaultProjectDir, "cache"))
+    await fse.ensureDir(path.join(defaultProjectDir, "reports"))
+    
+    // Check if migration is needed
+    const legacyExists = await fse.pathExists(legacyDbPath)
+    const defaultProjectDbExists = await fse.pathExists(defaultProjectDbPath)
+    
+    if (legacyExists && !defaultProjectDbExists) {
+      console.log(`[Migration] Migrating legacy database from ${legacyDbPath} to ${defaultProjectDbPath}`)
+      
+      // Copy the database file to default project
+      await fse.copy(legacyDbPath, defaultProjectDbPath)
+      
+      console.log("[Migration] ✓ Successfully migrated legacy database to default project")
+      console.log(`[Migration]   Legacy: ${legacyDbPath}`)
+      console.log(`[Migration]   New:    ${defaultProjectDbPath}`)
+      
+      // Optional: Backup the old file (don't delete yet for safety)
+      const backupPath = `${legacyDbPath}.backup`
+      if (!(await fse.pathExists(backupPath))) {
+        await fse.copy(legacyDbPath, backupPath)
+        console.log(`[Migration] ✓ Created backup at ${backupPath}`)
+      }
+    } else if (legacyExists && defaultProjectDbExists) {
+      console.log("[Migration] Both legacy and project databases exist, skipping migration")
+      console.log(`[Migration]   Legacy: ${legacyDbPath}`)
+      console.log(`[Migration]   Project: ${defaultProjectDbPath}`)
+    } else if (!legacyExists && !defaultProjectDbExists) {
+      console.log("[Migration] No legacy database found, will create new database on first run")
+    } else {
+      console.log("[Migration] Project database already exists, no migration needed")
+    }
+    
+  } catch (error) {
+    console.error("[Migration] Failed to migrate legacy database:", error)
+    // Don't throw - allow app to continue even if migration fails
   }
 }
 
@@ -496,25 +557,42 @@ async function startHostService() {
       : ["-I", "-c", `import sys; sys.path.extend(['${hostSrcPath.replace(/\\/g, "\\\\")}', '${hostDepsPath.replace(/\\/g, "\\\\")}']); from attacktrace_mcp_host.httpd._main import main; main()`]
     : ["run", "attacktrace_httpd"]
 
+  // Load current project ID and generate project-specific config
+  let currentProjectId = "default"
+  try {
+    const currentProjectFile = getCurrentProjectFilePath()
+    if (await fse.pathExists(currentProjectFile)) {
+      const data = await fse.readJSON(currentProjectFile)
+      currentProjectId = data.projectId || "default"
+    }
+  } catch (error) {
+    console.error("[Project] Failed to load current project, using default:", error)
+  }
+
+  console.log(`[Host] Starting with project: ${currentProjectId}`)
+
+  // Generate project-specific database configuration
+  const projectHttpdConfig = getProjectHttpdConfig(currentProjectId)
+  
   const httpdEnv: any = {
     ...process.env,
     ATTACKTRACE_CONFIG_DIR: baseConfigDir,
     RESOURCE_DIR: hostCacheDir,
+    // Pass project-specific config via environment variable
+    // This overrides the config file and ensures the correct database is used
+    DIVE_SERVICE_CONFIG_CONTENT: JSON.stringify(projectHttpdConfig),
   }
 
   // Inject keychain credentials as environment variables
   try {
-    const currentProjectFile = path.join(configDir, "..", "current_project.json")
-    if (await fse.pathExists(currentProjectFile)) {
-      const { projectId } = await fse.readJSON(currentProjectFile)
-      if (projectId) {
-        await injectKeychainCredentials(projectId, httpdEnv)
-      }
+    if (currentProjectId) {
+      await injectKeychainCredentials(currentProjectId, httpdEnv)
     }
   } catch (error) {
     console.error("[Keychain] Failed to load current project for keychain injection:", error)
   }
 
+  console.log(`[Host] Using database: ${projectHttpdConfig.db.uri}`)
   console.log("httpd executing path: ", httpdExec)
 
   const busPath = path.join(hostCacheDir, "bus")
