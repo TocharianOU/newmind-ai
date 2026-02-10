@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react"
 import "./Drawer.scss"
+import WindowControls from "../WindowControls"
 
 export type DrawerProps = {
   visible: boolean
@@ -84,6 +85,7 @@ const Drawer: React.FC<DrawerProps> = ({
                 <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
+            <WindowControls variant="drawer" />
           </div>
         )}
         <div className={fullscreen ? "drawer-fullscreen-content" : ""}>

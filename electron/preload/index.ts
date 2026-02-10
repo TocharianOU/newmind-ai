@@ -59,6 +59,12 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
   setAutoLaunch: (enable: boolean) => ipcRenderer.invoke("system:setAutoLaunch", enable),
   getMinimalToTray: () => ipcRenderer.invoke("system:getMinimalToTray"),
   setMinimalToTray: (enable: boolean) => ipcRenderer.invoke("system:setMinimalToTray", enable),
+  
+  // window controls
+  windowMinimize: () => ipcRenderer.invoke("window:minimize"),
+  windowMaximize: () => ipcRenderer.invoke("window:maximize"),
+  windowClose: () => ipcRenderer.invoke("window:close"),
+  windowIsMaximized: () => ipcRenderer.invoke("window:isMaximized"),
 
   // llm
   openaiModelList: (apiKey: string) => ipcRenderer.invoke("llm:openaiModelList", apiKey),

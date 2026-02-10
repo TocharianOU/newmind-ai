@@ -1,0 +1,115 @@
+@use "../_variables" as *;
+
+.window-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px; // 适中的间距
+  padding: 0 4px; // 左右留白
+  height: 100%; // 撑满高度以垂直居中
+  -webkit-app-region: no-drag; // 关键：整个区域都不可拖拽
+  z-index: 3000; // 确保在最上层
+  
+  // 以前是 absolute/fixed，现在改为 Flex 自然流布局
+  // 这能彻底解决点击热区偏移问题
+
+  .window-control-btn {
+    width: 24px; // 明确的大热区
+    height: 24px; // 明确的大热区
+    border: none;
+    cursor: default;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    -webkit-app-region: no-drag; // 双重保险
+    
+    // 视觉圆点 (Visual Dot)
+    &::before {
+      content: "";
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: block;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        0 1px 2px rgba(0, 0, 0, 0.3);
+      transition: all 0.1s ease;
+    }
+
+    &:hover {
+       &::before {
+         filter: brightness(1.1);
+         transform: scale(1.1); // 悬停微放大
+       }
+    }
+
+    &:active {
+      &::before {
+        transform: scale(0.95); // 点击微缩小
+        filter: brightness(0.9);
+      }
+    }
+
+    svg {
+      opacity: 0;
+      transition: opacity 0.1s ease;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2;
+      pointer-events: none; // 让鼠标穿透 SVG 直接点到按钮
+      width: 10px;
+      height: 10px;
+    }
+  }
+
+  &:hover .window-control-btn svg {
+    opacity: 1;
+  }
+
+  // macOS-style button colors
+  .close-btn {
+    &::before {
+      background: #ff5f57;
+      background: linear-gradient(135deg, #ff5f57 0%, #ff4136 100%);
+    }
+    svg { color: #4d0000; }
+  }
+
+  .minimize-btn {
+    &::before {
+      background: #ffbd2e;
+      background: linear-gradient(135deg, #ffbd2e 0%, #f5a623 100%);
+    }
+    svg { color: #7f4a00; }
+  }
+
+  .maximize-btn {
+    &::before {
+      background: #28ca42;
+      background: linear-gradient(135deg, #28ca42 0%, #20a037 100%);
+    }
+    svg { color: #0a4d17; }
+  }
+}
+
+// Dark theme adjustments
+[data-theme="dark"] {
+  .window-controls {
+    .window-control-btn {
+      &::before {
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.15),
+          0 1px 3px rgba(0, 0, 0, 0.5);
+      }
+    }
+  }
+}
+
+// Drawer 特殊样式修正
+.window-controls.window-controls-drawer {
+  margin-left: 16px; // 与左侧元素保持间距
+  padding-right: 0; // Drawer Header 已有 padding，不需要额外 padding
+}

@@ -52,4 +52,25 @@ export function ipcSystemHandler(win: BrowserWindow) {
       destroyTray()
     }
   })
+
+  // Window controls
+  safeRegisterHandler("window:minimize", () => {
+    win.minimize()
+  })
+
+  safeRegisterHandler("window:maximize", () => {
+    if (win.isMaximized()) {
+      win.unmaximize()
+    } else {
+      win.maximize()
+    }
+  })
+
+  safeRegisterHandler("window:close", () => {
+    win.close()
+  })
+
+  safeRegisterHandler("window:isMaximized", () => {
+    return win.isMaximized()
+  })
 }

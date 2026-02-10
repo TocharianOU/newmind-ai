@@ -118,11 +118,17 @@ export async function createWindow() {
     height: 720,
     minHeight: 320,
     minWidth: 400,
-    // Remove full window transparency to restore system titlebar buttons
-    // transparent: true,
-    // backgroundColor: "#00000000",
-    // vibrancy: process.platform === "darwin" ? "under-window" : undefined,
-    // backgroundMaterial: process.platform === "win32" ? "acrylic" : undefined,
+    // Enable SaaS-style transparent window with custom controls on right
+    transparent: true,
+    backgroundColor: "#00000000",
+    titleBarStyle: process.platform === "darwin" ? "hidden" : "default",
+    titleBarOverlay: process.platform === "win32" ? {
+      color: "#00000000",
+      symbolColor: "#ffffff",
+      height: 60
+    } : undefined,
+    vibrancy: process.platform === "darwin" ? "under-window" : undefined,
+    backgroundMaterial: process.platform === "win32" ? "acrylic" : undefined,
     webPreferences: {
       preload,
       // Warning: Enable nodeIntegration and disable contextIsolation is not secure in production
@@ -133,6 +139,11 @@ export async function createWindow() {
       // contextIsolation: false,
     },
   })
+
+  if (process.platform === "darwin") {
+    // Hide native traffic lights to avoid duplicate controls.
+    win.setWindowButtonVisibility(false)
+  }
 
   // win.webContents.openDevTools()
   if (VITE_DEV_SERVER_URL) { // #298
@@ -158,7 +169,8 @@ export async function createWindow() {
   })
 
   win.on("close", (event) => {
-    if (!AppState.isQuitting) {
+    const shouldminimalToTray = preferencesStore.get("minimalToTray")
+    if (shouldminimalToTray && !AppState.isQuitting) {
       event.preventDefault()
       win?.hide()
       return false

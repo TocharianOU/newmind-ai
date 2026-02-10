@@ -26,6 +26,13 @@
   background: inherit;
   z-index: $z-header;
   position: relative;
+  // Add drag region for macOS window dragging (works with hiddenInset titlebar)
+  -webkit-app-region: drag;
+  
+  // Make interactive elements clickable
+  button, select, input, .model-select, .project-selector, .project-selector * {
+    -webkit-app-region: no-drag;
+  }
   
   // Header bottom divider line - stays below content
   &::after {
@@ -62,10 +69,13 @@
     display: flex;
     align-items: center;
     gap: 16px;
-    height: 44px; // Fixed height to match selector components (36px + padding)
+    // Increased height for custom window controls
+    min-height: 52px;
+    padding-top: 8px; // Extra padding for window controls
     position: relative;
     z-index: 1; // Above divider line
-
+    // padding-right: 80px; // REMOVED: No longer needed with Flexbox
+    
     // Left side: Sidebar toggle + Model selector
     .left-side {
       display: flex;
@@ -288,37 +298,46 @@
     }
   }
 
-  // Project selector - center position with border for emphasis
+  // Project selector - center position with refined styling
   .project-selector {
     .project-select-button {
       height: 36px; // Match model selector height
       padding: 0 12px 0 16px;
-      background: var(--bg);
-      border: 1px solid var(--border-weak) !important; // Override default styles
-      border-radius: 8px; // Modern rounded corners
+      background: var(--bg-weak);
+      border: 1.5px solid var(--border-weak) !important; // Slightly thicker for better definition
+      border-radius: 10px; // Softer, more modern corners
       font-size: 14px;
       font-weight: 500;
       color: var(--text);
-      transition: all 0.2s ease;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 
       &:hover {
         background: var(--bg-op-dark-ultraweak);
         border-color: var(--border) !important; // Darker border on hover
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+        transform: translateY(-0.5px); // Subtle lift effect
       }
 
       &[data-state="open"] {
         background: var(--bg-op-dark-ultraweak);
-        border-color: var(--primary-color) !important; // Highlight when dropdown is open
+        border-color: var(--text-pri-blue) !important; // Blue accent when open
+        box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1); // Soft focus ring
       }
 
       // Dropdown arrow
       svg {
-        opacity: 0.6;
-        transition: opacity 0.2s ease;
+        opacity: 0.5;
+        transition: all 0.2s ease;
       }
 
       &:hover svg {
-        opacity: 1; // Full opacity on hover
+        opacity: 0.8; // Increased opacity on hover
+      }
+      
+      &[data-state="open"] svg {
+        opacity: 1;
+        transform: rotate(180deg); // Rotate arrow when open
       }
     }
   }

@@ -32,6 +32,10 @@ declare global {
       setAutoLaunch: (enable: boolean) => Promise<void>
       getMinimalToTray: () => Promise<boolean>
       setMinimalToTray: (enable: boolean) => Promise<void>
+      windowMinimize: () => Promise<void>
+      windowMaximize: () => Promise<void>
+      windowClose: () => Promise<void>
+      windowIsMaximized: () => Promise<boolean>
       onReceivePort: (callback: (port: number) => void) => void
       download: (url: string) => Promise<void>
       copyImage: (url: string) => Promise<void>

@@ -16,10 +16,12 @@
 @use "./components/Select";
 @use "./components/DropDown";
 @use "./components/Keymap";
+@use "./components/WindowControls";
 @use "./pages/Welcome";
 @use "./pages/Chat";
 @use "./memory-panel";
 @use "./overlay/Overlay";
+@use "./overlay/About";
 @use "./drawer/Settings";
 @use "./drawer/ProjectManagement";
 @use "./drawer/IntegrationMarket";
@@ -37,10 +39,8 @@ body {
   line-height: 1.6;
   display: flex;
   justify-content: center;
-  background: 
-    radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.03) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.03) 0%, transparent 50%),
-    transparent;
+  // Fully transparent background for SaaS effect
+  background: transparent;
   color: var(--text);
   :lang(ko) {
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -50,6 +50,8 @@ body {
 #root {
   width: 100%;
   height: 100vh;
+  // Add padding for macOS titlebar (hiddenInset style)
+  padding: 0;
 }
 
 .app-container {
@@ -58,22 +60,62 @@ body {
   display: flex;
   flex-direction: column;
   color: var(--text);
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(30px) saturate(180%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  // Enhanced SaaS-style transparency with stunning glassmorphism
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 50%),
+    rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
   border-radius: 16px;
   box-shadow: 
-    0 0 0 1px rgba(0, 0, 0, 0.05),
-    0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    0 0 0 1px rgba(0, 0, 0, 0.06),
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
   overflow: hidden;
+  // Add subtle border glow for premium feel
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.3) 100%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0.6;
+  }
   
   &[data-theme="dark"] {
-    background: rgba(21, 32, 43, 0.95);
+    background: 
+      radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
+      rgba(21, 32, 43, 0.85);
     box-shadow: 
-      0 0 0 1px rgba(255, 255, 255, 0.1),
-      0 10px 15px -3px rgba(0, 0, 0, 0.4),
-      0 4px 6px -2px rgba(0, 0, 0, 0.25);
+      0 0 0 1px rgba(255, 255, 255, 0.12),
+      0 20px 25px -5px rgba(0, 0, 0, 0.5),
+      0 10px 10px -5px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    
+    &::before {
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.2) 0%,
+        rgba(255, 255, 255, 0.05) 50%,
+        rgba(255, 255, 255, 0.15) 100%
+      );
+      opacity: 0.4;
+    }
   }
 }
 

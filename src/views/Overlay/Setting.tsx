@@ -109,11 +109,8 @@ const Setting = ({ _tab }: { _tab: Tab }) => {
               <div className="setting-sidebar-category-left">
                 <img src={`${imgPrefix}logo_oap.png`} alt="oap" className="provider-icon no-filter" />
                 <div className="oap-info">
-                  <div className="oap-name">{t("sidebar.New mindhub")}</div>
-                  <div className="oap-details">
-                    <span className="oap-username">{oapUser?.username}</span>
-                    <span className="oap-plan">({oapLevel || 'BASE'})</span>
-                  </div>
+                  <div className="oap-name">{oapUser?.username || t("sidebar.New mindhub")}</div>
+                  <div className="oap-plan-badge">{oapLevel || 'BASE'}</div>
                 </div>
               </div>
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 17 16" fill="none">

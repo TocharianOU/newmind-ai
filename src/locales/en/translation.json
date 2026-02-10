@@ -77,10 +77,11 @@
     "update": "Update available",
     "models": "Model Settings",
     "system": "System Settings",
-    "manageAndSettings": "Management and Settings",
+    "manageAndSettings": "Settings",
     "integrationMarket": "Integration Market",
     "New mindhub": "OAP Platform",
     "signOut": "Sign Out",
+    "accountSettings": "Account Settings",
     "chat": {
       "starredChat": "Starred",
       "starChat": "Star",
@@ -95,10 +96,17 @@
     "tabs": {
       "Projects": "Projects",
       "Tools": "Security Integrations",
-      "Model": "Provider Settings",
+      "Model": "Model Settings",
       "Account": "Account",
-      "System": "System Settings"
+      "System": "System",
+      "About": "About"
     }
+  },
+  "about": {
+    "description": "Description",
+    "descriptionText": "A powerful AI-powered development assistant with MCP integration.",
+    "credits": "Credits",
+    "creditsText": "Built with Electron, React, and TypeScript."
   },
   "project": {
     "title": "Project Management",

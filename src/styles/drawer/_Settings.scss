@@ -69,7 +69,7 @@
   }
 
   .settings-drawer-sidebar-category {
-    padding: 14px 24px;
+    padding: 12px 20px;
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
@@ -85,44 +85,52 @@
     .settings-drawer-sidebar-category-left {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      flex: 1;
+      min-width: 0; // 允许文本溢出
 
       img {
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        flex-shrink: 0;
       }
 
       .oap-info {
         display: flex;
-        flex-direction: column;
-        gap: 2px;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        min-width: 0;
 
         .oap-name {
-          font-size: 14px;
+          font-size: 13px;
           font-weight: 500;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          flex: 1;
         }
 
-        .oap-details {
-          font-size: 12px;
-          color: var(--text-weak);
-
-          .oap-username {
-            margin-right: 4px;
-          }
+        .oap-plan-badge {
+          font-size: 10px;
+          font-weight: 600;
+          color: var(--text-pri-blue);
+          background: var(--bg-op-blue-ultraweak);
+          padding: 2px 6px;
+          border-radius: 4px;
+          flex-shrink: 0;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
       }
     }
 
     svg {
       flex-shrink: 0;
+      color: var(--text-weak);
+      opacity: 0.6;
     }
-  }
-
-  .settings-drawer-sidebar-version {
-    padding: 14px 24px;
-    font-size: 12px;
-    color: var(--text-weak);
-    text-align: center;
   }
 }
 

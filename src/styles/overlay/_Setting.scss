@@ -140,30 +140,30 @@
 
       .oap-info {
         display: flex;
-        flex-direction: column;
-        gap: 2px;
+        align-items: center;
+        gap: 8px;
         flex: 1;
+        min-width: 0;
 
         .oap-name {
-          font-size: 16px;
+          font-size: 14px;
           font-weight: 500;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          flex: 1;
         }
 
-        .oap-details {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 12px;
-          color: var(--text-weak);
-
-          .oap-username {
-            font-weight: 500;
-          }
-
-          .oap-plan {
-            color: var(--text-pri-blue);
-            font-weight: 600;
-          }
+        .oap-plan-badge {
+          font-size: 10px;
+          font-weight: 600;
+          color: var(--text-pri-blue);
+          background: var(--bg-op-blue-ultraweak);
+          padding: 2px 6px;
+          border-radius: 4px;
+          flex-shrink: 0;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
       }
     }

@@ -8,6 +8,7 @@ import ModelSelect from "./ModelSelect"
 import ProjectSelector from "./ProjectSelector"
 import Tooltip from "./Tooltip"
 import UpdateButton from "./UpdateButton"
+import WindowControls from "./WindowControls"
 
 type Props = {
   showHelpButton?: boolean
@@ -64,8 +65,10 @@ const Header = ({ showHelpButton = false, showModelSelect = false, showProjectSe
                 </svg>
               </button>
             </Tooltip>
+            <WindowControls variant="header" />
           </div>
         )}
+        {!showHelpButton && <WindowControls variant="header" />}
       </div>
     </div>
   )

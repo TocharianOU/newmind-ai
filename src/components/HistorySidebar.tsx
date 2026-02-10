@@ -393,14 +393,14 @@ const HistorySidebar = ({ onNewConversation }: Props) => {
           <div className="history-footer">
             {isLoggedInOAP && oapUser ? (
               <div className="history-footer-user">
-                <Tooltip content={t("chat.modelSettings")}>
-                  <div className="user-info" onClick={() => openDrawer({ id: "Settings", page: "Settings", tab: "Model" })}>
+                <Tooltip content={t("sidebar.accountSettings")}>
+                  <div className="user-info" onClick={() => openDrawer({ id: "Settings", page: "Settings", tab: "Account" })}>
                     <div className="user-avatar">
                       {oapUser.email?.charAt(0).toUpperCase() || oapUser.username?.charAt(0).toUpperCase() || 'U'}
                     </div>
                     <div className="user-details">
                       <div className="user-name">{oapUser.username || oapUser.email}</div>
-                      <div className="user-plan">{oapLevel || 'BASE'}</div>
+                      <div className="user-plan-badge">{oapLevel || 'BASE'}</div>
                     </div>
                   </div>
                 </Tooltip>
