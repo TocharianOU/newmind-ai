@@ -4,6 +4,7 @@ import { useSetAtom } from "jotai"
 import PopupConfirm from "../../../components/PopupConfirm"
 import WrappedTextarea from "../../../components/WrappedTextarea"
 import { showToastAtom } from "../../../atoms/toastState"
+import { apiFetch } from "../../../utils/api"
 
 const ParameterPopup = ({ onClose }: { onClose: () => void }) => {
   const { t } = useTranslation()
@@ -19,7 +20,7 @@ const ParameterPopup = ({ onClose }: { onClose: () => void }) => {
 
   const fetchInstructions = async () => {
     try {
-      const response = await fetch("/api/config/customrules")
+      const response = await apiFetch("/api/config/customrules")
       const data = await response.json()
       if (data.success) {
         setInstructions(data.rules)

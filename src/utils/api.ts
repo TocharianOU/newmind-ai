@@ -1,7 +1,7 @@
 import { getCurrentProject } from "@/ipc/project"
 
 /**
- * Enhanced fetch wrapper that automatically injects X-Project-ID header
+ * Enhanced fetch wrapper that automatically injects X-Project-ID and X-Auth-Token headers
  */
 export async function apiFetch(
   input: RequestInfo | URL,
@@ -14,6 +14,16 @@ export async function apiFetch(
   // Inject X-Project-ID header for all project-scoped requests
   if (currentProjectId) {
     headers.set('X-Project-ID', currentProjectId)
+  }
+
+  // Security: Inject X-Auth-Token header for MCP Host authentication
+  try {
+    const authToken = await window.ipcRenderer.getAuthToken()
+    if (authToken) {
+      headers.set('X-Auth-Token', authToken)
+    }
+  } catch (error) {
+    console.error("[Security] Failed to get auth token:", error)
   }
 
   const enhancedInit: RequestInit = {

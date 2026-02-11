@@ -5,6 +5,7 @@ import { useSetAtom, useAtomValue } from "jotai"
 import { showToastAtom } from "../../atoms/toastState"
 import { currentProjectIdAtom } from "../../atoms/projectState"
 import { OAPMCPServer, InstanceInfo } from "../../../types/oap"
+import { apiFetch } from "../../utils/api"
 import { oapSearchMCPServer } from "../../ipc"
 import Button from "../../components/Button"
 import WrappedInput from "../../components/WrappedInput"
@@ -227,7 +228,7 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
   const loadInstalledInstances = useCallback(async () => {
     try {
       console.log('[IntegrationMarket] Loading installed instances...')
-      const res = await fetch("/api/plugins/oap-platform/instances")
+      const res = await apiFetch("/api/plugins/oap-platform/instances")
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`)
       }
@@ -463,7 +464,7 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
       const abortController = new AbortController()
       installAbortControllerRef.current = abortController
       
-      const response = await fetch("/api/plugins/oap-platform/packages/download", {
+      const response = await apiFetch("/api/plugins/oap-platform/packages/download", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -605,12 +606,9 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
         }
       })
       
-      const res = await fetch("/api/plugins/oap-platform/instances", {
+      const res = await apiFetch("/api/plugins/oap-platform/instances", {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "X-Project-ID": currentProjectId
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
       })
       

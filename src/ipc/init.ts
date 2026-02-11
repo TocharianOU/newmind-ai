@@ -97,36 +97,37 @@ export const nativeFetch = window.fetch;
 
 async function initElectronFetch(port: number) {
   const originalFetch = window.fetch
+  const withDesktopHeader = (inputHeaders?: HeadersInit) => {
+    const headers = new Headers(inputHeaders || {})
+    headers.set("X-Requested-With", "attacktrace-desktop")
+    return headers
+  }
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     // If the input is a full URL, use the original fetch.
     if (input.toString().startsWith('http')) {
       return originalFetch(input, {
         ...init,
-        headers: {
-          ...init?.headers,
-          "X-Requested-With": "attacktrace-desktop",
-        },
+        headers: withDesktopHeader(init?.headers),
       })
     }
     return originalFetch(`http://localhost:${port}${input}`, {
       ...init,
-      headers: {
-        ...init?.headers,
-        "X-Requested-With": "attacktrace-desktop",
-      },
+      headers: withDesktopHeader(init?.headers),
     })
   }
 }
 
 async function initTauriFetch(port: number) {
+  const withDesktopHeader = (inputHeaders?: HeadersInit) => {
+    const headers = new Headers(inputHeaders || {})
+    headers.set("X-Requested-With", "attacktrace-desktop")
+    return headers
+  }
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     console.log(input, init)
     return tauriFetch(`http://localhost:${port}${input}`, {
       ...init,
-      headers: {
-        ...init?.headers,
-        "X-Requested-With": "attacktrace-desktop",
-      },
+      headers: withDesktopHeader(init?.headers),
     })
   }
 }

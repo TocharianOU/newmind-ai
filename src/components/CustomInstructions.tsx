@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next"
 import { useAtom } from "jotai"
 import { showToastAtom } from "../atoms/toastState"
 import Textarea from "./WrappedTextarea"
+import { apiFetch } from "../utils/api"
 
 const CustomInstructions = () => {
   const { t } = useTranslation()
@@ -18,7 +19,7 @@ const CustomInstructions = () => {
 
   const fetchInstructions = async () => {
     try {
-      const response = await fetch("/api/config/customrules")
+      const response = await apiFetch("/api/config/customrules")
       const data = await response.json()
       if (data.success) {
         setInstructions(data.rules)

@@ -23,6 +23,7 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
   const { t } = useTranslation()
   const [formData, setFormData] = useState<Record<string, any>>({})
   const [useKeychainForField, setUseKeychainForField] = useState<Record<string, boolean>>({})
+  const [keychainPasswordInputs, setKeychainPasswordInputs] = useState<Record<string, string>>({})
   const [keychainAvailable, setKeychainAvailable] = useState(false)
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
@@ -165,12 +166,14 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
         if (!checked) {
           // Switch to plain text mode - clear the keychain reference
           setUseKeychainForField(prev => ({ ...prev, [key]: false }))
+          setKeychainPasswordInputs(prev => ({ ...prev, [key]: "" }))
           handleChange(key, "")
         } else {
           // Switch to keychain mode - generate reference
           const service = `attacktrace-${key.toLowerCase()}`
           const account = "default"
           setUseKeychainForField(prev => ({ ...prev, [key]: true }))
+          setKeychainPasswordInputs(prev => ({ ...prev, [key]: "" }))
           handleChange(key, generateKeychainReference(service, account))
         }
       }
@@ -203,8 +206,11 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
             <input
               id={`keychain-password-${key}`}
               type="password"
-              value={passwordValue}
-              onChange={(e) => setPasswordValue(e.target.value)}
+              value={keychainPasswordInputs[key] || ""}
+              onChange={(e) => {
+                const nextValue = e.target.value
+                setKeychainPasswordInputs(prev => ({ ...prev, [key]: nextValue }))
+              }}
               placeholder={t("tools.keychain.enterPassword") || "Enter password"}
               disabled={disabled}
               className="schema-form-input"

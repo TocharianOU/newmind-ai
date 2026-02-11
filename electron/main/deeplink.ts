@@ -27,7 +27,12 @@ function getDeepLinkTypeFromUrl(url: string): DeepLinkType {
 
 export async function refreshConfig() {
   const url = `http://${serviceStatus.ip}:${serviceStatus.port}`
-  await fetch(`${url}/api/plugins/oap-platform/config/refresh`, { method: "POST" })
+  await fetch(`${url}/api/plugins/oap-platform/config/refresh`, {
+    method: "POST",
+    headers: {
+      "X-Auth-Token": serviceStatus.authToken || "",
+    },
+  })
     .then((res) => res.json())
     .then((res) => console.log("refresh config", res))
 }
@@ -35,7 +40,12 @@ export async function refreshConfig() {
 export function setOAPTokenToHost(token: string) {
   const setHostToken = async (ip: string, port: number) => {
     const url = `http://${ip}:${port}`
-    await fetch(`${url}/api/plugins/oap-platform/auth?token=${token}`, { method: "POST" })
+    await fetch(`${url}/api/plugins/oap-platform/auth?token=${token}`, {
+      method: "POST",
+      headers: {
+        "X-Auth-Token": serviceStatus.authToken || "",
+      },
+    })
       .then((res) => res.json())
       .then((res) => console.log("set token to host", res))
       .then(refreshConfig)

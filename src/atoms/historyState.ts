@@ -1,4 +1,5 @@
 import { atom } from "jotai"
+import { apiFetch } from "../utils/api"
 
 interface ChatHistory {
   starred: ChatHistoryItem[]
@@ -22,7 +23,7 @@ export const loadHistoriesAtom = atom(
   null,
   async (get, set) => {
     try {
-      const response = await fetch("/api/chat/list?sort_by=msg")
+      const response = await apiFetch("/api/chat/list?sort_by=msg")
       const data = await response.json()
 
       if (data.success) {

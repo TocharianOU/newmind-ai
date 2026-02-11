@@ -106,9 +106,12 @@ def resolve_keychain_in_dict(data: Dict[str, Any]) -> Dict[str, Any]:
             if resolved is not None:
                 result[key] = resolved
             else:
-                # Keep original reference if resolution failed
-                result[key] = value
-                logger.warning(f"Failed to resolve keychain reference for key '{key}': {value}")
+                # Do not keep unresolved keychain reference values in runtime config.
+                # Keeping raw "@keychain:..." strings can make downstream clients
+                # treat them as real credentials and fail with confusing auth errors.
+                logger.warning(
+                    f"Failed to resolve keychain reference for key '{key}': {value}; key will be omitted"
+                )
         elif isinstance(value, dict):
             # Recursively resolve nested dicts
             result[key] = resolve_keychain_in_dict(value)

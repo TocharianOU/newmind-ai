@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next"
 import Select from "../../components/Select"
 import { openDrawerAtom } from "../../atoms/drawerState"
 import React, { useState, useEffect } from "react"
+import { apiFetch } from "../../utils/api"
 
 import ThemeSwitch from "../../components/ThemeSwitch"
 import Switch from "../../components/Switch"
@@ -54,7 +55,7 @@ const System = () => {
 
   const setDefaultInstructions = async () => {
     try {
-      const response = await fetch("/api/config/customrules")
+      const response = await apiFetch("/api/config/customrules")
       const data = await response.json()
       if (data.success && data.rules === "") {
         await fetch("/api/config/customrules", {

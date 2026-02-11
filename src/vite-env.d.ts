@@ -32,6 +32,7 @@ declare global {
       setAutoLaunch: (enable: boolean) => Promise<void>
       getMinimalToTray: () => Promise<boolean>
       setMinimalToTray: (enable: boolean) => Promise<void>
+      getAuthToken: () => Promise<string>
       windowMinimize: () => Promise<void>
       windowMaximize: () => Promise<void>
       windowClose: () => Promise<void>

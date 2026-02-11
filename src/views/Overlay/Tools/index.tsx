@@ -20,6 +20,7 @@ import { ClickOutside } from "../../../components/ClickOutside"
 import Button from "../../../components/Button"
 import CustomEdit from "./Popup/CustomEdit"
 import { openDrawerAtom } from "../../../atoms/drawerState"
+import { apiFetch } from "../../../utils/api"
 import "../../../styles/overlay/_Tools.scss"
 
 interface ToolsCache {
@@ -274,7 +275,7 @@ const Tools = () => {
       }
     })
 
-    return await fetch(`/api/config/mcpserver${force ? "?force=1" : ""}`, {
+    return await apiFetch(`/api/config/mcpserver${force ? "?force=1" : ""}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -417,11 +418,8 @@ const Tools = () => {
         console.log(`[deleteTool] Starting deletion for OAP tool: ${toolName}`)
         
         // Delete OAP instance via new instance API
-        const res = await fetch(`/api/plugins/oap-platform/instances/${toolName}`, {
+        const res = await apiFetch(`/api/plugins/oap-platform/instances/${toolName}`, {
           method: "DELETE",
-          headers: {
-            "X-Project-ID": currentProjectId
-          }
         })
         
         if (!res.ok) {
@@ -670,7 +668,7 @@ const Tools = () => {
     toolsCacheRef.current = {}
     
     try {
-      await fetch("/api/plugins/oap-platform/config/refresh", {
+      await apiFetch("/api/plugins/oap-platform/config/refresh", {
         method: "POST",
       })
       

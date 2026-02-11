@@ -1,5 +1,6 @@
 import { atom } from "jotai"
 import { atomWithStorage } from "jotai/utils"
+import { apiFetch } from "../utils/api"
 
 // Entity types
 export type EntityType = "person" | "project" | "concept" | "infrastructure" | "index" | "other"
@@ -62,7 +63,7 @@ export const loadMemoriesAtom = atom(
         : "/api/memory/entities"
       
       console.log("🔍 [Memory] Loading memories from:", url)
-      const response = await fetch(url)
+      const response = await apiFetch(url)
       const data = await response.json()
       
       console.log("🔍 [Memory] API response:", data)
@@ -93,7 +94,7 @@ export const searchMemoriesAtom = atom(
         params.append("entity_type", entityType)
       }
       
-      const response = await fetch(`/api/memory/search?${params}`)
+      const response = await apiFetch(`/api/memory/search?${params}`)
       const data = await response.json()
       
       if (data.success && data.data) {
@@ -113,7 +114,7 @@ export const loadMemoryStatsAtom = atom(
   async (get, set) => {
     try {
       console.log("🔍 [Memory] Loading memory stats...")
-      const response = await fetch("/api/memory/stats")
+      const response = await apiFetch("/api/memory/stats")
       const data = await response.json()
       
       console.log("🔍 [Memory] Stats API response:", data)
@@ -135,7 +136,7 @@ export const createMemoryAtom = atom(
   null,
   async (get, set, memory: Omit<Memory, "created_at" | "updated_at">) => {
     try {
-      const response = await fetch("/api/memory/entities", {
+      const response = await apiFetch("/api/memory/entities", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -165,7 +166,7 @@ export const updateMemoryAtom = atom(
   null,
   async (get, set, entityType: EntityType, entityName: string, updates: Partial<Memory>) => {
     try {
-      const response = await fetch(`/api/memory/entities/${entityType}/${encodeURIComponent(entityName)}`, {
+      const response = await apiFetch(`/api/memory/entities/${entityType}/${encodeURIComponent(entityName)}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -195,7 +196,7 @@ export const deleteMemoryAtom = atom(
   null,
   async (get, set, entityType: EntityType, entityName: string) => {
     try {
-      const response = await fetch(`/api/memory/entities/${entityType}/${encodeURIComponent(entityName)}`, {
+      const response = await apiFetch(`/api/memory/entities/${entityType}/${encodeURIComponent(entityName)}`, {
         method: "DELETE",
       })
       
@@ -221,7 +222,7 @@ export const deleteAllMemoriesAtom = atom(
   null,
   async (get, set) => {
     try {
-      const response = await fetch("/api/memory/entities", {
+      const response = await apiFetch("/api/memory/entities", {
         method: "DELETE",
       })
       

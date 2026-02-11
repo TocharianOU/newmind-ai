@@ -9,6 +9,7 @@ import { defaultBaseModel, defaultModelGroup, intoRawModelConfigWithQuery, query
 import { getVerifyKeyFromModelConfig } from "../helper/verify"
 import { oapGetToken } from "../ipc"
 import { fetchModels } from "../ipc/llm"
+import { apiFetch } from "../utils/api"
 
 
 export type OldVerifyStatus = {
@@ -115,7 +116,7 @@ export const activeConfigIdAtom = atom<string>(
   }
 )
 
-export const configDictAtom = atom<ModelConfigMap>((get) => get(configAtom).configs)
+export const configDictAtom = atom<ModelConfigMap>((get) => get(configAtom)?.configs || {})
 
 export const modelVerifyListAtom = atomWithStorage<Record<string, any>>("modelVerify", {})
 
@@ -180,7 +181,7 @@ export const loadConfigAtom = atom(
   null,
   async (get, set) => {
     try {
-      const response = await fetch("/api/config/model")
+      const response = await apiFetch("/api/config/model")
       const data = await response.json()
       set(configAtom, data.config)
       return data.config
@@ -195,7 +196,7 @@ export const writeRawConfigAtom = atom(
   null,
   async (get, set, rawConfig: RawModelConfig) => {
     try {
-      const response = await fetch("/api/config/model/replaceAll", {
+      const response = await apiFetch("/api/config/model/replaceAll", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -248,7 +249,7 @@ export const updateDisableDiveSystemPromptAtom = atom(
 )
 
 export async function verifyModelWithConfig(config: ModelConfig, signal?: AbortSignal) {
-  return await fetch("/model_verify", {
+  return await apiFetch("/model_verify", {
     signal,
     method: "POST",
     headers: {
@@ -270,7 +271,7 @@ export const writeEmptyConfigAtom = atom(
       disableDiveSystemPrompt: false
     }
 
-    await fetch("/api/config/model/replaceAll", {
+    await apiFetch("/api/config/model/replaceAll", {
       method: "POST",
       headers: {
           "Content-Type": "application/json",

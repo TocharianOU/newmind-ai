@@ -19,6 +19,7 @@ import { settingTabAtom } from "../atoms/globalState"
 import { ClickOutside } from "./ClickOutside"
 import { oapGetToken } from "../ipc/oap"
 import { ENV_CONFIG } from "../config/env"
+import { apiFetch } from "../utils/api"
 
 interface Props {
   onNewConversation?: () => void
@@ -160,7 +161,7 @@ const HistorySidebar = ({ onNewConversation }: Props) => {
     }
 
     try {
-      const response = await fetch(`/api/chat/${deletingChatId}`, {
+      const response = await apiFetch(`/api/chat/${deletingChatId}`, {
         method: "DELETE"
       })
       const data = await response.json()
@@ -193,7 +194,7 @@ const HistorySidebar = ({ onNewConversation }: Props) => {
   }
 
   const handleStarChat = async (chat: ChatHistoryItem, type: "starred" | "normal") => {
-    const response = await fetch(`/api/chat/${chat.id}`, {
+    const response = await apiFetch(`/api/chat/${chat.id}`, {
       method: "PATCH",
       headers: {
         "content-type": "application/json"
@@ -224,7 +225,7 @@ const HistorySidebar = ({ onNewConversation }: Props) => {
     if (!renamingChat)
       return
 
-    const response = await fetch(`/api/chat/${renamingChat.id}`, {
+    const response = await apiFetch(`/api/chat/${renamingChat.id}`, {
       method: "PATCH",
       headers: {
         "content-type": "application/json"

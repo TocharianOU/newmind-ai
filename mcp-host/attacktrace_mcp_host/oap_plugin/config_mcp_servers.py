@@ -54,12 +54,15 @@ class MCPServerManagerPlugin:
     async def update_device_token(
         self, device_token: str | None, mcp_server_manager: MCPServerManager
     ) -> None:
-        """Update the device token (no longer triggers config refresh)."""
+        """Update the device token (in-memory only, not persisted to disk).
+        
+        Security: Token is kept in memory only. It will be lost on process restart,
+        which is expected - Electron main process will re-inject via environment variable.
+        """
         self.device_token = device_token
         self._http_client.headers = {"Authorization": f"bearer {self.device_token}"}
-        update_oap_token(self.device_token)
-        # No longer refreshes tool configs from cloud - configs are fully local
-        logger.info("Device token updated. Tool configurations remain local.")
+        # No longer persists to oap_config.json - token stays in memory only
+        logger.info("[Security] Device token updated in memory (not persisted to disk)")
 
     async def refresh(self, mcp_server_manager: MCPServerManager, instances: list[dict] | None = None) -> None:
         """Refresh method - now a no-op since configs are fully local.
@@ -171,30 +174,53 @@ class MCPServerManagerPlugin:
 
 
 def read_oap_config() -> OAPConfig:
-    """Read the OAP config."""
-    if not CONFIG_FILE.exists():
-        logger.warning("OAP config file not found at %s. Creating default config.", CONFIG_FILE)
-        config = OAPConfig()
-        # Create the config file with default values
-        with CONFIG_FILE.open("w") as f:
-            f.write(config.model_dump_json(indent=2))
-        return config
-
-    try:
-        with CONFIG_FILE.open("r") as f:
-            config = OAPConfig.model_validate_json(f.read())
-            logger.info("Loaded OAP config from %s", CONFIG_FILE)
-            if not config.auth_key:
-                logger.warning("No auth_key found in OAP config. MCP sync will not work until auth_key is set.")
-            return config
-    except Exception as e:
-        logger.error("Failed to read OAP config from %s: %s", CONFIG_FILE, e)
-        return OAPConfig()
+    """Read the OAP config.
+    
+    Security: All config now comes from environment variables and defaults.
+    File persistence removed to prevent plaintext token leakage.
+    - Token: ATTACKTRACE_OAP_TOKEN (injected by Electron at startup)
+    - URLs: VITE_API_BASE_URL or HUB_BACKEND_URL (with fallback to localhost:23000)
+    """
+    # Use environment variables and defaults only - no file persistence
+    config = OAPConfig()
+    config.auth_key = os.getenv("ATTACKTRACE_OAP_TOKEN")
+    
+    # Optionally load URL overrides from file if it exists (legacy support)
+    if CONFIG_FILE.exists():
+        try:
+            with CONFIG_FILE.open("r") as f:
+                import json
+                file_config = json.load(f)
+                # Only read non-sensitive config (URLs, SSL settings)
+                if "store_url" in file_config:
+                    config.store_url = file_config["store_url"]
+                if "oap_root_url" in file_config:
+                    config.oap_root_url = file_config["oap_root_url"]
+                if "verify_ssl" in file_config:
+                    config.verify_ssl = file_config["verify_ssl"]
+                logger.info("Loaded OAP URL settings from %s", CONFIG_FILE)
+        except Exception as e:
+            logger.warning("Failed to read OAP config file, using defaults: %s", e)
+    
+    if config.auth_key:
+        logger.info("Using OAP token from environment variable")
+    else:
+        logger.warning("No OAP token found in ATTACKTRACE_OAP_TOKEN. OAP features will not work.")
+    
+    return config
 
 
 def update_oap_token(token: str | None) -> None:
-    """Update the OAP token."""
-    config = read_oap_config()
-    config.auth_key = token
-    with CONFIG_FILE.open("w") as f:
-        f.write(config.model_dump_json())
+    """Update the OAP token (deprecated - token now comes from environment variable).
+    
+    Security: This function no longer persists the token to oap_config.json.
+    The token is provided via ATTACKTRACE_OAP_TOKEN environment variable at startup.
+    Runtime token updates are handled in-memory only via the plugin instance.
+    
+    This function is kept for backward compatibility but does nothing to prevent
+    accidental plaintext token persistence.
+    """
+    logger.warning(
+        "[Security] update_oap_token() called but ignored - "
+        "OAP token is now provided via ATTACKTRACE_OAP_TOKEN env var, not persisted to disk"
+    )

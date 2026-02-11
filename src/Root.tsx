@@ -8,6 +8,7 @@ import { modelSettingsAtom } from "./atoms/modelState"
 import { fromRawConfigToModelGroupSetting } from "./helper/model"
 import { initFetch } from "./ipc"
 import { getModelSettings, setModelSettings } from "./ipc/config"
+import { apiFetch } from "./utils/api"
 
 function Root() {
   const loadConfig = useSetAtom(loadConfigAtom)
@@ -38,7 +39,7 @@ function Root() {
       let attempts = 0
       const i = setInterval(() => {
         attempts++
-        fetch("/api/tools/").then(() => {
+        apiFetch("/api/tools/").then(() => {
           console.log('[Root] Host is ready!')
           resolve(0)
           clearInterval(i)

@@ -83,14 +83,12 @@ export const loadToolsAtom = atom(
     
     try {
       const response = await fetchWithRetry(`/api/tools${cacheBuster}`, {
-        cache: 'no-cache',
-        headers: { 'Cache-Control': 'no-cache' }
+        cache: 'no-cache'
       })
       const data = await response.json()
       
       const mcpserverResponse = await fetchWithRetry(`/api/config/mcpserver${cacheBuster}`, {
-        cache: 'no-cache',
-        headers: { 'Cache-Control': 'no-cache' }
+        cache: 'no-cache'
       })
       const mcpserverData = await mcpserverResponse.json()
       
@@ -138,8 +136,7 @@ export const loadMcpConfigAtom = atom(
     
     try {
       const response = await fetchWithRetry(`/api/config/mcpserver${cacheBuster}`, {
-        cache: 'no-cache',
-        headers: { 'Cache-Control': 'no-cache' }
+        cache: 'no-cache'
       })
       const data = await response.json()
       if (data.success) {

@@ -129,9 +129,23 @@ const onServiceUpCallbacks: ((ip: string, port: number) => Promise<void>)[] = []
 export const clearServiceUpCallbacks = () => onServiceUpCallbacks.length = 0
 export const setServiceUpCallback = (callback: (ip: string, port: number) => Promise<void>) => onServiceUpCallbacks.push(callback)
 
+// Generate auth token on first access
+let authTokenGenerated = false
+
 export const serviceStatus = {
   ip: "localhost",
   port: 0,
+  authToken: "", // Will be generated on first startHostService call
+}
+
+// Initialize auth token once
+function ensureAuthToken() {
+  if (!authTokenGenerated) {
+    serviceStatus.authToken = crypto.randomBytes(32).toString('hex')
+    authTokenGenerated = true
+    console.log(`[Security] Generated MCP Host auth token: ${serviceStatus.authToken.substring(0, 8)}...`)
+  }
+  return serviceStatus.authToken
 }
 
 let hostProcess: ChildProcess | null = null
@@ -571,8 +585,15 @@ async function startHostService() {
 
   console.log(`[Host] Starting with project: ${currentProjectId}`)
 
+  // Ensure auth token is generated (only happens once)
+  const authToken = ensureAuthToken()
+
   // Generate project-specific database configuration
   const projectHttpdConfig = getProjectHttpdConfig(currentProjectId)
+  
+  // Security: Get OAP token from encrypted storage (if available)
+  const { getToken } = await import("./oap")
+  const oapToken = getToken()
   
   const httpdEnv: any = {
     ...process.env,
@@ -581,6 +602,10 @@ async function startHostService() {
     // Pass project-specific config via environment variable
     // This overrides the config file and ensures the correct database is used
     DIVE_SERVICE_CONFIG_CONTENT: JSON.stringify(projectHttpdConfig),
+    // Security: Pass auth token to MCP Host for API authentication
+    ATTACKTRACE_AUTH_TOKEN: authToken,
+    // Security: Pass OAP token via environment variable (not persisted to disk)
+    ATTACKTRACE_OAP_TOKEN: oapToken || "",
   }
 
   // Inject keychain credentials as environment variables

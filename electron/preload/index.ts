@@ -59,6 +59,7 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
   setAutoLaunch: (enable: boolean) => ipcRenderer.invoke("system:setAutoLaunch", enable),
   getMinimalToTray: () => ipcRenderer.invoke("system:getMinimalToTray"),
   setMinimalToTray: (enable: boolean) => ipcRenderer.invoke("system:setMinimalToTray", enable),
+  getAuthToken: () => ipcRenderer.invoke("system:getAuthToken"),
   
   // window controls
   windowMinimize: () => ipcRenderer.invoke("window:minimize"),

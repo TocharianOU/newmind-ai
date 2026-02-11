@@ -6,7 +6,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
 from attacktrace_mcp_host.httpd.conf.httpd_service import ServiceManager
-from attacktrace_mcp_host.httpd.middlewares import default_state, error_handler
+from attacktrace_mcp_host.httpd.middlewares import default_state, error_handler, AuthMiddleware
 from attacktrace_mcp_host.httpd.routers.chat import chat
 from attacktrace_mcp_host.httpd.routers.config import config
 from attacktrace_mcp_host.httpd.routers.memory import router as memory_router
@@ -44,21 +44,21 @@ def create_app(
     app.add_exception_handler(Exception, error_handler)
 
     service_setting = service_config_manager.current_setting
-    if service_setting and service_setting.cors_origin:
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=[service_setting.cors_origin],
-            allow_credentials=True,
-            allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-            allow_headers=[
-                "Origin",
-                "X-Requested-With",
-                "Content-Type",
-                "Accept",
-                "Authorization",
-                "X-Project-ID",
-            ],
-        )
+    cors_origin = service_setting.cors_origin if service_setting and service_setting.cors_origin else "*"
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[cors_origin],
+        # NOTE: wildcard origin + credentials is invalid for CORS preflight in browsers
+        allow_credentials=(cors_origin != "*"),
+        allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+        # Requests may include cache-control headers and future custom headers.
+        # Using wildcard avoids fragile preflight failures.
+        allow_headers=["*"],
+    )
+
+    # Security: add auth after CORS so browser preflight can succeed
+    app.add_middleware(AuthMiddleware)
+    logger.info("[Security] Authentication middleware enabled")
     app.add_middleware(BaseHTTPMiddleware, dispatch=default_state)
     app.include_router(openai, prefix="/v1/openai")
     app.include_router(chat, prefix="/api/chat")

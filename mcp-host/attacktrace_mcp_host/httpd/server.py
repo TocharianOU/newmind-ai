@@ -1,4 +1,5 @@
 import os
+import sys
 from collections.abc import AsyncGenerator
 from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import UTC, datetime
@@ -33,6 +34,7 @@ from attacktrace_mcp_host.httpd.conf.prompt import PromptManager
 from attacktrace_mcp_host.httpd.database.migrate import db_migration
 from attacktrace_mcp_host.httpd.database.msg_store.base import BaseMessageStore
 from attacktrace_mcp_host.httpd.database.msg_store.sqlite import SQLiteMessageStore
+from attacktrace_mcp_host.httpd.database.encryption import DatabaseEncryption
 from attacktrace_mcp_host.httpd.middlewares.plugins import PluginMiddlewaresManager
 from attacktrace_mcp_host.httpd.routers.plugins import RouterPlugin
 from attacktrace_mcp_host.httpd.store.cache import LocalFileCache
@@ -154,20 +156,62 @@ class AttackTraceHostAPI(FastAPI):
         if self._service_config_manager.current_setting is None:
             raise ValueError("Service manager is not initialized")
 
-        if self._service_config_manager.current_setting.db.migrate:
-            db_migration(uri=self._service_config_manager.current_setting.db.uri)
+        # Database security setup
+        db_config = self._service_config_manager.current_setting.db
+        db_uri = db_config.uri
+        async_db_uri = db_config.async_uri
+        
+        # Set database file permissions for SQLite (security hardening)
+        if db_uri.startswith("sqlite:///"):
+            try:
+                from pathlib import Path
+                import os
+                import stat
+                
+                db_path = db_uri.replace("sqlite:///", "")
+                db_file_path = Path(db_path)
+                
+                # Extract project_id from database path
+                project_id = "default"
+                if "/projects/" in db_path:
+                    parts = db_path.split("/projects/")
+                    if len(parts) > 1:
+                        project_id = parts[1].split("/")[0]
+                
+                # Ensure parent directory exists
+                db_file_path.parent.mkdir(parents=True, exist_ok=True)
+                
+                # If database file exists, set restrictive permissions
+                if db_file_path.exists():
+                    # Unix-like systems: chmod 600 (owner read/write only)
+                    if sys.platform != "win32":
+                        os.chmod(db_file_path, stat.S_IRUSR | stat.S_IWUSR)
+                        logger.info(f"[Database] Set secure permissions (600) for: {db_file_path}")
+                
+                # Initialize encryption manager for sensitive fields
+                if db_config.enable_encryption:
+                    db_encryption = DatabaseEncryption(project_id=project_id)
+                    db_encryption.get_fernet()  # Initialize encryption key
+                    logger.info(f"[Database] Field encryption ready for project: {project_id}")
+                
+            except Exception as e:
+                logger.warning(f"[Database] Failed to set secure permissions: {e}")
+                # Continue - not critical for functionality
+        
+        if db_config.migrate:
+            db_migration(uri=db_uri)
 
         self._engine = create_async_engine(
-            self._service_config_manager.current_setting.db.async_uri,
-            echo=self._service_config_manager.current_setting.db.echo,
+            async_db_uri,
+            echo=db_config.echo,
             # check connection before using
-            pool_pre_ping=self._service_config_manager.current_setting.db.pool_pre_ping,
+            pool_pre_ping=db_config.pool_pre_ping,
             # max connections
-            pool_size=self._service_config_manager.current_setting.db.pool_size,
+            pool_size=db_config.pool_size,
             # close connection after 60 seconds
-            pool_recycle=self._service_config_manager.current_setting.db.pool_recycle,
+            pool_recycle=db_config.pool_recycle,
             # burst connections
-            max_overflow=self._service_config_manager.current_setting.db.max_overflow,
+            max_overflow=db_config.max_overflow,
         )
         self._db_sessionmaker = async_sessionmaker(self._engine, class_=AsyncSession)
         self._msg_store = SQLiteMessageStore

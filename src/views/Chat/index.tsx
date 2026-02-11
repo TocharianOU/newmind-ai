@@ -12,6 +12,7 @@ import { safeBase64Encode } from "../../util"
 import { updateOAPUsageAtom } from "../../atoms/oapState"
 import { loadHistoriesAtom } from "../../atoms/historyState"
 import MemoryPanel from "../../components/MemoryPanel"
+import { apiFetch } from "../../utils/api"
 
 interface ToolCall {
   name: string
@@ -65,7 +66,7 @@ const ChatWindow = () => {
 
   const loadChat = useCallback(async (id: string) => {
     try {
-      const response = await fetch(`/api/chat/${id}`)
+      const response = await apiFetch(`/api/chat/${id}`)
       const data = await response.json()
 
       if (data.success) {
@@ -200,7 +201,7 @@ const ChatWindow = () => {
 
   const abortChat = async (_chatId: string) => {
     try {
-      await fetch(`/api/chat/${_chatId}/abort`, {
+      await apiFetch(`/api/chat/${_chatId}/abort`, {
         method: "POST",
       })
     } catch (error) {
@@ -258,7 +259,7 @@ const ChatWindow = () => {
       return
 
     try {
-      await fetch(`/api/chat/${currentChatId.current}/abort`, {
+      await apiFetch(`/api/chat/${currentChatId.current}/abort`, {
         method: "POST",
       })
       setIsChatStreaming(false)
@@ -339,7 +340,7 @@ const ChatWindow = () => {
 
   const handlePost = useCallback(async (body: any, type: "json" | "formData", url: string) => {
     try {
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method: "POST",
         headers: type === "json" ? {
           "Content-Type": "application/json",

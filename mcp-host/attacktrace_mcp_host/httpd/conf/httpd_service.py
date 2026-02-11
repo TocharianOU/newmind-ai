@@ -23,6 +23,7 @@ class DBConfig(BaseModel):
     echo: bool = False
     pool_pre_ping: bool = True
     migrate: bool = True
+    enable_encryption: bool = True  # Enable field-level encryption by default
 
     @property
     def async_uri(self) -> str:

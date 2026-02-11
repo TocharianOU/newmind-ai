@@ -7,6 +7,8 @@ from pydantic import BaseModel
 class OAPConfig(BaseModel):
     """OAP Config."""
 
+    # Security: Token is now provided via ATTACKTRACE_OAP_TOKEN environment variable
+    # to avoid plaintext persistence in oap_config.json
     auth_key: str | None = None
     # Use environment variable VITE_API_BASE_URL or HUB_BACKEND_URL, defaults to localhost
     store_url: str = os.getenv("VITE_API_BASE_URL") or os.getenv("HUB_BACKEND_URL", "http://localhost:23000")

@@ -44,26 +44,9 @@ router.post('/register', async (req, res) => {
       );
     }
 
-    // Decrypt password if it's encrypted
-    if (encrypted) {
-      try {
-        const encryptionKey = 'newmind';
-        const bytes = CryptoJS.AES.decrypt(password, encryptionKey);
-        password = bytes.toString(CryptoJS.enc.Utf8);
-
-        if (!password) {
-          logger.error(`Password decryption failed: empty result for ${email}`);
-          return res.status(400).json(
-            createResponse(null, 'Failed to decrypt password')
-          );
-        }
-      } catch (decryptError) {
-        logger.error('Password decryption error:', decryptError);
-        return res.status(400).json(
-          createResponse(null, 'Invalid encrypted password')
-        );
-      }
-    }
+    // Security: Removed client-side password encryption (security theater)
+    // Passwords should be transmitted over HTTPS only, never pre-encrypted with hardcoded keys
+    // The 'encrypted' parameter is now ignored for backward compatibility
 
     // Check invite code
     if (HARDCODED_CONFIG.INVITE_CODE_ENABLED) {
@@ -153,26 +136,8 @@ router.post('/login', async (req, res) => {
       );
     }
 
-    // Decrypt password if it's encrypted
-    if (encrypted) {
-      try {
-        const encryptionKey = 'newmind';
-        const bytes = CryptoJS.AES.decrypt(password, encryptionKey);
-        password = bytes.toString(CryptoJS.enc.Utf8);
-
-        if (!password) {
-          logger.error(`Password decryption failed: empty result for ${email}`);
-          return res.status(400).json(
-            createResponse(null, 'Failed to decrypt password')
-          );
-        }
-      } catch (decryptError) {
-        logger.error('Password decryption error:', decryptError);
-        return res.status(400).json(
-          createResponse(null, 'Invalid encrypted password')
-        );
-      }
-    }
+    // Security: Removed client-side password encryption (security theater)
+    // The 'encrypted' parameter is now ignored for backward compatibility
 
     // Find user
     const user = await prisma.user.findUnique({
@@ -276,13 +241,32 @@ router.post('/refresh', async (req, res) => {
     }
 
     // Generate new access token
-    const newToken = jwt.sign(
+    const newAccessToken = jwt.sign(
       { userId: decoded.userId },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
 
-    res.json(createResponse({ token: newToken }));
+    // Generate new refresh token (optional: rotate refresh token for better security)
+    const newRefreshToken = jwt.sign(
+      { userId: decoded.userId },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d' }
+    );
+
+    // Update refresh token in database (token rotation)
+    await prisma.refreshToken.update({
+      where: { token: refreshToken },
+      data: {
+        token: newRefreshToken,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+      }
+    });
+
+    res.json(createResponse({ 
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken
+    }));
   } catch (error) {
     logger.error('Token refresh error:', error);
     res.status(401).json(createResponse(null, 'Token refresh failed'));

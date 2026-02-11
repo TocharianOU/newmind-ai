@@ -3,6 +3,7 @@ import AppState from "../state"
 import { scriptsDir } from "../constant"
 import { preferencesStore } from "../store"
 import { safeRegisterHandler } from "../utils/ipcRegistry"
+import { serviceStatus } from "../service"
 
 import {
   checkAppImageAutoLaunchStatus,
@@ -11,6 +12,10 @@ import {
 import { destroyTray, initTray } from "../tray"
 
 export function ipcSystemHandler(win: BrowserWindow) {
+  // Security: Provide MCP Host auth token to frontend
+  safeRegisterHandler("system:getAuthToken", () => {
+    return serviceStatus.authToken || ""
+  })
   safeRegisterHandler("system:openScriptsDir", async () => {
     shell.openPath(scriptsDir)
   })

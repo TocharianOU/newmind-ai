@@ -82,14 +82,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (email, password) => {
-    // Encrypt password before sending
-    const encryptionKey = 'newmind';
-    const encryptedPassword = CryptoJS.AES.encrypt(password, encryptionKey).toString();
-
+    // Security: Password transmitted over HTTPS (no client-side encryption needed)
+    // Client-side encryption with hardcoded keys is security theater
     const response = await api.post('/api/auth/login', {
       email,
-      password: encryptedPassword,
-      encrypted: true // Flag to indicate password is encrypted
+      password, // Send plaintext over HTTPS
+      encrypted: false // No longer encrypting
     });
     if (response.data.success) {
       localStorage.setItem('authToken', response.data.data.accessToken);
@@ -100,15 +98,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (email, username, password, inviteCode = null) => {
-    // Encrypt password before sending
-    const encryptionKey = 'newmind';
-    const encryptedPassword = CryptoJS.AES.encrypt(password, encryptionKey).toString();
-
+    // Security: Password transmitted over HTTPS (no client-side encryption needed)
     const requestData = {
       email,
       username,
-      password: encryptedPassword,
-      encrypted: true // Flag to indicate password is encrypted
+      password, // Send plaintext over HTTPS
+      encrypted: false // No longer encrypting
     };
 
     // Only include inviteCode if provided

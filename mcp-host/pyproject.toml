@@ -36,6 +36,8 @@ dependencies = [
     "pydantic>=2.11.7",
     "pywin32>=310; sys_platform == 'win32' or platform_system == 'Windows'",
     "sqlite-vec>=0.1.6",
+    "cryptography>=44.0.0",  # Database field encryption (pure Python, cross-platform)
+    "keyring>=25.5.0",  # System keychain access for encryption keys
     "psycopg[binary]>=3.2.9",
     "alembic>=1.15.2,< 1.16", # Alembic doesn't use SemVer https://alembic.sqlalchemy.org/en/latest/front.html#versioning-scheme
     "sqlalchemy[asyncio]>=2.0.42",

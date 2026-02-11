@@ -252,15 +252,18 @@ const ChatInput: React.FC<Props> = ({ page, onSendMessage, disabled, onAbort }) 
   }, [])
 
   const currentModelEnableToolcall = () => {
-    return config.enableTools ?? true
+    return config?.enableTools ?? true
   }
 
   const toggleEnableTools = () => {
-    if(!hasActiveConfig){
+    if (!hasActiveConfig || !config || !config.activeProvider) {
       return
     }
 
     const _config = configList[config.activeProvider]
+    if (!_config) {
+      return
+    }
     const enableTools = config?.enableTools ?? true
     setSettings(s => {
       const term = getTermFromModelConfig(_config)
@@ -289,7 +292,7 @@ const ChatInput: React.FC<Props> = ({ page, onSendMessage, disabled, onAbort }) 
       return s
     })
 
-    saveAllConfig({...config, enableTools: !enableTools})
+    saveAllConfig({ ...config, enableTools: !enableTools })
     if(enableTools){
       showToast({
         message: t("chat.tools-btn.disableToast"),
