@@ -96,6 +96,8 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
   oapGetMe: () => ipcRenderer.invoke("oap:getMe"),
   oapGetUsage: () => ipcRenderer.invoke("oap:getUsage"),
   oapLoginWithToken: (token: string) => ipcRenderer.invoke("oap:loginWithToken", token),
+  oapGetOAuthConfig: () => ipcRenderer.invoke("oap:getOAuthConfig"),
+  oapLoginWithOAuth: (provider: string) => ipcRenderer.invoke("oap:loginWithOAuth", provider),
   oapRegistEvent: (event: "login" | "logout", callback: () => void) => {
     ipcRenderer.on(`oap:${event}`, callback)
     return () => ipcRenderer.off(`oap:${event}`, callback)
@@ -123,6 +125,11 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
     ipcRenderer.invoke("keychain:list"),
   keychainIsAvailable: () => 
     ipcRenderer.invoke("keychain:isAvailable"),
+  keychainOnDecryptFailed: (cb: (service: string, account: string) => void) => {
+    const listener = (_event: Electron.IpcMainInvokeEvent, { service, account }: { service: string; account: string }) => cb(service, account)
+    ipcRenderer.on("keychain:credentialDecryptFailed", listener as any)
+    return () => ipcRenderer.off("keychain:credentialDecryptFailed", listener as any)
+  },
 })
 
 // --------- Preload scripts loading ---------

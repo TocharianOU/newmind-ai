@@ -2,6 +2,7 @@ import { RouterProvider } from "react-router-dom"
 import { router } from "./router"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { reloadOapConfigAtom, removeOapConfigAtom, writeOapConfigAtom } from "./atoms/configState"
+import { showToastAtom } from "./atoms/toastState"
 import { useEffect, useRef, useState } from "react"
 import { handleGlobalHotkey } from "./atoms/hotkeyState"
 import { handleWindowResizeAtom } from "./atoms/sidebarState"
@@ -40,6 +41,7 @@ function App() {
   const openDrawer = useSetAtom(openDrawerAtom)
   const loadCurrentProjectId = useSetAtom(loadCurrentProjectIdAtom)
 
+  const showToast = useSetAtom(showToastAtom)
   const setInstallToolBuffer = useSetAtom(installToolBufferAtom)
   const installToolBuffer = useRef<{ name: string, config: any } | null>(null)
   const [installToolConfirm, setInstallToolConfirm] = useState(false)
@@ -176,6 +178,20 @@ function App() {
       })
     })
     .catch(console.error)
+  }, [])
+
+  // keychain decrypt failure notification
+  useEffect(() => {
+    if (!window.ipcRenderer?.keychainOnDecryptFailed) return
+    const unlisten = window.ipcRenderer.keychainOnDecryptFailed(() => {
+      showToast({
+        message: t("tools.keychain.decryptFailed"),
+        type: "warning",
+        duration: 8000,
+        closable: true
+      })
+    })
+    return () => { unlisten?.() }
   }, [])
 
   // set system theme

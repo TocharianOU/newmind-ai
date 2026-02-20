@@ -200,11 +200,13 @@
       "storedAs": "Stored as",
       "enterNewPassword": "Enter new password to update...",
       "enterPassword": "Enter password",
-      "save": "💾 Save",
+      "save": "Save",
       "saved": "Saved to Keychain successfully",
       "saveFailed": "Failed to save",
       "saveOnSubmit": "Password will be securely saved to Keychain when you save the configuration",
-      "pleaseEnterPassword": "Please enter a password"
+      "pleaseEnterPassword": "Please enter a password",
+      "restartingHost": "Saving...",
+      "decryptFailed": "Credential decryption failed, please re-enter and save your password"
     },
     "viewJsonConfig": "View Underlying JSON Configuration",
     "copyJsonConfig": "Copy Configuration",

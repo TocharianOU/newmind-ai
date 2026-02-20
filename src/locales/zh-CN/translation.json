@@ -200,11 +200,13 @@
       "storedAs": "存储为",
       "enterNewPassword": "输入新密码以更新...",
       "enterPassword": "输入密码",
-      "save": "💾 保存",
+      "save": "保存",
       "saved": "已保存到密钥链",
       "saveFailed": "保存失败",
       "saveOnSubmit": "保存配置时，密码将被安全地保存到密钥链",
-      "pleaseEnterPassword": "请输入密码"
+      "pleaseEnterPassword": "请输入密码",
+      "restartingHost": "保存中...",
+      "decryptFailed": "凭据解密失败，请重新输入密码并保存"
     },
     "viewJsonConfig": "查看底层 JSON 配置",
     "copyJsonConfig": "复制配置",

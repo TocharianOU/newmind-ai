@@ -1655,11 +1655,10 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
       onConfirm={handleSubmit}
       onCancel={onCancel}
       disabled={isFormatError || isRangeError || tmpCustom.isError?.isError || tmpCustom.isRangeError?.isError || customList.some(custom => custom.isError?.isError || custom.isRangeError?.isError) || isSubmitting}
+      loading={isSubmitting}
       zIndex={1000}
       listenHotkey={false}
-      confirmText={isSubmitting ? (
-        <div className="loading-spinner"></div>
-      ) : t("tools.save")}
+      confirmText={t("tools.save")}
       footerHint={ type.startsWith("edit") &&
         <div className="tool-edit-popup-footer-hint">
           {onDelete && !isSubmitting &&

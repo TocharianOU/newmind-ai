@@ -33,7 +33,7 @@ CREATE TABLE "AuditLog" (
 ALTER TABLE "ChatSession" ADD COLUMN "projectId" TEXT;
 
 -- AlterTable
-ALTER TABLE "UserMcpConfig" DROP CONSTRAINT "UserMcpConfig_userId_mcpServerId_key";
+DROP INDEX "UserMcpConfig_userId_mcpServerId_key";
 ALTER TABLE "UserMcpConfig" ADD COLUMN "projectId" TEXT;
 
 -- CreateIndex

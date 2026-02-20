@@ -563,9 +563,8 @@ const ModelPopup = ({ onClose, onSuccess }: Props) => {
       zIndex={1200}
       className="model-popup"
       disabled={isFetching || isVerifying.current || isSubmitting}
-      confirmText={(isVerifying.current || isSubmitting) ? (
-        <div className="loading-spinner"></div>
-      ) : t("tools.save")}
+      loading={isVerifying.current || isSubmitting}
+      confirmText={t("tools.save")}
       onConfirm={onConfirm}
       onCancel={handleClose}
       onClickOutside={handleClose}

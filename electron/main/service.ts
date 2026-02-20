@@ -117,7 +117,16 @@ async function injectKeychainCredentials(projectId: string, env: Record<string, 
         env[envKey] = result.password
         console.log(`[Keychain] Injected credential: ${envKey} (from ${service}:${account})`)
       } else {
-        console.warn(`[Keychain] Failed to load credential for ${service}:${account}:`, result.error)
+        console.error(`[Keychain] Failed to decrypt credential for ${service}:${account}: ${result.error}`)
+        // Notify renderer so the user knows to re-enter the password
+        try {
+          const wins = BrowserWindow.getAllWindows()
+          if (wins.length > 0) {
+            wins[0].webContents.send("keychain:credentialDecryptFailed", { service, account })
+          }
+        } catch (notifyError) {
+          // Best-effort notification, ignore errors
+        }
       }
     }
   } catch (error) {

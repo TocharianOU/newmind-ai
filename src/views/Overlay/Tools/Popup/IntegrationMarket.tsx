@@ -331,9 +331,11 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
   // Create instance
   const createInstance = async (tool: ToolItem, config: Record<string, any>) => {
     // Save all keychain passwords before creating instance
+    let keychainSavedCount = 0
     try {
       const { saveAllKeychainPasswords } = await import('./SchemaForm')
       const keychainResult = await saveAllKeychainPasswords()
+      keychainSavedCount = keychainResult.savedCount
       
       if (!keychainResult.success) {
         showToast({
@@ -491,6 +493,20 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
           }
         }
         
+        // If new keychain credentials were saved, restart host so env vars are injected
+        if (keychainSavedCount > 0) {
+          showToast({
+            message: t("tools.keychain.restartingHost"),
+            type: "info",
+            duration: 5000
+          })
+          try {
+            await window.ipcRenderer.restartHost()
+          } catch (e) {
+            console.error('[Keychain] Failed to restart host after credential save:', e)
+          }
+        }
+
         if (onIntegrationAdded && data.instance.config) {
           // Pass both instance name and enhanced configuration
           // No timeout needed since we're passing the config directly
@@ -942,11 +958,12 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
       onConfirm={viewMode === "configure" ? handleConfigSubmit : undefined}
       onCancel={viewMode === "configure" ? handleBackToBrowse : (viewMode === "installing" ? undefined : onClose)}
       disabled={isSubmitting || viewMode === "browse" || viewMode === "installing"}
+      loading={viewMode === "configure" && isSubmitting}
       zIndex={1000}
       listenHotkey={false}
       confirmText={
         viewMode === "configure" 
-          ? (isSubmitting ? <div className="loading-spinner"></div> : (t("tools.marketplace.addButton") || "Add Integration"))
+          ? (t("tools.marketplace.addButton") || "Add Integration")
           : viewMode === "installing"
           ? undefined
           : (t("tools.save") || "Close")

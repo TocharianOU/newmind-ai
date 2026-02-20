@@ -217,12 +217,18 @@ class MCPServerManager:
                         "update config callback errer, plugin: %s", plugin_name
                     )
 
-        write_then_replace(
-            Path(self._config_path),
-            new_config.model_dump_json(by_alias=True),
-        )
+        raw_json = new_config.model_dump_json(by_alias=True)
 
-        self._current_config = new_config
+        # Write raw config to disk (preserves @keychain: references for restarts)
+        write_then_replace(Path(self._config_path), raw_json)
+
+        # Resolve keychain references for in-memory runtime config so that MCP
+        # server processes receive the actual credential values, not the reference
+        # strings.  (initialize() already does this at startup; we must mirror it
+        # here so hot-reloads work without a full host restart.)
+        from .keychain import resolve_keychain_in_mcp_config
+        resolved_dict = resolve_keychain_in_mcp_config(json.loads(raw_json))
+        self._current_config = Config(**resolved_dict)
         return True
 
     def register_plugin(

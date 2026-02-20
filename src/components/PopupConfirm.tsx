@@ -15,6 +15,7 @@ type PopupConfirmProps = PopupStylePorps & {
 	confirmText?: string | React.ReactNode
 	confirmTooltip?: string
 	disabled?: boolean
+	loading?: boolean
 	cancelText?: string | React.ReactNode
 	cancelTooltip?: string
 	footerHint?: React.ReactNode | string
@@ -26,7 +27,7 @@ type PopupConfirmProps = PopupStylePorps & {
 	onFinish?: () => void //execute after confirm or cancel or onClickOutside
 }
 
-export default function PopupConfirm({ overlay, title, children, zIndex, noBackground, className, noBorder, showClose, onClickOutside, onConfirm, confirmText, confirmTooltip, disabled, onCancel, cancelText, cancelTooltip, footerHint, footerType, listenHotkey=true, onFinish }: PopupConfirmProps) {
+export default function PopupConfirm({ overlay, title, children, zIndex, noBackground, className, noBorder, showClose, onClickOutside, onConfirm, confirmText, confirmTooltip, disabled, loading, onCancel, cancelText, cancelTooltip, footerHint, footerType, listenHotkey=true, onFinish }: PopupConfirmProps) {
 	const { t } = useTranslation()
 
   useEffect(() => {
@@ -75,7 +76,9 @@ export default function PopupConfirm({ overlay, title, children, zIndex, noBackg
 					onFinish?.()
 				}}
 				disabled={disabled}
+				loading={loading}
 				color="green"
+				size="fit"
 				minHeight="40px"
 			>
 				{confirmText || t("common.confirm")}
@@ -97,6 +100,7 @@ const CancelButton = () => {
 					onFinish?.()
 				}}
 				color="gray"
+				size="fit"
 				minHeight="40px"
 			>
 				{cancelText || t("common.cancel")}

@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { pathToFileURL } from 'url';
+import { randomUUID } from 'node:crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,6 +14,8 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting seed...');
 
+  const now = new Date();
+
   // Create test users
   const hashedPassword = await bcrypt.hash('password123', 10);
 
@@ -21,14 +24,18 @@ async function main() {
     where: { email: 'base@test.com' },
     update: {},
     create: {
+      id: randomUUID(),
       email: 'base@test.com',
       username: 'Base User',
       password: hashedPassword,
-      subscription: {
+      updatedAt: now,
+      Subscription: {
         create: {
+          id: randomUUID(),
           planName: 'BASE',
           isDefaultPlan: true,
-          isActive: true
+          isActive: true,
+          updatedAt: now,
         }
       }
     }
@@ -39,14 +46,18 @@ async function main() {
     where: { email: 'pro@test.com' },
     update: {},
     create: {
+      id: randomUUID(),
       email: 'pro@test.com',
       username: 'Pro User',
       password: hashedPassword,
-      subscription: {
+      updatedAt: now,
+      Subscription: {
         create: {
+          id: randomUUID(),
           planName: 'PRO',
           isDefaultPlan: false,
-          isActive: true
+          isActive: true,
+          updatedAt: now,
         }
       }
     }
@@ -57,18 +68,24 @@ async function main() {
     where: { email: 'enterprise@test.com' },
     update: {},
     create: {
+      id: randomUUID(),
       email: 'enterprise@test.com',
       username: 'Enterprise User',
       password: hashedPassword,
-      subscription: {
+      updatedAt: now,
+      Subscription: {
         create: {
+          id: randomUUID(),
           planName: 'ENTERPRISE',
           isDefaultPlan: false,
-          isActive: true
+          isActive: true,
+          updatedAt: now,
         }
       }
     }
   });
+
+  console.log(`✅ Users created: ${baseUser.email}, ${proUser.email}, ${enterpriseUser.email}`);
 
   // Auto-load MCP servers from integrations directory
   console.log('📦 Loading MCP integrations...');
@@ -94,24 +111,25 @@ async function main() {
         version: config.version,
         downloadUrl: config.downloadUrl,
         description: config.description,
-        descriptionI18n: JSON.stringify(config.descriptionI18n),
-        tags: JSON.stringify(config.tags),
+        descriptionI18n: config.descriptionI18n ? JSON.stringify(config.descriptionI18n) : null,
+        tags: config.tags ? JSON.stringify(config.tags) : null,
         transport: config.transport,
         command: config.command,
-        args: JSON.stringify(config.args),
-        env: JSON.stringify(config.env),
+        args: config.args ? JSON.stringify(config.args) : null,
+        env: config.env ? JSON.stringify(config.env) : null,
         planRequired: config.planRequired,
         logo: config.logo,
         banner: config.banner,
         document: config.document,
-        documentI18n: JSON.stringify(config.documentI18n),
-        configSchema: JSON.stringify(config.configSchema),
+        documentI18n: config.documentI18n ? JSON.stringify(config.documentI18n) : null,
+        configSchema: config.configSchema ? JSON.stringify(config.configSchema) : null,
         tokenCost: config.tokenCost,
         tokenRequired: config.tokenRequired,
         tokenPriceUnit: config.tokenPriceUnit,
         popular: config.popular,
         new: config.new,
-        isActive: config.isActive
+        isActive: config.isActive,
+        updatedAt: now,
       };
       
       // Check if server exists
@@ -127,7 +145,7 @@ async function main() {
         console.log(`✅ Updated: ${config.name} v${config.version}`);
       } else {
         await prisma.mcpServer.create({
-          data: serverData
+          data: { id: randomUUID(), ...serverData }
         });
         console.log(`✅ Created: ${config.name} v${config.version}`);
       }
@@ -139,17 +157,6 @@ async function main() {
   // Create model descriptions
   const models = [
     {
-      modelId: 'gpt-3.5-turbo',
-      name: 'GPT-3.5 Turbo',
-      provider: 'openai',
-      tokenCost: 0.0015,
-      description: 'Fast and efficient model for general tasks',
-      extra: JSON.stringify({
-        feature: 'General purpose',
-        special: ['fast', 'cost-effective']
-      })
-    },
-    {
       modelId: 'newmind-medium',
       name: 'AttackTrace Medium (Claude Sonnet)',
       provider: 'anthropic',
@@ -158,7 +165,8 @@ async function main() {
       extra: JSON.stringify({
         feature: 'Advanced reasoning',
         special: ['coding', 'analysis', 'creative']
-      })
+      }),
+      updatedAt: now,
     },
     {
       modelId: 'newmind-strong',
@@ -169,7 +177,8 @@ async function main() {
       extra: JSON.stringify({
         feature: 'Maximum capability',
         special: ['research', 'complex-reasoning', 'long-context']
-      })
+      }),
+      updatedAt: now,
     }
   ];
 
@@ -180,8 +189,9 @@ async function main() {
     
     if (!existing) {
       await prisma.modelDescription.create({
-        data: model
+        data: { id: randomUUID(), ...model }
       });
+      console.log(`✅ Model: ${model.name}`);
     }
   }
 

@@ -509,8 +509,9 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
  * Collect and save all keychain passwords from the form
  * This should be called before saving the configuration
  */
-export async function saveAllKeychainPasswords(): Promise<{ success: boolean; errors: string[] }> {
+export async function saveAllKeychainPasswords(): Promise<{ success: boolean; errors: string[]; savedCount: number }> {
   const errors: string[] = []
+  let savedCount = 0
   
   // Find all keychain password inputs
   const keychainInputs = document.querySelectorAll('input[data-keychain-service][data-keychain-account]')
@@ -535,6 +536,7 @@ export async function saveAllKeychainPasswords(): Promise<{ success: boolean; er
       
       if (result.success) {
         console.log(`[Keychain] Saved password for ${service}:${account}`)
+        savedCount++
         // Clear the input for security
         passwordInput.value = ''
       } else {
@@ -551,7 +553,8 @@ export async function saveAllKeychainPasswords(): Promise<{ success: boolean; er
   
   return {
     success: errors.length === 0,
-    errors
+    errors,
+    savedCount
   }
 }
 

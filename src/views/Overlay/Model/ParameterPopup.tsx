@@ -64,11 +64,8 @@ const ParameterPopup = ({ onClose }: { onClose: () => void }) => {
       zIndex={1200}
       className="models-parameter-popup-confirm"
       onConfirm={onConfirm}
-      confirmText={
-        isSubmitting ? (
-          <div className="loading-spinner"></div>
-        ) : t("tools.save")
-      }
+      confirmText={t("tools.save")}
+      loading={isSubmitting}
       onCancel={onClose}
       onClickOutside={onClose}
       disabled={!changed || isSubmitting}

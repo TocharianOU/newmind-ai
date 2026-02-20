@@ -226,9 +226,11 @@ const Tools = () => {
     }
 
     // Save all keychain passwords before updating config
+    let keychainSavedCount = 0
     try {
       const { saveAllKeychainPasswords } = await import('./Popup/SchemaForm')
       const keychainResult = await saveAllKeychainPasswords()
+      keychainSavedCount = keychainResult.savedCount
       
       if (!keychainResult.success) {
         showToast({
@@ -275,7 +277,7 @@ const Tools = () => {
       }
     })
 
-    return await apiFetch(`/api/config/mcpserver${force ? "?force=1" : ""}`, {
+    const result = await apiFetch(`/api/config/mcpserver${force ? "?force=1" : ""}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -299,6 +301,22 @@ const Tools = () => {
           })
         }
       })
+
+    // If new keychain credentials were saved, restart the host to inject them as env vars
+    if (keychainSavedCount > 0 && result && !result?.error) {
+      showToast({
+        message: t("tools.keychain.restartingHost"),
+        type: "info",
+        duration: 5000
+      })
+      try {
+        await window.ipcRenderer.restartHost()
+      } catch (e) {
+        console.error('[Keychain] Failed to restart host after credential save:', e)
+      }
+    }
+
+    return result
   }
 
   const handleUpdateConfigResponse = (data: { errors: { error: string; serverName: string }[] }, isShowToast = false) => {

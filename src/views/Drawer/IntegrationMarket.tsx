@@ -537,9 +537,11 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
 
   const createInstance = async (tool: ToolItem, config: Record<string, any>) => {
     // Save all keychain passwords before creating instance
+    let keychainSavedCount = 0
     try {
       const { saveAllKeychainPasswords } = await import('../Overlay/Tools/Popup/SchemaForm')
       const keychainResult = await saveAllKeychainPasswords()
+      keychainSavedCount = keychainResult.savedCount
       
       if (!keychainResult.success) {
         showToast({
@@ -688,6 +690,20 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
           return t
         }))
         
+        // If new keychain credentials were saved, restart host so env vars are injected
+        if (keychainSavedCount > 0) {
+          showToast({
+            message: t("tools.keychain.restartingHost"),
+            type: "info",
+            duration: 5000
+          })
+          try {
+            await window.ipcRenderer.restartHost()
+          } catch (e) {
+            console.error('[Keychain] Failed to restart host after credential save:', e)
+          }
+        }
+
         // CRITICAL: Call callback with full_config from backend for immediate update
         if (onIntegrationAdded && data.instance.config) {
           await onIntegrationAdded(data.instance.instance_name, enhancedConfig, data.full_config)
@@ -1437,8 +1453,8 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
           <Button onClick={handleBackToBrowse} color="white" disabled={isSubmitting}>
             {t("tools.cancel") || "取消"}
           </Button>
-          <Button onClick={handleConfigSubmit} color="blue" disabled={isSubmitting}>
-            {isSubmitting ? <div className="loading-spinner"></div> : (t("tools.marketplace.addButton") || "添加集成")}
+          <Button onClick={handleConfigSubmit} color="blue" size="fit" loading={isSubmitting} disabled={isSubmitting}>
+            {t("tools.marketplace.addButton") || "添加集成"}
           </Button>
         </div>
       )}
