@@ -29,6 +29,18 @@
     // Remove flexbox alignment to let content fill naturally
     display: block;
 
+    .overlay-window-controls {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: auto;
+      height: $header-height;
+      display: flex;
+      align-items: center;
+      padding-right: 4px;
+      z-index: 1;
+    }
+
     &.full-width {
       left: 0;
       width: 100vw;

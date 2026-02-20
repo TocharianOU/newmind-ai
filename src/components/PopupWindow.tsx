@@ -3,6 +3,7 @@ import * as Portal from "@radix-ui/react-portal"
 import { DismissableLayer } from "@radix-ui/react-dismissable-layer"
 import { useAtom } from "jotai"
 import { sidebarVisibleAtom } from "../atoms/sidebarState"
+import WindowControls from "./WindowControls"
 
 export type PopupStylePorps = {
   zIndex?: number
@@ -30,6 +31,11 @@ export default function PopupWindow({
   return (
     <Portal.Root container={root}>
       <div className={`container-wrapper ${noBackground ? "transparent" : ""} ${overlay ? "popup-overlay" : ""} ${!isSidebarVisible ? "full-width" : ""}`} style={{ zIndex }}>
+        {overlay && (
+          <div className="overlay-window-controls">
+            <WindowControls variant="header" />
+          </div>
+        )}
         <DismissableLayer onPointerDownOutside={onClickOutside}>
           {children}
         </DismissableLayer>
