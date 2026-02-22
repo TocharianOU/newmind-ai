@@ -581,6 +581,48 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
         delete stringifiedConfig.tlsMode
         stringifiedConfig.NODE_TLS_REJECT_UNAUTHORIZED = tlsMode === "skip" ? "0" : "1"
       }
+
+      // Dual-mode (Hub / BYOK) resolution for TI integrations that use keyMode.
+      // Each service gets its own env-var names and proxy path.
+      if (stringifiedConfig.keyMode !== undefined) {
+        const keyMode = stringifiedConfig.keyMode
+        delete stringifiedConfig.keyMode
+
+        if (tool.name === "Shodan") {
+          if (keyMode === "hub") {
+            delete stringifiedConfig.SHODAN_API_KEY
+            stringifiedConfig.SHODAN_BASE_URL = `${OAP_ROOT_URL}/api/shodan-proxy/v1`
+            try {
+              const token = await window.ipcRenderer.oapGetToken()
+              stringifiedConfig.SHODAN_AUTH_TOKEN = token || "{{device_token}}"
+            } catch {
+              stringifiedConfig.SHODAN_AUTH_TOKEN = "{{device_token}}"
+            }
+          } else {
+            delete stringifiedConfig.SHODAN_BASE_URL
+            delete stringifiedConfig.SHODAN_AUTH_TOKEN
+          }
+        } else {
+          // Default / VirusTotal: Hub-managed key routes through the VT proxy.
+          // VIRUSTOTAL_BASE_URL points to our backend proxy; VIRUSTOTAL_AUTH_TOKEN
+          // carries the OAP device token so the proxy can verify the caller.
+          if (keyMode === "hub") {
+            delete stringifiedConfig.VIRUSTOTAL_API_KEY
+            stringifiedConfig.VIRUSTOTAL_BASE_URL = `${OAP_ROOT_URL}/api/vt-proxy/v3`
+            try {
+              const token = await window.ipcRenderer.oapGetToken()
+              stringifiedConfig.VIRUSTOTAL_AUTH_TOKEN = token || "{{device_token}}"
+            } catch {
+              // Fall back to the mcp-host template variable which is resolved server-side
+              stringifiedConfig.VIRUSTOTAL_AUTH_TOKEN = "{{device_token}}"
+            }
+          } else {
+            // BYOK: direct access using the user-supplied API key
+            delete stringifiedConfig.VIRUSTOTAL_BASE_URL
+            delete stringifiedConfig.VIRUSTOTAL_AUTH_TOKEN
+          }
+        }
+      }
       
       const derivedLogo = tool.logo || (tool.banner ? tool.banner.replace("logo-240", "logo-48") : undefined)
       const requestBody = {

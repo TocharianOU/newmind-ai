@@ -27,6 +27,8 @@ import systemPromptRoutes from './routes/system-prompt.js';
 import paymentRoutes, { stripeWebhookHandler } from './routes/payment.js';
 import projectRoutes from './routes/projects.js';
 import auditRoutes from './routes/audit.js';
+import vtProxyRoutes from './routes/vt-proxy.js';
+import shodanProxyRoutes from './routes/shodan-proxy.js';
 // import syncRoutes from './routes/sync.js';
 
 // Import middleware
@@ -146,6 +148,8 @@ app.use('/api/v1/system-prompt', systemPromptRoutes);
 app.use('/api/v1/payment', paymentRoutes);
 app.use('/api/v1/projects', projectRoutes);
 app.use('/api/v1/audit', auditRoutes);
+app.use('/api/vt-proxy/v3', vtProxyRoutes);        // VirusTotal Hub proxy (Hub-managed key mode)
+app.use('/api/shodan-proxy/v1', shodanProxyRoutes); // Shodan Hub proxy (Hub-managed key mode)
 // app.use('/api/v1/sync', syncRoutes);     // Cloud sync endpoints (still disabled)
 
 // WebSocket handling
