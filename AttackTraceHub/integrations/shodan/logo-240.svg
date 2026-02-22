@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120" width="240" height="120">
+  <rect width="240" height="120" rx="12" fill="#E8312A"/>
+  <!-- Radar icon -->
+  <circle cx="52" cy="60" r="30" fill="none" stroke="white" stroke-width="1.5" stroke-opacity="0.3"/>
+  <circle cx="52" cy="60" r="20" fill="none" stroke="white" stroke-width="1.5" stroke-opacity="0.5"/>
+  <circle cx="52" cy="60" r="10" fill="none" stroke="white" stroke-width="1.5" stroke-opacity="0.7"/>
+  <circle cx="52" cy="60" r="3.5" fill="white"/>
+  <line x1="52" y1="60" x2="74" y2="38" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-opacity="0.9"/>
+  <circle cx="70" cy="43" r="2.5" fill="white" fill-opacity="0.9"/>
+  <!-- Text -->
+  <text x="98" y="52" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="700" fill="white" letter-spacing="-0.5">Shodan</text>
+  <text x="99" y="76" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="white" fill-opacity="0.85" letter-spacing="0.2">MCP Server</text>
+</svg>
