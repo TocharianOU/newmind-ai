@@ -134,17 +134,27 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
         fields.delete('KIBANA_CA_CERT')
       }
     }
-    
-    if (schema.oneOf) {
-      // Find the active oneOf group
-      // This logic can be complex. For simplicity, we check if any required field in a group has a value.
-      // Or we can default to the first group if no values are set.
-      
-      // Better approach for UI: If there's a discriminator, use it.
-      // If not, we might need a "Mode" selector if the schema implies mutually exclusive modes (like API Key vs Username/Password)
-      
-      // Simple heuristic: If all required fields of a group are filled, that group is active.
-      // If none, the first group is default.
+
+    // Generic: hide fields required only by inactive branches of schema.dependencies
+    // e.g. keyMode='hub' hides VIRUSTOTAL_API_KEY (required only in byok branch)
+    if (schema.dependencies) {
+      for (const [depField, depSchema] of Object.entries(schema.dependencies as any)) {
+        if (!depSchema?.oneOf) continue
+        // Resolve current value, falling back to the field's declared default
+        const rawVal = formData[depField]
+        const depValue = (rawVal !== undefined && rawVal !== '')
+          ? rawVal
+          : schema.properties?.[depField]?.default
+        if (depValue === undefined) continue
+        for (const branch of depSchema.oneOf) {
+          const branchEnum = branch.properties?.[depField]?.enum
+          if (!branchEnum) continue
+          const isActive = branchEnum.includes(depValue)
+          if (!isActive && branch.required) {
+            branch.required.forEach((f: string) => fields.delete(f))
+          }
+        }
+      }
     }
 
     return Array.from(fields)
@@ -347,10 +357,14 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
     // Select/Enum
     if (fieldSchema.enum) {
         // Use custom enumLabels if provided, otherwise use default i18n labels
-        const getEnumLabel = (opt: string): string => {
-          // First check if schema has custom enumLabels
+        const getEnumLabel = (opt: string, idx: number): string => {
+          // enumLabels: object map { value: label }
           if (fieldSchema.enumLabels && fieldSchema.enumLabels[opt]) {
             return fieldSchema.enumLabels[opt]
+          }
+          // enumNames: array aligned with enum values (JSON Schema extension)
+          if (fieldSchema.enumNames && fieldSchema.enumNames[idx]) {
+            return fieldSchema.enumNames[idx]
           }
           
           // Fallback to i18n for common cases
@@ -376,8 +390,8 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
                     )}
                 </label>
                 <Select
-                    options={fieldSchema.enum.map((opt: string) => ({ 
-                        label: getEnumLabel(opt), 
+                    options={fieldSchema.enum.map((opt: string, idx: number) => ({ 
+                        label: getEnumLabel(opt, idx), 
                         value: opt 
                     }))}
                     value={value}

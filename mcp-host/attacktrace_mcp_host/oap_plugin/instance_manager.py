@@ -145,7 +145,14 @@ class InstanceManager:
                 config_params["args"] = request.args
             
             if request.env:
-                config_params["env"] = request.env
+                # Resolve {{device_token}} placeholder so integrations like VirusTotal
+                # can receive the OAP device token without frontend involvement.
+                resolved_env: dict[str, str] = {}
+                for k, v in request.env.items():
+                    if isinstance(v, str) and "{{device_token}}" in v:
+                        v = v.replace("{{device_token}}", self.device_token or "")
+                    resolved_env[k] = v
+                config_params["env"] = resolved_env
         else:
             # Handle http/sse/streamable transport
             config_params["url"] = request.url

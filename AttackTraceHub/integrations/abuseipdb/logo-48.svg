@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <rect width="48" height="48" rx="10" fill="#DC2626"/>
+  <!-- Shield shape -->
+  <path d="M24 8 L36 13 L36 24 C36 31 30 37 24 40 C18 37 12 31 12 24 L12 13 Z"
+        fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round" stroke-opacity="0.9"/>
+  <!-- Warning exclamation -->
+  <rect x="22.5" y="17" width="3" height="11" rx="1.5" fill="white"/>
+  <circle cx="24" cy="32" r="1.8" fill="white"/>
+</svg>

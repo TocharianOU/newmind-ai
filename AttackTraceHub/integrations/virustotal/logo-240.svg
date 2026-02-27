@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120" width="240" height="120">
+  <rect width="240" height="120" rx="12" fill="#394EFF"/>
+  <path d="M60 30L90 45V75L60 90L30 75V45L60 30Z" fill="none" stroke="white" stroke-width="2.5"/>
+  <path d="M45 60L55 70L75 50" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <text x="105" y="65" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="700" fill="white">VirusTotal</text>
+  <text x="105" y="83" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)">Threat Intelligence MCP</text>
+</svg>

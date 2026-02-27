@@ -602,6 +602,21 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
             delete stringifiedConfig.SHODAN_BASE_URL
             delete stringifiedConfig.SHODAN_AUTH_TOKEN
           }
+        } else if (tool.name === "AbuseIPDB") {
+          // AbuseIPDB: Hub proxy uses Authorization: Bearer; BYOK uses Key header directly.
+          if (keyMode === "hub") {
+            delete stringifiedConfig.ABUSEIPDB_API_KEY
+            stringifiedConfig.ABUSEIPDB_BASE_URL = `${OAP_ROOT_URL}/api/abuseipdb-proxy/v2`
+            try {
+              const token = await window.ipcRenderer.oapGetToken()
+              stringifiedConfig.ABUSEIPDB_AUTH_TOKEN = token || "{{device_token}}"
+            } catch {
+              stringifiedConfig.ABUSEIPDB_AUTH_TOKEN = "{{device_token}}"
+            }
+          } else {
+            delete stringifiedConfig.ABUSEIPDB_BASE_URL
+            delete stringifiedConfig.ABUSEIPDB_AUTH_TOKEN
+          }
         } else {
           // Default / VirusTotal: Hub-managed key routes through the VT proxy.
           // VIRUSTOTAL_BASE_URL points to our backend proxy; VIRUSTOTAL_AUTH_TOKEN
