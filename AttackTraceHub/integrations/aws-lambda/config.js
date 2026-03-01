@@ -3,10 +3,9 @@ export default {
   version: '1.0.1',
   downloadUrl: 'https://github.com/TocharianOU/lambda-tool-mcp/releases/download/v1.0.1/lambda-tool-mcp-v1.0.1.tar.gz',
 
-  description: 'AWS Lambda function discovery, configuration inspection, resource policy analysis and exposure check via MCP',
+  description: 'Lambda function enumeration, env var key audit, resource policy public-exposure analysis, and Function URL auth check for serverless security investigations',
   descriptionI18n: {
-    en: 'AWS Lambda MCP Server for function discovery, configuration inspection (env var keys, VPC, layers), resource policy analysis, event source mapping enumeration, and Function URL public exposure checks – designed for serverless security investigations',
-    zh: 'AWS Lambda MCP 服务器，支持函数发现、配置检查（环境变量键名、VPC、层）、资源策略分析、事件源映射枚举及 Function URL 公开暴露检查，专为无服务器安全调查设计'
+    zh: 'Lambda 函数枚举、环境变量键名审计、资源策略公开暴露分析，以及 Function URL 认证检查，专为无服务器安全调查设计'
   },
 
   tags: ['AWS'],
@@ -51,39 +50,38 @@ Provide your AWS credentials to connect:
 - \`lambda:ListTags\`
 - \`lambda:GetFunctionConcurrency\`
 
-## Usage Examples
-- Discover all Lambda functions modified in the past 24 hours after a suspected breach
-- Check if a suspicious function has a public resource policy or Function URL (AuthType=NONE)
-- Identify functions with DynamoDB stream triggers (potential data exfiltration path)
-- Audit environment variable key names for hardcoded credential patterns`,
+## Investigation Workflow
+
+1. \`list_functions\` → enumerate all Lambda functions; check \`last_modified\` for recently changed functions after a suspected breach
+2. \`get_function_details function_name=<name>\` → inspect env var key names for hardcoded secrets (values are always redacted), IAM role, and VPC placement
+3. \`get_function_policy function_name=<name>\` → check if any principal is \`"*"\` (public invoke) or from an unexpected account
+4. \`get_function_url_config function_name=<name>\` → if \`AuthType=NONE\`, the function is **publicly callable without AWS credentials**
+5. \`list_event_source_mappings function_name=<name>\` → identify DynamoDB stream triggers that could serve as data exfiltration paths`,
 
   documentI18n: {
-    en: `# AWS Lambda Tool MCP Server
-
-Lambda function discovery, configuration inspection, and security exposure analysis powered by AWS Lambda API.
-
-## Tools
-- **list_functions** – List functions with runtime, VPC config, state, and last-modified date
-- **get_function_details** – Full config with env var key audit (values redacted), VPC, layers, IAM role
-- **get_function_policy** – Resource policy with public-principal detection
-- **list_event_source_mappings** – Persistence & exfiltration path enumeration
-- **get_function_url_config** – Public Function URL exposure check`,
     zh: `# AWS Lambda Tool MCP 服务器
 
 基于 AWS Lambda API 的函数发现、配置检查和安全暴露分析服务。
 
-## 工具列表
-- **list_functions** – 列出函数（含运行时、VPC 配置、状态、最后修改时间），支持前缀过滤
-- **get_function_details** – 完整配置：环境变量键名审计（值已屏蔽）、VPC、IAM 角色、层
-- **get_function_policy** – 资源策略，检测公开主体和跨账户授权
-- **list_event_source_mappings** – 持久化和数据泄露路径枚举（SQS、DynamoDB Streams、Kinesis）
-- **get_function_url_config** – 公开 Function URL 暴露检查（AuthType=NONE 告警）
+## 工具
 
-## 配置说明
-提供 AWS 凭证以连接：
-- **AWS Access Key ID** 和 **Secret Access Key**：标准 IAM 凭证
-- **AWS 区域**：目标区域（如 us-east-1）
-- **Session Token**：可选，用于临时/AssumeRole 凭证`
+- **list_functions** – 列出函数（含运行时、VPC 配置、状态、最后修改时间），支持前缀过滤。用于发现可疑的近期修改函数
+- **get_function_details** – 完整配置：环境变量键名审计（**值始终屏蔽**，防止凭据泄露）、VPC、IAM 执行角色、层列表。标记可疑键名（如 \`SECRET\`、\`PASSWORD\`、\`KEY\`）
+- **get_function_policy** – 资源策略分析：高亮公开主体（\`"Principal": "*"\`）和跨账户授权。\`"*"\` 表示任何人都可调用该函数
+- **list_event_source_mappings** – 枚举 SQS/DynamoDB Streams/Kinesis 触发器。DynamoDB 流触发器可能是数据泄露路径
+- **get_function_url_config** – 公开 Function URL 检查：\`AuthType=NONE\` 表示**无需 AWS 凭证即可公开调用**（🔴 高危），同时检查 CORS 通配符配置
+
+## 所需 IAM 权限
+
+\`lambda:ListFunctions\`, \`lambda:GetFunction\`, \`lambda:GetPolicy\`, \`lambda:ListEventSourceMappings\`, \`lambda:GetFunctionUrlConfig\`, \`lambda:ListTags\`
+
+## 调查工作流
+
+1. \`list_functions\` → 枚举所有函数；检查 \`last_modified\` 发现可疑期间内的最近修改
+2. \`get_function_details function_name=<函数名>\` → 检查环境变量键名是否含硬编码凭据、IAM 角色和 VPC 配置
+3. \`get_function_policy function_name=<函数名>\` → 检查是否有 \`"*"\` 主体（公开调用）或来自意外账户的授权
+4. \`get_function_url_config function_name=<函数名>\` → \`AuthType=NONE\` 表示函数可无凭证公开调用（高危）
+5. \`list_event_source_mappings function_name=<函数名>\` → 识别可能作为数据泄露路径的 DynamoDB 流触发器`
   },
 
   configSchema: {

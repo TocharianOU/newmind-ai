@@ -3,10 +3,10 @@ export default {
   version: '1.0.1',
   downloadUrl: 'https://github.com/TocharianOU/abuseipdb-mcp/releases/download/v1.0.1/abuseipdb-mcp-v1.0.1.tar.gz',
 
-  description: 'IP reputation intelligence and threat blacklist via AbuseIPDB',
+  description: 'Community-reported IP reputation: single/bulk abuse confidence scoring, CIDR block analysis, and global blacklist up to 500K entries for SOC triage',
   descriptionI18n: {
-    en: 'AbuseIPDB MCP Server for IP reputation checks, abuse confidence scoring, CIDR block analysis, and threat blacklist',
-    zh: 'AbuseIPDB MCP 服务器，用于 IP 声誉检查、滥用置信度评分、CIDR 网段分析和威胁黑名单查询'
+    en: 'Community-reported IP reputation: single/bulk abuse confidence scoring, CIDR block analysis, and global blacklist up to 500K entries for SOC triage',
+    zh: '基于社区众报的 IP 声誉情报：单个/批量滥用置信度评分、CIDR 网段分析、全球黑名单（最多 50 万条），适用于 SOC 告警快速研判'
   },
 
   tags: ['TI'],
@@ -26,52 +26,50 @@ export default {
 
   document: `# AbuseIPDB MCP Server
 
-IP reputation intelligence powered by AbuseIPDB — the world's largest collaborative database of reported malicious IP addresses.
+Community-powered IP reputation intelligence. Every check draws on millions of crowd-reported abuse incidents contributed by security teams worldwide.
 
-## Features
-- Single IP reputation check with abuse confidence score (0–100%) and risk level
-- Bulk check up to 100 IP addresses in one call with flagged-IP summary
-- CIDR network block analysis with per-address confidence breakdown *(subscription required)*
-- Threat blacklist retrieval with confidence distribution and country statistics *(subscription required)*
-- Supports Hub-managed key and custom BYOK
+## Tools
+
+- **check_ip** – Single IP reputation lookup. Returns: abuse confidence score (0–100%), community risk level, ISP, usage type, country, total reports, and unique reporter count. Key params: \`max_age_days\` (1–365 lookback window, default 30), \`verbose\` (include individual report details), \`threshold\` (custom flagging cutoff, default 75%)
+- **bulk_check** – Batch reputation check for up to 100 IPs in a single call. Returns a flagged-IP summary with confidence scores, risk levels, and ISP/country breakdown. Same \`max_age_days\` and \`threshold\` params as \`check_ip\`
+- **check_block** – Check all reported IPs within a CIDR block (e.g. \`198.51.100.0/24\`). Returns network summary, total reported address count, and top threats sorted by confidence. \`confidence_threshold\` sets the high-risk cutoff. *(Requires AbuseIPDB subscription)*
+- **get_blacklist** – Retrieve the global AbuseIPDB blacklist. Key params: \`confidence_minimum\` (25–100, default 90), \`limit\` up to **500,000 entries**, \`plain_text: true\` for raw IP list ready for firewall rules. *(Requires AbuseIPDB subscription)*
 
 ## Configuration
-Choose your access mode:
-- **Hub Key**: No setup required. The platform manages the API key and routes requests through a secure proxy.
-- **Custom Key (BYOK)**: Enter your own AbuseIPDB API key for direct access. Get yours at https://www.abuseipdb.com/account/api
 
-## Usage Examples
-- Check reputation of IPs extracted from security alerts or firewall logs
-- Bulk-validate a list of suspicious IP addresses from an incident
-- Investigate CIDR blocks linked to attack campaigns
-- Enrich SOC alerts with abuse confidence scores and reporter statistics`,
+- **Access Mode**: \`Hub Key\` (platform-managed, zero setup) or \`Custom Key (BYOK)\` (your own AbuseIPDB API key)
+- **ABUSEIPDB_API_KEY**: Required in BYOK mode. Free tier covers \`check_ip\` and \`bulk_check\`; \`check_block\` and \`get_blacklist\` require a paid subscription. Get yours at https://www.abuseipdb.com/account/api
+
+## Investigation Workflow
+
+1. \`check_ip ip_address:"<alert-IP>" verbose:true\` → full abuse history with individual report details
+2. \`bulk_check ip_addresses:["<IP1>","<IP2>","<IP3>"] threshold:50\` → triage suspicious IPs from firewall logs in one call
+3. \`check_block network:"<attacker-CIDR>"\` → assess entire network range linked to a campaign
+4. \`get_blacklist confidence_minimum:100 limit:10000 plain_text:true\` → export high-confidence block list for firewall rules`,
 
   documentI18n: {
-    en: `# AbuseIPDB MCP Server
-
-IP reputation intelligence powered by AbuseIPDB — the world's largest collaborative database of reported malicious IP addresses.
-
-## Features
-- Single IP reputation check with abuse confidence score (0–100%) and risk level
-- Bulk check up to 100 IP addresses in one call with flagged-IP summary
-- CIDR network block analysis with per-address confidence breakdown *(subscription required)*
-- Threat blacklist retrieval with confidence distribution and country statistics *(subscription required)*
-- Supports Hub-managed key and custom BYOK`,
     zh: `# AbuseIPDB MCP 服务器
 
-基于 AbuseIPDB 的 IP 声誉情报服务——全球最大的恶意 IP 协作举报数据库。
+基于社区众报的 IP 声誉情报——全球最大的恶意 IP 协作举报数据库，数百万条安全团队贡献的滥用记录。
 
-## 功能特性
-- 单 IP 声誉检查：滥用置信度评分（0–100%）和风险等级
-- 批量检查最多 100 个 IP，含被标记 IP 汇总
-- CIDR 网段分析：每个地址的置信度分布 *（需要订阅）*
-- 威胁黑名单查询：置信度分布和国家统计 *（需要订阅）*
-- 支持 Hub 托管密钥和自带密钥（BYOK）
+## 工具
+
+- **check_ip** – 单 IP 声誉查询。返回：滥用置信度评分（0–100%）、社区风险等级、ISP、使用类型、国家、举报总数和唯一举报人数。关键参数：\`max_age_days\`（1–365 天回溯窗口，默认 30）、\`verbose\`（包含逐条举报详情）、\`threshold\`（自定义标记阈值，默认 75%）
+- **bulk_check** – 单次调用批量检查最多 100 个 IP 的声誉。返回被标记 IP 汇总，含置信度评分、风险等级和 ISP/国家分布。支持与 \`check_ip\` 相同的 \`max_age_days\` 和 \`threshold\` 参数
+- **check_block** – 检查 CIDR 网段（如 \`198.51.100.0/24\`）内所有被举报的 IP 地址。返回网段摘要、被举报地址总数以及按置信度排序的高危地址列表。\`confidence_threshold\` 控制高危认定阈值。*（需要 AbuseIPDB 订阅）*
+- **get_blacklist** – 获取全球 AbuseIPDB 黑名单。关键参数：\`confidence_minimum\`（25–100，默认 90）、\`limit\` 最多 **50 万条**、\`plain_text: true\` 返回原始 IP 列表可直接用于防火墙规则。*（需要 AbuseIPDB 订阅）*
 
 ## 配置说明
-选择您的访问模式：
-- **Hub 密钥**：无需配置，平台自动管理 API 密钥并通过安全代理路由请求。
-- **自定义密钥（BYOK）**：输入您自己的 AbuseIPDB API 密钥。前往 https://www.abuseipdb.com/account/api 获取。`
+
+- **访问模式**：\`Hub 密钥\`（平台托管，无需配置）或\`自定义密钥（BYOK）\`（使用自己的 AbuseIPDB API 密钥）
+- **ABUSEIPDB_API_KEY**：BYOK 模式下必填。免费套餐支持 \`check_ip\` 和 \`bulk_check\`；\`check_block\` 和 \`get_blacklist\` 需要付费订阅。获取地址：https://www.abuseipdb.com/account/api
+
+## 调查工作流
+
+1. \`check_ip ip_address:"<告警IP>" verbose:true\` → 查看完整滥用历史和逐条举报详情
+2. \`bulk_check ip_addresses:["<IP1>","<IP2>","<IP3>"] threshold:50\` → 一次调用批量研判防火墙日志中的可疑 IP
+3. \`check_block network:"<攻击者CIDR>"\` → 评估攻击活动关联的整个网段
+4. \`get_blacklist confidence_minimum:100 limit:10000 plain_text:true\` → 导出高置信度黑名单用于防火墙规则`
   },
 
   configSchema: {

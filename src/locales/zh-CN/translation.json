@@ -239,7 +239,10 @@
       "updateAvailable": "更新可用",
       "installedVersion": "已安装版本",
       "verifyingIntegrity": "验证包完整性...",
-      "integrityCheckFailed": "包完整性验证失败"
+      "integrityCheckFailed": "包完整性验证失败",
+      "documentation": "集成说明",
+      "categories": "分类",
+      "upgradeAvailable": "可升级"
     },
     "packages": {
       "title": "包管理",

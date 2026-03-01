@@ -3,10 +3,9 @@ export default {
   version: '1.0.1',
   downloadUrl: 'https://github.com/TocharianOU/aws-security-mcp/releases/download/v1.0.1/aws-security-mcp-v1.0.1.tar.gz',
 
-  description: 'AWS security service status checks, threat findings from GuardDuty/SecurityHub/Inspector, and S3/EBS encryption audits',
+  description: 'GuardDuty/SecurityHub/Inspector/AccessAnalyzer status checks, severity-filtered findings, and S3/EBS encryption audits for AWS security posture',
   descriptionI18n: {
-    en: 'AWS Security MCP Server for SOC/DFIR – check whether GuardDuty, Security Hub, Inspector, and IAM Access Analyzer are enabled; retrieve active threat findings with severity filtering; audit S3 bucket and EBS volume encryption compliance',
-    zh: 'AWS Security MCP 服务器，面向 SOC/DFIR 场景，支持检查 GuardDuty/SecurityHub/Inspector/AccessAnalyzer 启用状态、按严重程度过滤获取活跃威胁告警，以及审计 S3 存储桶与 EBS 卷的加密合规情况'
+    zh: 'GuardDuty/SecurityHub/Inspector/AccessAnalyzer 启用状态检查、按严重程度过滤的威胁告警获取，以及 S3/EBS 加密合规审计，全面评估 AWS 安全态势'
   },
 
   tags: ['AWS'],
@@ -60,11 +59,13 @@ Provide your AWS credentials:
 - \`s3:ListAllMyBuckets\`, \`s3:GetEncryptionConfiguration\`, \`s3:GetBucketLocation\`, \`s3:GetBucketPolicyStatus\`
 - \`ec2:DescribeVolumes\`
 
-## Usage Examples
-- **Security posture check**: Run \`check_security_services\` first to see which detection services are active
-- **Incident triage**: Use \`get_security_findings service=guardduty severity_filter=HIGH\` to pull high-priority alerts
-- **Compliance audit**: Use \`check_storage_encryption include_unencrypted_only=true\` to quickly find unencrypted buckets/volumes
-- **Cross-account access review**: Use \`get_security_findings service=accessanalyzer\` to find resources exposed outside the account`,
+## Investigation Workflow
+
+1. \`check_security_services\` → identify which security services are active in the region (find coverage gaps)
+2. \`get_security_findings service=guardduty severity_filter=CRITICAL\` → triage the most urgent threats first
+3. \`get_security_findings service=securityhub\` → cross-check with centralized Security Hub aggregated findings
+4. \`get_security_findings service=accessanalyzer\` → find resources with external or cross-account exposure
+5. \`check_storage_encryption include_unencrypted_only=true\` → audit for unencrypted S3 buckets and EBS volumes`,
 
   documentI18n: {
     zh: `# AWS Security MCP 服务器
@@ -86,13 +87,19 @@ Provide your AWS credentials:
 
 ## 所需 IAM 权限
 
-详见英文文档。
+**check_security_services**: \`guardduty:ListDetectors\`, \`guardduty:GetDetector\`, \`securityhub:DescribeHub\`, \`inspector2:BatchGetAccountStatus\`, \`access-analyzer:ListAnalyzers\`
 
-## 使用示例
-- **安全态势检查**：先运行 \`check_security_services\`，了解哪些检测服务已激活
-- **事件响应分类**：使用 \`get_security_findings service=guardduty severity_filter=HIGH\` 获取高危告警
-- **合规审计**：使用 \`check_storage_encryption include_unencrypted_only=true\` 快速找出未加密的存储桶/卷
-- **跨账号访问审查**：使用 \`get_security_findings service=accessanalyzer\` 发现账号外部可访问的资源`
+**get_security_findings**: \`guardduty:ListFindings\`, \`guardduty:GetFindings\`, \`securityhub:GetFindings\`, \`inspector2:ListFindings\`, \`access-analyzer:ListFindings\`
+
+**check_storage_encryption**: \`s3:ListAllMyBuckets\`, \`s3:GetEncryptionConfiguration\`, \`s3:GetBucketLocation\`, \`s3:GetBucketPolicyStatus\`, \`ec2:DescribeVolumes\`
+
+## 调查工作流
+
+1. \`check_security_services\` → 确认哪些安全服务在当前区域已启用，发现覆盖盲区
+2. \`get_security_findings service=guardduty severity_filter=CRITICAL\` → 优先处理最紧急的威胁
+3. \`get_security_findings service=securityhub\` → 与 Security Hub 聚合告警交叉核查
+4. \`get_security_findings service=accessanalyzer\` → 发现对外部或跨账号暴露的资源
+5. \`check_storage_encryption include_unencrypted_only=true\` → 审计未加密的 S3 存储桶和 EBS 卷`
   },
 
   configSchema: {

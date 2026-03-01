@@ -238,7 +238,10 @@
       "updateAvailable": "Update available",
       "installedVersion": "Installed version",
       "verifyingIntegrity": "Verifying package integrity...",
-      "integrityCheckFailed": "Package integrity verification failed"
+      "integrityCheckFailed": "Package integrity verification failed",
+      "documentation": "Documentation",
+      "categories": "Categories",
+      "upgradeAvailable": "Update Available"
     },
     "packages": {
       "title": "Package Manager",

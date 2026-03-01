@@ -5,7 +5,6 @@ export default {
 
   description: 'AWS EC2 instance inventory, security group exposure analysis, and console output forensics for incident response',
   descriptionI18n: {
-    en: 'AWS EC2 MCP Server for DFIR – list instances with IPs/SGs/IAM/user-data forensics, analyze security group rules for dangerous internet exposure (SSH/RDP/DB open to 0.0.0.0/0), and retrieve console output with automatic suspicious pattern scanning',
     zh: 'AWS EC2 MCP 服务器，面向 DFIR 场景，支持实例清单（含 IP/安全组/IAM/User-Data 取证）、安全组规则暴露面分析（检测 SSH/RDP/DB 对公网开放），以及控制台输出自动扫描（认证失败、反弹 Shell、挖矿程序等）'
   },
 

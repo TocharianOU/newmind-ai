@@ -3,10 +3,9 @@ export default {
   version: '1.0.1',
   downloadUrl: 'https://github.com/TocharianOU/cloudtrail-mcp/releases/download/v1.0.1/cloudtrail-mcp-v1.0.1.tar.gz',
 
-  description: 'AWS CloudTrail audit log lookup and security investigation via MCP',
+  description: 'CloudTrail event lookup by username/AccessKeyId/EventName and Lake SQL analytics for AWS API audit trail investigations',
   descriptionI18n: {
-    en: 'AWS CloudTrail MCP Server for audit log lookup, CloudTrail Lake SQL analytics, event data store management, and security investigations',
-    zh: 'AWS CloudTrail MCP 服务器，用于审计日志查询、CloudTrail Lake SQL 分析、事件数据存储管理和安全调查'
+    zh: '按用户名/AccessKeyId/事件名过滤的 CloudTrail 事件查询，以及 CloudTrail Lake SQL 分析，专为 AWS API 审计跟踪调查设计'
   },
 
   tags: ['AWS'],
@@ -27,59 +26,57 @@ export default {
 
   document: `# AWS CloudTrail MCP Server
 
-Audit log lookup and security investigation powered by AWS CloudTrail.
+AWS API audit trail lookup and advanced threat hunting via CloudTrail management events and CloudTrail Lake SQL analytics.
 
-## Features
-- Lookup CloudTrail events by time range, resource, user, or event type
-- CloudTrail Lake SQL analytics for advanced threat hunting
-- Query status tracking and result retrieval
-- List and manage event data stores
-- Supports temporary credentials (AssumeRole / AWS SSO)
+## Tools
 
-## Configuration
-Provide your AWS credentials to connect:
-- **AWS Access Key ID** and **Secret Access Key**: Standard IAM credentials
-- **AWS Region**: Target region for CloudTrail queries (e.g. us-east-1)
-- **Session Token**: Optional, for temporary/AssumeRole credentials
+### Management Event Lookup
+- **lookup_events** – Look up CloudTrail management events from the **last 90 days**. Filter by: \`attributeKey\` (Username, EventName, AccessKeyId, ResourceName, ResourceType, EventSource, ReadOnly, EventId) + \`attributeValue\`. Params: \`startTime\`/\`endTime\` (ISO or relative e.g. \`"2 hours ago"\`), \`maxResults\` (1–50), pagination via \`nextToken\`. Ideal for per-user or per-action forensics
+
+### CloudTrail Lake SQL Analytics
+- **lake_query** – Run SQL queries against a CloudTrail Lake event data store for deeper analytics. Supports aggregations, JOINs, and full-history queries beyond 90 days. Provide the event data store ARN and a SQL string; returns a \`queryId\` for async retrieval
+- **get_query_status** – Poll the status of an async Lake query (QUEUED / RUNNING / FINISHED / FAILED). Call this after \`lake_query\` before fetching results
+- **get_query_results** – Retrieve the results of a completed Lake query by \`queryId\`. Supports pagination for large result sets
 
 ## Required IAM Permissions
-- \`cloudtrail:LookupEvents\`
-- \`cloudtrail:StartQuery\`
-- \`cloudtrail:GetQueryResults\`
-- \`cloudtrail:ListEventDataStores\`
 
-## Usage Examples
-- Investigate suspicious API calls from a specific IAM user
-- Hunt for privilege escalation events across accounts
-- Correlate CloudTrail events with security alerts`,
+\`cloudtrail:LookupEvents\`, \`cloudtrail:StartQuery\`, \`cloudtrail:GetQueryResults\`, \`cloudtrail:DescribeQuery\`, \`cloudtrail:ListEventDataStores\`
+
+## Investigation Workflow
+
+1. \`lookup_events attributeKey=Username attributeValue=<suspect> startTime="2 days ago" maxResults=50\` → trace all API calls by a suspected user
+2. \`lookup_events attributeKey=EventName attributeValue=ConsoleLogin startTime="1 hour ago"\` → find recent console logins
+3. \`lookup_events attributeKey=EventName attributeValue=CreateUser\` → hunt for unauthorized IAM user creation (privilege escalation)
+4. \`lookup_events attributeKey=AccessKeyId attributeValue=<leaked_key>\` → track all usage of a compromised access key
+5. For deeper analytics: \`lake_query\` → \`get_query_status\` → \`get_query_results\` pipeline with SQL like:
+   \`SELECT eventTime, userIdentity.arn, eventName, sourceIPAddress FROM <eds_arn> WHERE eventName IN ('CreateUser','AttachUserPolicy','AssumeRole') ORDER BY eventTime DESC LIMIT 50\``,
 
   documentI18n: {
-    en: `# AWS CloudTrail MCP Server
-
-Audit log lookup and security investigation powered by AWS CloudTrail.
-
-## Features
-- Lookup CloudTrail events by time range, resource, user, or event type
-- CloudTrail Lake SQL analytics for advanced threat hunting
-- Query status tracking and result retrieval
-- List and manage event data stores
-- Supports temporary credentials (AssumeRole / AWS SSO)`,
     zh: `# AWS CloudTrail MCP 服务器
 
-基于 AWS CloudTrail 的审计日志查询和安全调查服务。
+通过 CloudTrail 管理事件和 CloudTrail Lake SQL 分析，进行 AWS API 审计跟踪查询和高级威胁狩猎。
 
-## 功能特性
-- 按时间范围、资源、用户或事件类型查询 CloudTrail 事件
-- CloudTrail Lake SQL 分析，用于高级威胁狩猎
-- 查询状态跟踪和结果获取
-- 列出并管理事件数据存储
-- 支持临时凭证（AssumeRole / AWS SSO）
+## 工具
 
-## 配置说明
-提供 AWS 凭证以连接：
-- **AWS Access Key ID** 和 **Secret Access Key**：标准 IAM 凭证
-- **AWS 区域**：CloudTrail 查询的目标区域（如 us-east-1）
-- **Session Token**：可选，用于临时/AssumeRole 凭证`
+### 管理事件查询
+- **lookup_events** – 查询 **90 天内**的 CloudTrail 管理事件。过滤维度：\`attributeKey\`（Username/EventName/AccessKeyId/ResourceName/ResourceType/EventSource/ReadOnly/EventId）+ \`attributeValue\`。支持 ISO 或相对时间（如 \`"2 hours ago"\`）、\`maxResults`\`（1–50）和分页（\`nextToken\`）
+
+### CloudTrail Lake SQL 分析
+- **lake_query** – 对 CloudTrail Lake 事件数据存储运行 SQL 查询，支持聚合、JOIN 和超出 90 天的历史查询。返回 \`queryId\` 用于异步获取结果
+- **get_query_status** – 轮询异步 Lake 查询状态（QUEUED / RUNNING / FINISHED / FAILED）。在 \`lake_query\` 之后、获取结果之前调用
+- **get_query_results** – 通过 \`queryId\` 获取已完成 Lake 查询的结果，支持大结果集分页
+
+## 所需 IAM 权限
+
+\`cloudtrail:LookupEvents\`, \`cloudtrail:StartQuery\`, \`cloudtrail:GetQueryResults\`, \`cloudtrail:DescribeQuery\`, \`cloudtrail:ListEventDataStores\`
+
+## 调查工作流
+
+1. \`lookup_events attributeKey=Username attributeValue=<嫌疑人> startTime="2 days ago" maxResults=50\` → 追踪嫌疑用户的所有 API 调用
+2. \`lookup_events attributeKey=EventName attributeValue=ConsoleLogin startTime="1 hour ago"\` → 发现近期控制台登录
+3. \`lookup_events attributeKey=EventName attributeValue=CreateUser\` → 狩猎未授权 IAM 用户创建（提权）
+4. \`lookup_events attributeKey=AccessKeyId attributeValue=<泄露密钥>\` → 追踪泄露访问密钥的所有使用记录
+5. 深度分析：\`lake_query\` → \`get_query_status\` → \`get_query_results\` 流程，使用 SQL 进行聚合分析`
   },
 
   configSchema: {

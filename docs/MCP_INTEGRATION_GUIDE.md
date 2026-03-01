@@ -21,6 +21,7 @@
 11. [GitHub 仓库管理规范](#11-github-仓库管理规范)
 12. [版本与发布管理规范](#12-版本与发布管理规范)
 13. [数据库与前端缓存更新流程](#13-数据库与前端缓存更新流程)
+14. [集成描述与文档规范（description / document）](#14-集成描述与文档规范description--document)
 
 ---
 
@@ -994,3 +995,188 @@ AI 会据此自动调整查询策略（缩小时间窗口、加过滤条件、�
 - [ ] 工具 schema 中加入 `break_token_rule` 参数
 - [ ] `index.ts` 读取 `MAX_TOKEN_CALL` 环境变量并传入工具注册
 - [ ] `config.js` 的 `configSchema` 中暴露 `MAX_TOKEN_CALL` 字段（可选但推荐）
+
+---
+
+## 14. 集成描述与文档规范（description / document）
+
+每个集成的 `config.js` 包含两层描述，分别对应 UI 的不同展示位置：
+
+```
+集成市场（Browse 卡片）
+├── tool.description          ← 卡片中的一行简介
+└── tool.descriptionI18n      ← 同上，国际化版本
+
+配置页（Configure 表单 → "集成说明" 折叠面板）
+└── tool.document             ← Markdown 格式完整文档（可折叠展开）
+```
+
+---
+
+### 14.1 `description`（卡片简介）书写规范
+
+**定位**：集成市场卡片 `oap-description` 区域展示的一行文字，用户通过它快速判断该工具是否符合需求。
+
+**要求**：
+- 长度控制在 **80–120 字符**以内（不超过两行）
+- 包含：**核心数据对象** + **关键能力** + **适用场景**
+- 禁止出现 "via MCP"（冗余，所有集成都是 via MCP）
+- 避免使用纯功能罗列（"A, B, C, D"）；应说清楚**为什么重要**
+
+**好的示例**：
+```
+# AWS Security
+"GuardDuty / SecurityHub / Inspector threat findings, IAM Access Analyzer 
+ alerts, and S3/EBS encryption audit for SOC investigations"
+
+# Splunk
+"Execute SPL queries, discover indexes and sourcetypes, and manage saved 
+ searches for SIEM-driven threat hunting"
+
+# VirusTotal
+"Multi-engine threat intelligence for files, URLs, IPs and domains – 
+ supports 41 file / 17 URL / 12 IP relationship types for IOC pivoting"
+```
+
+**差的示例**：
+```
+# 太泛
+"File, URL, IP, and domain threat intelligence via VirusTotal"
+
+# 纯罗列
+"Comprehensive Kibana management and visualization tools"
+```
+
+---
+
+### 14.2 `descriptionI18n`（国际化简介）
+
+`descriptionI18n.zh` 是中文版本，在中文 UI 下替代 `description` 字段展示。
+
+- 内容与 `description` **完全对应**，不要增减信息
+- 中文无需翻译技术名词（如 GuardDuty、SPL、WHOIS、IOC）
+- 长度控制在 **60–100 个中文字符**以内
+
+---
+
+### 14.3 `document`（配置页折叠文档）书写规范
+
+**定位**：用户点击"添加集成"后，配置表单顶部有一个可折叠的"集成说明"面板，渲染该字段的 Markdown 内容。
+
+**前端实现**：`src/views/Drawer/IntegrationMarket.tsx` — configure 视图中的 `.integration-doc-panel`。默认折叠，点击展开。
+
+**渲染支持**：`react-markdown` + `remark-gfm`，支持标准 GFM（表格、代码块、粗体、列表等）。
+
+**标准结构模板**：
+
+```markdown
+# 工具名称 MCP Server
+
+一句话描述该工具的定位和主要价值（与 description 字段一致，可略加展开）。
+
+## Tools
+
+- **tool_name_1** – 功能说明。列出关键参数和返回内容的亮点
+- **tool_name_2** – 功能说明。如有数量亮点（如"支持 41 种关系类型"）必须注明
+- **tool_name_3** – 功能说明
+
+## Configuration
+
+- **ENV_VAR_NAME**: 该变量的含义和填写方式
+- **ENV_VAR_NAME_2**: 认证方式说明（如有 Token/Username+Password 两种模式，在此说明选择逻辑）
+
+## Required Permissions（如适用）
+
+列出最小所需权限/IAM Policy/角色（AWS 类集成必须提供此节）
+
+## Investigation Workflow（可选但推荐）
+
+1. 第一步工具调用 → 说明目的
+2. 第二步工具调用 → 说明如何利用第一步结果
+3. ...
+```
+
+**书写要求**：
+
+| 项目 | 要求 |
+|------|------|
+| `## Tools` | **必须列出所有工具名（\`tool_name\`）**，逐条说明功能，不能只写 Feature 列表 |
+| 工具描述 | 突出**关系类型数量**、**特殊参数**、**自动完成的操作**（如"自动拉取关系数据"） |
+| `## Configuration` | 说明所有关键 env var 的用途，认证有多种模式时必须说明优先级逻辑 |
+| `## Required Permissions` | AWS 类集成必填；列出最小权限，防止用户配置 Full-Access |
+| `## Investigation Workflow` | 推荐提供，帮助 AI 和用户理解最佳调用顺序 |
+| 语言 | `document` 字段使用**英文**；`documentI18n.zh` 提供中文版本 |
+| 长度 | 无严格上限，但应聚焦实用信息，避免抄写 API 文档 |
+
+---
+
+### 14.4 `documentI18n`（国际化文档）
+
+`documentI18n.zh` 是中文版文档，结构与 `document` 完全对应。
+
+- 技术名词（工具名、环境变量名、服务名）不翻译
+- `## Tools` 中的工具名保持英文（`**get_file_report**`），说明文字翻译
+- 若暂时没有中文版本，可省略 `documentI18n` 字段，前端自动降级显示 `document`
+
+---
+
+### 14.5 完整示例（VirusTotal）
+
+```javascript
+description: 'Multi-engine threat intelligence for files, URLs, IPs and domains – 41 file / 17 URL / 12 IP relationship types for IOC pivoting',
+
+descriptionI18n: {
+  en: 'Multi-engine threat intelligence for files, URLs, IPs and domains – 41 file / 17 URL / 12 IP relationship types for IOC pivoting',
+  zh: '文件/URL/IP/域名多引擎威胁情报，支持 41 种文件、17 种 URL、12 种 IP 关系类型，适合 IOC 溯源和基础设施关联分析'
+},
+
+document: `# VirusTotal MCP Server
+
+Multi-engine threat intelligence platform. Analyze any IOC (file hash, URL, IP, domain)
+and pivot through relationship graphs to uncover attacker infrastructure.
+
+## Tools
+
+- **get_file_report** – Full scan report for a file hash (MD5/SHA-1/SHA-256). Automatically 
+  fetches the most relevant relationships: behaviors, dropped files, network connections, 
+  execution chains, embedded content, and threat actors. Supports **41 relationship types**.
+- **get_file_relationship** – Deep-dive into a specific relationship type for a file, 
+  with pagination (41 types: behaviors, network-connections, dropped-files, execution-parents, 
+  embedded-domains, threat-actors, etc.)
+- **get_url_report** – URL safety scan with automatic relationship fetch: communicating files, 
+  contacted domains/IPs, downloaded files, redirect chains, threat actors (**17 types**).
+- **get_url_relationship** – Paginated query for a specific URL relationship type.
+- **get_ip_report** – IP geolocation, reputation score, and relationships: historical SSL 
+  certificates, WHOIS records, passive DNS resolutions, communicating files (**12 types**).
+- **get_ip_relationship** – Paginated query for a specific IP relationship type.
+- **get_domain_report** – Domain DNS records, WHOIS data, subdomains, historical SSL 
+  certificates, and communicating files/URLs.
+
+## Configuration
+
+- **Access Mode**: Choose \`Hub Key\` (platform manages the API key, zero setup) or 
+  \`Custom Key (BYOK)\` (enter your own VirusTotal API key for direct API access).
+- **VIRUSTOTAL_API_KEY**: Required only in BYOK mode. Free API keys have rate limits 
+  (4 requests/min); premium keys unlock higher quotas.
+- **Max Token Limit**: Caps the result size per call to prevent context overflow.
+
+## Investigation Workflow
+
+1. \`get_file_report hash:"<sha256>"\` → get detection verdict + behavior summary
+2. \`get_file_relationship hash:"<sha256>" relationship:"dropped-files"\` → find files dropped by malware
+3. \`get_ip_report ip:"<C2-IP>"\` → pivot from network IOC to attacker infrastructure
+4. \`get_domain_report domain:"<c2-domain>"\` → enumerate subdomains and historical certs`,
+```
+
+---
+
+### 14.6 Checklist（新增集成时）
+
+- [ ] `description`：80–120 字符，包含核心数据对象 + 关键能力 + 场景，无 "via MCP"
+- [ ] `descriptionI18n.zh`：60–100 中文字符，与 `description` 内容完全对应
+- [ ] `document`：英文 Markdown，包含 `## Tools`（列出所有工具名）、`## Configuration`
+- [ ] `document ## Tools`：每个工具逐条描述，标注关系类型数量、关键参数等亮点
+- [ ] AWS 类集成：`document` 中包含 `## Required Permissions` 最小权限清单
+- [ ] 推荐：`document` 包含 `## Investigation Workflow` 调用顺序示例
+- [ ] `documentI18n.zh`：提供中文版（或确认暂缓并在注释中标注）
+- [ ] 修改后执行 `npx prisma db seed` 更新数据库

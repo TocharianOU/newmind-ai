@@ -1,6 +1,8 @@
 import { memo, useCallback, useEffect, useRef, useState, useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import React from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { useSetAtom, useAtomValue } from "jotai"
 import { showToastAtom } from "../../atoms/toastState"
 import { currentProjectIdAtom } from "../../atoms/projectState"
@@ -13,6 +15,19 @@ import InfiniteScroll from "../../components/InfiniteScroll"
 import SchemaForm from "../Overlay/Tools/Popup/SchemaForm"
 import Tooltip from "../../components/Tooltip"
 import { OAP_ROOT_URL } from "../../../shared/oap"
+
+// Compare semver strings: returns true if a > b
+function semverGt(a: string, b: string): boolean {
+  const pa = a.split('.').map(Number)
+  const pb = b.split('.').map(Number)
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const na = pa[i] ?? 0
+    const nb = pb[i] ?? 0
+    if (na > nb) return true
+    if (na < nb) return false
+  }
+  return false
+}
 
 // Custom hook for debounced value
 function useDebounce<T>(value: T, delay: number): T {
@@ -43,6 +58,8 @@ interface ToolItem extends OAPMCPServer {
   installProgress?: number
   installedInstanceCount?: number
   installedInstanceNames?: string[]
+  installedVersion?: string | null
+  isUpgradeAvailable?: boolean
   logoUrl?: string
 }
 
@@ -77,6 +94,7 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [installProgress, setInstallProgress] = useState(0)
   const [installStatus, setInstallStatus] = useState("")
+  const [docExpanded, setDocExpanded] = useState(false)
   const installAbortControllerRef = useRef<AbortController | null>(null)
 
   // Load all tools into cache (initial load)
@@ -900,11 +918,20 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
   const getToolInstallStatus = useCallback((tool: OAPMCPServer) => {
     const instances = installedInstances.filter(inst => inst.tool_id === tool.id)
     const instanceNames = instances.map(inst => inst.instance_name)
-    
+    // Use the version from the first installed instance (all instances share the same package)
+    const installedVersion = instances.length > 0 ? (instances[0].version ?? null) : null
+    const isUpgradeAvailable = !!(
+      installedVersion &&
+      tool.version &&
+      semverGt(tool.version, installedVersion)
+    )
+
     return {
       isInstalled: instances.length > 0,
       installedInstanceCount: instances.length,
       installedInstanceNames: instanceNames,
+      installedVersion,
+      isUpgradeAvailable,
     }
   }, [installedInstances])
 
@@ -976,53 +1003,56 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
   }, [cacheLoaded, allToolsCache, debouncedSearchText, selectedCategory, toolList, localSearchTools, processTools])
 
   const IntegrationList = useMemo(() => {
+    // Count tools per category from the full cache (unfiltered by search)
+    const categoryCounts: Record<string, number> = { All: allToolsCache.length }
+    allToolsCache.forEach(tool => {
+      if (tool.tags && Array.isArray(tool.tags) && tool.tags.length > 0) {
+        const tag = tool.tags[0]
+        categoryCounts[tag] = (categoryCounts[tag] || 0) + 1
+      }
+    })
+
     return (
       <div className="tool-edit-list integration-list">
         <div className="integration-list-header">
-          <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-weak)' }}>
-            {t("tools.marketplace.available") || "Available"} ({filteredTools.length})
+          <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            {t("tools.marketplace.categories") || "Categories"}
           </span>
         </div>
         <div style={{ overflowY: 'auto', flex: 1 }}>
-          {filteredTools.map((tool) => (
-          <Tooltip
-            key={tool.id}
-            content={tool.description || tool.name}
-            side="right"
-          >
+          {availableCategories.map((category) => (
             <div
-              className={`tool-edit-list-item ${selectedTool?.id === tool.id ? "active" : ""}`}
-              onClick={() => handleAddClick(tool)}
+              key={category}
+              className={`tool-edit-list-item ${selectedCategory === category ? "active" : ""}`}
+              onClick={() => setSelectedCategory(category)}
               style={{ cursor: 'pointer' }}
             >
               <div className="tool-edit-list-item-content">
-                {tool.logoUrl && (
-                  <img 
-                    src={tool.logoUrl} 
-                    alt={tool.name}
-                    style={{
-                      width: '24px',
-                      height: '24px',
-                      objectFit: 'contain',
-                      marginRight: '8px',
-                      flexShrink: 0
-                    }}
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none'
-                    }}
-                  />
-                )}
                 <div className="left">
-                  <label>{mcpNameMask(tool.name, 14)}</label>
+                  <label style={{ cursor: 'pointer' }}>{category}</label>
+                </div>
+                <div className="right">
+                  <span style={{
+                    fontSize: '11px',
+                    padding: '2px 7px',
+                    borderRadius: '10px',
+                    background: selectedCategory === category ? 'var(--bg-pri-blue)' : 'var(--bg-op-dark-weak)',
+                    color: selectedCategory === category ? '#fff' : 'var(--text-weak)',
+                    fontWeight: '600',
+                    minWidth: '20px',
+                    textAlign: 'center',
+                    display: 'inline-block',
+                  }}>
+                    {categoryCounts[category] ?? 0}
+                  </span>
                 </div>
               </div>
             </div>
-          </Tooltip>
           ))}
         </div>
       </div>
     )
-  }, [filteredTools, selectedTool, t, handleAddClick])
+  }, [availableCategories, selectedCategory, allToolsCache, t, setSelectedCategory])
 
   const ContentArea = useMemo(() => {
     if (viewMode === "installing" && selectedTool) {
@@ -1119,7 +1149,7 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
                 </div>
                 
                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: '24px' }}>
-                  <Button onClick={handleCancelInstallation} color="white">
+                  <Button onClick={handleCancelInstallation} color="white" size="fit">
                     {t("tools.cancel") || "取消安装"}
                   </Button>
                 </div>
@@ -1183,10 +1213,48 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
               </div>
               
               <div className="configure-form">
-                <div className="oap-edit-notice">
-                  {t("tools.oap.edit_managed_notice") || "This integration is managed by OAP Platform. Configure the required settings below."}
-                </div>
-                
+                {selectedTool.document ? (
+                  <div className="integration-doc-panel">
+                    <button
+                      className="integration-doc-toggle"
+                      onClick={() => setDocExpanded(prev => !prev)}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
+                    >
+                      <span>{t("tools.marketplace.documentation") || "Documentation"}</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        style={{
+                          transition: 'transform 0.2s',
+                          transform: docExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+                          flexShrink: 0,
+                          opacity: 0.6
+                        }}
+                      >
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </button>
+                    {docExpanded && (
+                      <div className="integration-doc-content">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {selectedTool.document}
+                        </ReactMarkdown>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="oap-edit-notice">
+                    {t("tools.oap.edit_managed_notice") || "Configure the required settings below."}
+                  </div>
+                )}
+
                 <div className="field-item">
                   <label>
                     {t("tools.namePlaceholder") || "Instance Name"}
@@ -1283,21 +1351,6 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
               )}
             </div>
 
-            {/* Category Filter (Single Selection) */}
-            {availableCategories.length > 1 && (
-              <div className="tag-filter-container">
-                {availableCategories.map(category => (
-                  <button
-                    key={category}
-                    className={`tag-chip ${selectedCategory === category ? 'active' : ''}`}
-                    onClick={() => setSelectedCategory(category)}
-                  >
-                    {category}
-                  </button>
-                ))}
-              </div>
-            )}
-
             <div className="oap-item-wrapper">
               <div className="oap-grid">
                 {/* 本地缓存模式不需要无限滚动 */}
@@ -1344,30 +1397,32 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
                             <div className="oap-content">
                               <div className="oap-content-title">
                                 <div className="oap-title-text">{tool.name}</div>
-                                {tool.version && (
-                                  <span style={{ 
-                                    fontSize: '11px',
-                                    padding: '2px 6px',
-                                    borderRadius: '4px',
-                                    background: 'var(--bg-op-dark-ultraweak)',
-                                    color: 'var(--text-weak)',
-                                    fontWeight: '500',
-                                    marginLeft: '8px'
-                                  }}>
-                                    v{tool.version}
-                                  </span>
-                                )}
                               </div>
                               <div className="oap-description">{tool.description || 'No description available'}</div>
                             </div>
                           </div>
                           <div className="oap-item-content-bottom">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                              <div style={{ fontSize: '12px', color: 'var(--text-weak)' }}>
+                              <div style={{ fontSize: '11px', color: 'var(--text-weak)', display: 'flex', flexDirection: 'column', gap: '3px' }}>
                                 {tool.isInstalled && tool.installedInstanceCount
-                                  ? `${tool.installedInstanceCount} ${tool.installedInstanceCount > 1 ? (t("tools.marketplace.instances") || "instances") : (t("tools.marketplace.instance") || "instance")} ${t("tools.marketplace.installed") || "已安装"}`
-                                  : t("tools.marketplace.notInstalled") || "未安装"
+                                  ? <span>{tool.installedInstanceCount} {tool.installedInstanceCount > 1 ? (t("tools.marketplace.instances") || "instances") : (t("tools.marketplace.instance") || "instance")} {t("tools.marketplace.installed") || "已安装"}</span>
+                                  : <span>{t("tools.marketplace.notInstalled") || "未安装"}</span>
                                 }
+                                {tool.isUpgradeAvailable && (
+                                  <span style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '3px',
+                                    fontSize: '11px',
+                                    fontWeight: '600',
+                                    color: '#f59e0b',
+                                  }}>
+                                    <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+                                      <path d="M8 1l6 6H9v8H7V7H2L8 1z"/>
+                                    </svg>
+                                    {t("tools.marketplace.upgradeAvailable") || "Update Available"}
+                                  </span>
+                                )}
                               </div>
                               <Button
                                 onClick={() => handleAddClick(tool)}
@@ -1439,30 +1494,32 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
                               <div className="oap-content">
                                 <div className="oap-content-title">
                                   <div className="oap-title-text">{tool.name}</div>
-                                  {tool.version && (
-                                    <span style={{ 
-                                      fontSize: '11px',
-                                      padding: '2px 6px',
-                                      borderRadius: '4px',
-                                      background: 'var(--bg-op-dark-ultraweak)',
-                                      color: 'var(--text-weak)',
-                                      fontWeight: '500',
-                                      marginLeft: '8px'
-                                    }}>
-                                      v{tool.version}
-                                    </span>
-                                  )}
                                 </div>
                                 <div className="oap-description">{tool.description || 'No description available'}</div>
                               </div>
                             </div>
                             <div className="oap-item-content-bottom">
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                                <div style={{ fontSize: '12px', color: 'var(--text-weak)' }}>
+                                <div style={{ fontSize: '11px', color: 'var(--text-weak)', display: 'flex', flexDirection: 'column', gap: '3px' }}>
                                   {tool.isInstalled && tool.installedInstanceCount
-                                    ? `${tool.installedInstanceCount} ${tool.installedInstanceCount > 1 ? (t("tools.marketplace.instances") || "instances") : (t("tools.marketplace.instance") || "instance")} ${t("tools.marketplace.installed") || "已安装"}`
-                                    : t("tools.marketplace.notInstalled") || "未安装"
+                                    ? <span>{tool.installedInstanceCount} {tool.installedInstanceCount > 1 ? (t("tools.marketplace.instances") || "instances") : (t("tools.marketplace.instance") || "instance")} {t("tools.marketplace.installed") || "已安装"}</span>
+                                    : <span>{t("tools.marketplace.notInstalled") || "未安装"}</span>
                                   }
+                                  {tool.isUpgradeAvailable && (
+                                    <span style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '3px',
+                                      fontSize: '11px',
+                                      fontWeight: '600',
+                                      color: '#f59e0b',
+                                    }}>
+                                      <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M8 1l6 6H9v8H7V7H2L8 1z"/>
+                                      </svg>
+                                      {t("tools.marketplace.upgradeAvailable") || "Update Available"}
+                                    </span>
+                                  )}
                                 </div>
                                 <Button
                                   onClick={() => handleAddClick(tool)}
@@ -1494,7 +1551,7 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
         </div>
       </div>
     )
-  }, [viewMode, selectedTool, instanceName, configData, isSubmitting, searchText, filteredTools, hasNextPage, t, handleLoadNextPage, installProgress, installStatus])
+  }, [viewMode, selectedTool, instanceName, configData, isSubmitting, searchText, filteredTools, hasNextPage, t, handleLoadNextPage, installProgress, installStatus, docExpanded, setDocExpanded])
 
   return (
     <div className={`integration-market-drawer ${viewMode !== "browse" ? "single-column" : ""}`}>
@@ -1505,7 +1562,7 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
       
       {viewMode === "configure" && (
         <div className="drawer-footer">
-          <Button onClick={handleBackToBrowse} color="white" disabled={isSubmitting}>
+          <Button onClick={handleBackToBrowse} color="white" size="fit" disabled={isSubmitting}>
             {t("tools.cancel") || "取消"}
           </Button>
           <Button onClick={handleConfigSubmit} color="blue" size="fit" loading={isSubmitting} disabled={isSubmitting}>

@@ -3,10 +3,9 @@ export default {
   version: '1.0.1',
   downloadUrl: 'https://github.com/TocharianOU/aws-s3-mcp/releases/download/v1.0.1/aws-s3-mcp-v1.0.1.tar.gz',
 
-  description: 'AWS S3 bucket inventory, public exposure detection, policy/ACL analysis, and sensitive file detection for data exfiltration investigations',
+  description: 'S3 public exposure, policy/ACL risk audit, and automatic sensitive-file detection for data-exfiltration investigations',
   descriptionI18n: {
-    en: 'AWS S3 MCP Server for DFIR – full bucket inventory with security audit (public access, encryption, versioning, logging), bucket policy and ACL analysis for public/cross-account exposure, and object listing with automatic sensitive file detection (credentials, keys, DB backups, Terraform state, SSH keys, PII data)',
-    zh: 'AWS S3 MCP 服务器，面向 DFIR 场景，支持存储桶清单安全审计（公开访问/加密/版本控制/日志），存储桶策略与 ACL 分析（公开/跨账号暴露检测），以及对象列举中的敏感文件自动检测（凭据/密钥/数据库备份/Terraform 状态/SSH 密钥/PII 数据）'
+    zh: 'S3 公开暴露审计、策略与 ACL 风险分析，以及凭据/数据库备份/Terraform 状态文件的自动检测，面向数据泄露事件响应'
   },
 
   tags: ['AWS'],
