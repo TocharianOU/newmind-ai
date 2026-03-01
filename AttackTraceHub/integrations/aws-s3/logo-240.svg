@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <rect width="240" height="240" rx="40" fill="#FF9900"/>
+  <!-- Bucket body -->
+  <rect x="55" y="80" width="130" height="110" rx="6" fill="none" stroke="white" stroke-width="9"/>
+  <!-- Bucket lid (ellipse top) -->
+  <ellipse cx="120" cy="80" rx="65" ry="18" fill="none" stroke="white" stroke-width="9"/>
+  <!-- Handle -->
+  <path d="M90 80 Q90 45 120 45 Q150 45 150 80" fill="none" stroke="white" stroke-width="9" stroke-linecap="round"/>
+  <!-- Horizontal line dividing body -->
+  <line x1="55" y1="118" x2="185" y2="118" stroke="white" stroke-width="6" stroke-dasharray="12,8"/>
+</svg>

@@ -378,13 +378,11 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
       const init = async () => {
         await loadInstalledInstances()
         
-        // Try to load from localStorage first
-        const hasCache = loadCacheFromStorage()
+        // Show localStorage cache immediately (avoids blank screen)
+        loadCacheFromStorage()
         
-        // If no valid cache, load from API
-        if (!hasCache) {
-          await loadAllToolsCache()
-        }
+        // Always fetch fresh data from API in background
+        await loadAllToolsCache()
       }
       init()
     }

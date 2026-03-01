@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120" width="240" height="120">
+  <rect width="240" height="120" rx="12" fill="#232F3E"/>
+  <!-- Shield icon -->
+  <path d="M56 18 L80 28 L80 62 C80 82 68 94 56 100 C44 94 32 82 32 62 L32 28 Z"
+        fill="none" stroke="#FF9900" stroke-width="3" stroke-linejoin="round"/>
+  <!-- Key inside shield -->
+  <circle cx="52" cy="55" r="8" fill="none" stroke="#FF9900" stroke-width="2.5"/>
+  <line x1="60" y1="55" x2="74" y2="55" stroke="#FF9900" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="70" y1="55" x2="70" y2="62" stroke="#FF9900" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="74" y1="55" x2="74" y2="62" stroke="#FF9900" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Text -->
+  <text x="106" y="50" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF">AWS IAM</text>
+  <text x="106" y="74" font-family="Arial, sans-serif" font-size="13" fill="#FF9900">Identity &amp; Access Management</text>
+</svg>

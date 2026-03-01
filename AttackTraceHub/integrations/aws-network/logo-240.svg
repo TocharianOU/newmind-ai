@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <!-- Background -->
+  <rect width="240" height="240" rx="32" fill="#232F3E"/>
+  <!-- VPC Shield shape -->
+  <path d="M120 30 L190 65 L190 125 C190 165 158 198 120 215 C82 198 50 165 50 125 L50 65 Z" fill="#FF9900" opacity="0.12"/>
+  <!-- Network nodes -->
+  <circle cx="120" cy="70" r="14" fill="#FF9900"/>
+  <circle cx="70" cy="140" r="14" fill="#FF9900"/>
+  <circle cx="170" cy="140" r="14" fill="#FF9900"/>
+  <circle cx="120" cy="185" r="11" fill="#FF9900" opacity="0.75"/>
+  <!-- Node inner glow -->
+  <circle cx="120" cy="70" r="7" fill="#232F3E"/>
+  <circle cx="70" cy="140" r="7" fill="#232F3E"/>
+  <circle cx="170" cy="140" r="7" fill="#232F3E"/>
+  <!-- Network connections -->
+  <line x1="120" y1="70" x2="70" y2="140" stroke="#FF9900" stroke-width="2.5" opacity="0.8"/>
+  <line x1="120" y1="70" x2="170" y2="140" stroke="#FF9900" stroke-width="2.5" opacity="0.8"/>
+  <line x1="70" y1="140" x2="120" y2="185" stroke="#FF9900" stroke-width="2.5" opacity="0.7"/>
+  <line x1="170" y1="140" x2="120" y2="185" stroke="#FF9900" stroke-width="2.5" opacity="0.7"/>
+  <line x1="70" y1="140" x2="170" y2="140" stroke="#FF9900" stroke-width="2.5" opacity="0.6"/>
+</svg>

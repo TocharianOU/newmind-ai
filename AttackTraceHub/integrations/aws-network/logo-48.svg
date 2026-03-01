@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <!-- Background -->
+  <rect width="48" height="48" rx="8" fill="#232F3E"/>
+  <!-- VPC Shield shape (network security) -->
+  <path d="M24 6 L38 13 L38 25 C38 33 31 40 24 43 C17 40 10 33 10 25 L10 13 Z" fill="#FF9900" opacity="0.15"/>
+  <!-- Network node dots -->
+  <circle cx="24" cy="14" r="3" fill="#FF9900"/>
+  <circle cx="14" cy="28" r="3" fill="#FF9900"/>
+  <circle cx="34" cy="28" r="3" fill="#FF9900"/>
+  <circle cx="24" cy="37" r="2.5" fill="#FF9900" opacity="0.7"/>
+  <!-- Network connections -->
+  <line x1="24" y1="14" x2="14" y2="28" stroke="#FF9900" stroke-width="1.5" opacity="0.8"/>
+  <line x1="24" y1="14" x2="34" y2="28" stroke="#FF9900" stroke-width="1.5" opacity="0.8"/>
+  <line x1="14" y1="28" x2="24" y2="37" stroke="#FF9900" stroke-width="1.5" opacity="0.7"/>
+  <line x1="34" y1="28" x2="24" y2="37" stroke="#FF9900" stroke-width="1.5" opacity="0.7"/>
+  <line x1="14" y1="28" x2="34" y2="28" stroke="#FF9900" stroke-width="1.5" opacity="0.6"/>
+</svg>

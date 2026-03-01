@@ -1,7 +1,7 @@
 export default {
   name: 'VirusTotal',
-  version: '1.1.0',
-  downloadUrl: 'https://github.com/TocharianOU/mcp-virustotal/releases/download/v1.1.0/mcp-virustotal-v1.1.0.tar.gz',
+  version: '1.0.1',
+  downloadUrl: 'https://github.com/TocharianOU/mcp-virustotal/releases/download/v1.0.1/mcp-virustotal-v1.0.1.tar.gz',
 
   description: 'File, URL, IP, and domain threat intelligence via VirusTotal',
   descriptionI18n: {
@@ -102,6 +102,14 @@ Threat intelligence for files, URLs, IP addresses, and domains powered by VirusT
         default: 30000,
         minimum: 5000,
         maximum: 120000
+      },
+      MAX_TOKEN_CALL: {
+        type: 'number',
+        title: 'Max Token Limit',
+        description: 'Maximum number of tokens allowed per tool call result. Prevents context window overflow. Set to 0 to disable.',
+        default: 20000,
+        minimum: 0,
+        maximum: 200000
       }
     },
     dependencies: {

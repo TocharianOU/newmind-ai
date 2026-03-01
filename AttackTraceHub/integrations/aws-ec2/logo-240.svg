@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <rect width="240" height="240" rx="40" fill="#FF9900"/>
+  <!-- Server box -->
+  <rect x="60" y="55" width="120" height="130" rx="8" fill="none" stroke="white" stroke-width="9"/>
+  <!-- Three server slots -->
+  <rect x="75" y="75" width="90" height="22" rx="4" fill="none" stroke="white" stroke-width="6"/>
+  <rect x="75" y="109" width="90" height="22" rx="4" fill="none" stroke="white" stroke-width="6"/>
+  <rect x="75" y="143" width="90" height="22" rx="4" fill="none" stroke="white" stroke-width="6"/>
+  <!-- Status dots on each slot -->
+  <circle cx="154" cy="86" r="5" fill="white"/>
+  <circle cx="154" cy="120" r="5" fill="white"/>
+  <circle cx="154" cy="154" r="5" fill="white"/>
+</svg>

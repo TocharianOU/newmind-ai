@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <rect width="240" height="240" rx="40" fill="#00A35C"/>
+  <!-- Magnifying glass circle -->
+  <circle cx="105" cy="100" r="45" fill="none" stroke="white" stroke-width="12"/>
+  <!-- Magnifying glass handle -->
+  <line x1="140" y1="135" x2="175" y2="175" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <!-- SPL ">" chevron inside glass -->
+  <polyline points="85,85 105,100 85,115" fill="none" stroke="white" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- SPL "_" underscore inside glass -->
+  <line x1="105" y1="115" x2="122" y2="115" stroke="white" stroke-width="9" stroke-linecap="round"/>
+</svg>

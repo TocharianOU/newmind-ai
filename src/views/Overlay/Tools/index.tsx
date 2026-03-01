@@ -14,7 +14,7 @@ import { OAPMCPServer } from "../../../types/oap"
 import { isLoggedInOAPAtom } from "../../../atoms/oapState"
 import { currentProjectIdAtom } from "../../../atoms/projectState"
 import { OAP_ROOT_URL } from "../../../../shared/oap"
-import { openUrl, readLocalLogo } from "../../../ipc/util"
+import { openUrl } from "../../../ipc/util"
 import cloneDeep from "lodash/cloneDeep"
 import { ClickOutside } from "../../../components/ClickOutside"
 import Button from "../../../components/Button"
@@ -85,7 +85,6 @@ const Tools = () => {
   const sortedConfigOrderRef = useRef<string[]>([])
   const [expandedSections, setExpandedSections] = useState<string[]>([])
   const [installToolBuffer, setInstallToolBuffer] = useAtom(installToolBufferAtom)
-  const [localLogos, setLocalLogos] = useState<Record<string, string>>({})
   const getMcpConfig = () => new Promise((resolve) => {
     setMcpConfig(prevConfig => {
       resolve(prevConfig)
@@ -1059,40 +1058,18 @@ const Tools = () => {
                         </svg>}
                     </div>
                     {(() => {
-                      // Try to get logo from mcpConfig (for OAP tools with custom logos)
+                      // Load logo from Hub backend (single source of truth)
                       const toolConfig = mcpConfig.mcpServers?.[tool.name]
-                      const installPath = toolConfig?.extraData?.oap?.installPath
                       let logoUrl = toolConfig?.extraData?.oap?.logo || toolConfig?.logo
-                      
+
                       if (!logoUrl) {
                         const bannerUrl = toolConfig?.extraData?.oap?.banner
                         if (bannerUrl) {
                           logoUrl = bannerUrl.replace("logo-240", "logo-48")
                         }
                       }
-                      
-                      // If package is installed locally, load local logo asynchronously
-                      if (installPath && logoUrl && !logoUrl.startsWith("http")) {
-                        const logoFileName = logoUrl.split('/').pop()
-                        const logoPath = `${installPath}/logos/${logoFileName}`
-                        const cacheKey = `${tool.name}_${logoFileName}`
-                        
-                        // Check if already loaded
-                        if (!localLogos[cacheKey]) {
-                          // Load asynchronously
-                          readLocalLogo(logoPath).then(base64Logo => {
-                            if (base64Logo) {
-                              setLocalLogos(prev => ({ ...prev, [cacheKey]: base64Logo }))
-                            }
-                          }).catch(err => {
-                            console.error(`Failed to load logo for ${tool.name}:`, err)
-                          })
-                        }
-                        
-                        // Use cached logo or fallback to Hub URL while loading
-                        logoUrl = localLogos[cacheKey] || `${OAP_ROOT_URL}${logoUrl}`
-                      } else if (logoUrl && !logoUrl.startsWith("http")) {
-                        // Fallback: use Hub URL if not installed locally
+
+                      if (logoUrl && !logoUrl.startsWith("http")) {
                         logoUrl = `${OAP_ROOT_URL}${logoUrl}`
                       }
                       

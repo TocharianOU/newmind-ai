@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <rect width="48" height="48" rx="8" fill="#232F3E"/>
+  <!-- Shield outline -->
+  <path d="M24 7 L38 13 L38 26 C38 34 31 40 24 43 C17 40 10 34 10 26 L10 13 Z"
+        fill="none" stroke="#FF9900" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Key shape inside shield -->
+  <circle cx="22" cy="22" r="4" fill="none" stroke="#FF9900" stroke-width="2"/>
+  <line x1="26" y1="22" x2="33" y2="22" stroke="#FF9900" stroke-width="2" stroke-linecap="round"/>
+  <line x1="31" y1="22" x2="31" y2="25" stroke="#FF9900" stroke-width="2" stroke-linecap="round"/>
+  <line x1="33" y1="22" x2="33" y2="25" stroke="#FF9900" stroke-width="2" stroke-linecap="round"/>
+</svg>

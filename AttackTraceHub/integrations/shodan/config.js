@@ -1,7 +1,7 @@
 export default {
   name: 'Shodan',
-  version: '1.0.0',
-  downloadUrl: 'https://github.com/TocharianOU/mcp-shodan/releases/download/v1.0.0/mcp-shodan-v1.0.0.tar.gz',
+  version: '1.0.1',
+  downloadUrl: 'https://github.com/TocharianOU/mcp-shodan/releases/download/v1.0.1/mcp-shodan-v1.0.1.tar.gz',
 
   description: 'Network reconnaissance and vulnerability intelligence via Shodan',
   descriptionI18n: {
@@ -102,6 +102,14 @@ Network intelligence and vulnerability research powered by Shodan.
         default: 30000,
         minimum: 5000,
         maximum: 120000
+      },
+      MAX_TOKEN_CALL: {
+        type: 'number',
+        title: 'Max Token Limit',
+        description: 'Maximum number of tokens allowed per tool call result. Prevents context window overflow. Set to 0 to disable.',
+        default: 20000,
+        minimum: 0,
+        maximum: 200000
       }
     },
     dependencies: {

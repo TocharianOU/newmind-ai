@@ -17,6 +17,10 @@
 7. [前端 SchemaForm 扩展](#7-前端-schemaform-扩展)
 8. [完整集成流程 Checklist](#8-完整集成流程-checklist)
 9. [已知错误与解决方案](#9-已知错误与解决方案)
+10. [Token 限制机制（防 Context 爆炸）](#10-token-限制机制防-context-爆炸)
+11. [GitHub 仓库管理规范](#11-github-仓库管理规范)
+12. [版本与发布管理规范](#12-版本与发布管理规范)
+13. [数据库与前端缓存更新流程](#13-数据库与前端缓存更新流程)
 
 ---
 
@@ -134,6 +138,154 @@ export const ConfigSchema = z.object({
 });
 ```
 
+### 2.5 Token 限制机制（必须实现的防护规范）
+
+**参考实现**：`list_tool/elasticsearch-mcp/src/token-limiter.ts`
+
+当工具返回结果体积较大（如 ES 搜索、CloudTrail Lake 查询、CloudWatch 日志）时，未经限制的输出会将大量 token 压入 AI context window，轻则降低回答质量，重则因超出窗口上限导致整个对话崩溃。
+
+#### 2.5.1 适用场景
+
+以下类型的工具**必须**加入 token 限制机制：
+
+| 工具类型 | 典型代表 | 风险说明 |
+|----------|----------|----------|
+| 全文搜索 / 日志查询 | `es_search`、CloudWatch `query_logs` | 原始 JSON 文档可达数十 KB |
+| SQL 分析查询 | CloudTrail `lake_query` / `get_query_results` | SELECT * 50行 × 大字段可达 MB 级 |
+| 批量资源列表 | IAM `list_policies`、S3 `list_objects` | 策略文档逐条展开时体积剧增 |
+
+以下工具**无需**强制加入（输出天然有界）：
+- IP/域名/文件 单条情报查询（VirusTotal、AbuseIPDB、Shodan）
+- 简单状态查询（CloudTrail `lookup_events` 已内置 maxResults=10/50 上限）
+
+#### 2.5.2 核心实现
+
+新建 `src/utils/token-limiter.ts`（每个需要限制的 MCP 项目都复制一份）：
+
+```typescript
+import { encoding_for_model, TiktokenModel } from 'tiktoken';
+
+export interface TokenCheckResult {
+  allowed: boolean;
+  tokens: number;
+  error?: string;
+}
+
+/**
+ * 精确计算文本的 token 数（使用 tiktoken，GPT-4 分词器）。
+ * tiktoken 失败时 fallback 到 text.length / 4 粗估。
+ */
+export function calculateTokens(text: string, model: TiktokenModel = 'gpt-4'): number {
+  try {
+    const encoding = encoding_for_model(model);
+    const tokens = encoding.encode(text);
+    const count = tokens.length;
+    encoding.free();
+    return count;
+  } catch {
+    return Math.ceil(text.length / 4);
+  }
+}
+
+/**
+ * 检查工具返回结果是否超出 token 上限。
+ * @param result     工具返回的完整结果对象（将被 JSON.stringify 计算 token）
+ * @param maxTokens  最大允许 token 数
+ * @param breakRule  true = 紧急绕过（跳过检查，直接放行）
+ */
+export function checkTokenLimit(
+  result: unknown,
+  maxTokens: number,
+  breakRule = false
+): TokenCheckResult {
+  if (breakRule) return { allowed: true, tokens: 0 };
+
+  const text = JSON.stringify(result);
+  const tokens = calculateTokens(text);
+
+  if (tokens > maxTokens) {
+    return {
+      allowed: false,
+      tokens,
+      error: `Token limit exceeded: result contains ${tokens} tokens (limit: ${maxTokens}).\n\n` +
+        'Suggestions:\n' +
+        '1. Reduce the size/limit parameters in your query\n' +
+        '2. Narrow down the time range or date filters\n' +
+        '3. Add more specific query filters to reduce result set\n' +
+        '4. Use aggregations instead of raw documents when possible\n' +
+        '5. If absolutely necessary, retry with break_token_rule: true\n\n' +
+        'Note: Frequent use of break_token_rule may cause context overflow and degraded AI performance.',
+    };
+  }
+
+  return { allowed: true, tokens };
+}
+```
+
+**依赖**：在 `package.json` 中加入 `"tiktoken": "^1.0.7"`（与 elasticsearch-mcp 保持一致）。
+
+#### 2.5.3 在工具注册中接入
+
+工具 schema 中暴露 `break_token_rule` 参数，handler 执行完后检查结果：
+
+```typescript
+// 在 *-tools.ts 的 schema 定义中加入
+break_token_rule: z
+  .boolean()
+  .optional()
+  .default(false)
+  .describe(
+    'Set to true to bypass token limits in critical situations. ' +
+    'Use sparingly to avoid context overflow.'
+  ),
+
+// 在 handler 调用后、return 前执行检查
+const resultContent = { content: [{ type: 'text', text }] };
+const tokenCheck = checkTokenLimit(resultContent, maxTokenCall, break_token_rule);
+if (!tokenCheck.allowed) {
+  return {
+    content: [{ type: 'text', text: tokenCheck.error ?? 'Token limit exceeded' }],
+    isError: true,
+  };
+}
+return resultContent;
+```
+
+#### 2.5.4 `MAX_TOKEN_CALL` 环境变量
+
+Token 上限通过环境变量配置，在 MCP Server 初始化时读取：
+
+```typescript
+// index.ts 或 server 初始化处
+const maxTokenCall = parseInt(process.env.MAX_TOKEN_CALL ?? '20000', 10);
+// 作为参数传入各工具注册函数
+registerLakeTools(server, config, maxTokenCall);
+```
+
+在 `config.js` 的 `configSchema` 中为用户暴露（可选）：
+
+```javascript
+MAX_TOKEN_CALL: {
+  type: 'number',
+  title: 'Max Token Per Call',
+  description: 'Maximum tokens allowed per tool call result (default: 20000).',
+  default: 20000,
+  minimum: 1000,
+  maximum: 200000,
+}
+```
+
+#### 2.5.5 设计原则总结
+
+| 原则 | 说明 |
+|------|------|
+| **拒绝而非截断** | 超限时返回 `isError: true` + 建议，而非静默截断。截断会导致 AI 基于不完整数据产生错误结论。 |
+| **紧急绕过开关** | 提供 `break_token_rule` 参数，允许 AI 在知情情况下主动绕过，而非强行拦截。 |
+| **上限可配** | 默认 20,000 tokens 适合大多数场景，生产环境可按模型窗口调整。 |
+| **仅对大结果工具启用** | 单条情报查询、简单状态查询无需此机制，避免不必要的 tiktoken 开销。 |
+
+---
+
 ### 2.4 工具注册中的 TypeScript 深层类型问题
 
 MCP SDK 与 Zod 的复杂类型推断可能导致 `TS2589: Type instantiation is excessively deep` 错误。
@@ -173,6 +325,14 @@ AttackTraceHub/integrations/
     ├── logo-48.svg          # 48×48 用于列表图标
     └── logo-240.svg         # 240×120 用于卡片 banner
 ```
+
+> **Logo SVG 规范**
+>
+> Tool 列表和集成市场的 logo **统一从 Hub 后端加载**（`http://localhost:23000/integrations/<name>/logo-48.svg`）。
+> logo **只需维护一处**：`AttackTraceHub/integrations/<name>/logo-*.svg`，**不需要**放入 tarball。
+>
+> 1. **禁止使用 `<text>` 元素**渲染字符（字体在浏览器/Electron 中不可保证）；**只用几何图形**：`<rect>` `<circle>` `<line>` `<path>` `<polyline>` `<polygon>`。
+> 2. **推荐风格**：纯色背景（`#FF9900` 橙色或 `#232F3E` 深色）+ 对比色几何图形，48px 下仍清晰可辨。
 
 ### 3.2 `config.js` 完整字段说明
 
@@ -362,6 +522,8 @@ ls -lh mcp-<toolname>-v1.0.0.tar.gz
 ```
 
 ### 4.4 上传到 GitHub Release
+
+> **命名规则**：Release 的 `--title` 必须与 tag 保持一致，统一为 `v{version}`（如 `v1.0.1`），**不要**加项目名前缀。
 
 ```bash
 GITHUB_TOKEN="your_token"
@@ -644,7 +806,7 @@ Select 下拉框支持两种标签格式：
 ### Step 3：添加集成配置
 
 - [ ] 创建 `AttackTraceHub/integrations/<name>/` 目录
-- [ ] 创建 `logo-48.svg`（48×48）和 `logo-240.svg`（240×120）
+- [ ] 创建 `logo-48.svg`（48×48）和 `logo-240.svg`（240×120）**（只用几何图形，禁止 `<text>` 元素）**
 - [ ] 创建 `config.js`（参考上方规范，`name` 字段与 DB 唯一键一致）
 - [ ] 运行 `npx prisma db seed` 写入数据库
 - [ ] 验证 Marketplace 能显示新集成
@@ -747,3 +909,88 @@ cd mcp-virustotal && tar -czf ../out.tar.gz -C . .   # 内部是 ./dist/index.js
 **原因 B**：`enumNames` 格式不被识别（期望 `enumLabels` 对象格式）。
 
 **解决**：`SchemaForm.tsx` 已同时支持 `enumNames`（数组）和 `enumLabels`（对象），两种格式都可以用。
+
+---
+
+## 10. Token 限制机制（防 Context 爆炸）
+
+> 本节为设计规范摘要，完整实现说明见 [2.5 节](#25-token-限制机制必须实现的防护规范)。
+>
+> **参考实现**：`list_tool/elasticsearch-mcp/src/token-limiter.ts`（已在生产验证）
+
+### 10.1 背景
+
+MCP 工具返回的结果会直接进入 AI 的 context window。对于查询类工具，若不加限制：
+
+- **AWS CloudTrail `lake_query` SELECT \***：50 行 × requestParameters/responseElements 大字段 → 可达数 MB
+- **Elasticsearch `es_search`**：size=100 的全文文档 → 数百 KB
+- **CloudWatch `query_logs`**：Logs Insights 查询结果 → 视日志量可达 MB
+
+这些情况会导致 AI context 爆炸，轻则降低回答质量（早期 token 被驱逐），重则模型报错或产生幻觉。
+
+### 10.2 机制一览
+
+```
+工具调用 → 执行 API → 获得结果
+                            ↓
+                   checkTokenLimit(result, maxTokenCall, break_token_rule)
+                            ↓
+              ┌─────────────┴──────────────┐
+         超限（allowed=false）          未超限（allowed=true）
+              ↓                               ↓
+    返回 isError: true                  正常返回结果
+    + 5 条优化建议                      （包含实际 token 数可用于调试）
+    + 提示可用 break_token_rule: true
+```
+
+### 10.3 核心文件
+
+| 文件 | 职责 |
+|------|------|
+| `src/utils/token-limiter.ts` | `calculateTokens()` + `checkTokenLimit()`，每个 MCP 项目各自维护一份 |
+| `index.ts` 初始化处 | 读取 `MAX_TOKEN_CALL` 环境变量（默认 20000），传入工具注册函数 |
+| `*-tools.ts` 工具注册 | schema 中加 `break_token_rule` 参数；调用 handler 后执行 token 检查 |
+| `config.js` configSchema | 暴露 `MAX_TOKEN_CALL` 字段供用户在 Marketplace 配置页调整 |
+
+### 10.4 适用工具类型判断
+
+```
+工具返回结果是否可能超过 20,000 tokens？
+    │
+    ├─ 否（单条情报查询 / 简单状态）→ 无需加入，避免 tiktoken 开销
+    │    例：check_ip、lookup_events（已有 maxResults 上限）
+    │
+    └─ 是（批量 / SQL / 全文日志）→ 必须加入
+         例：lake_query、get_query_results、es_search、
+             query_logs、list_policies（含策略文档展开）
+```
+
+### 10.5 用户可见行为
+
+当 AI 调用某工具且结果超限时，AI 会收到：
+
+```
+Token limit exceeded: result contains 45230 tokens (limit: 20000).
+
+Suggestions:
+1. Reduce the size/limit parameters in your query
+2. Narrow down the time range or date filters
+3. Add more specific query filters to reduce result set
+4. Use aggregations instead of raw documents when possible
+5. If absolutely necessary, retry with break_token_rule: true
+
+Note: Frequent use of break_token_rule may cause context overflow and degraded AI performance.
+```
+
+AI 会据此自动调整查询策略（缩小时间窗口、加过滤条件、改用聚合等），或在用户明确要求时以 `break_token_rule: true` 重试。
+
+### 10.6 Checklist
+
+在 Checklist 的 Step 1（创建 MCP Server）中需要额外验证：
+
+- [ ] 判断是否存在可能返回大量数据的工具（见 10.4）
+- [ ] 如有，在 `package.json` 中添加 `"tiktoken"` 依赖
+- [ ] 创建 `src/utils/token-limiter.ts`
+- [ ] 工具 schema 中加入 `break_token_rule` 参数
+- [ ] `index.ts` 读取 `MAX_TOKEN_CALL` 环境变量并传入工具注册
+- [ ] `config.js` 的 `configSchema` 中暴露 `MAX_TOKEN_CALL` 字段（可选但推荐）

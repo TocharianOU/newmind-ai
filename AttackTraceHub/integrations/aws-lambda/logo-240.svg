@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <rect width="240" height="240" rx="32" fill="#FF9900"/>
+  <!-- ?: left stroke -->
+  <line x1="115" y1="42" x2="38" y2="198" stroke="white" stroke-width="20" stroke-linecap="round"/>
+  <!-- ?: right leg (starts at junction) -->
+  <line x1="78" y1="122" x2="202" y2="198" stroke="white" stroke-width="20" stroke-linecap="round"/>
+</svg>

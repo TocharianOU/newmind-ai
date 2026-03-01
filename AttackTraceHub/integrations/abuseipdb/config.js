@@ -1,7 +1,7 @@
 export default {
   name: 'AbuseIPDB',
-  version: '1.0.0',
-  downloadUrl: 'https://github.com/TocharianOU/abuseipdb-mcp/releases/download/v1.0.0/abuseipdb-mcp-v1.0.0.tar.gz',
+  version: '1.0.1',
+  downloadUrl: 'https://github.com/TocharianOU/abuseipdb-mcp/releases/download/v1.0.1/abuseipdb-mcp-v1.0.1.tar.gz',
 
   description: 'IP reputation intelligence and threat blacklist via AbuseIPDB',
   descriptionI18n: {
@@ -99,6 +99,14 @@ IP reputation intelligence powered by AbuseIPDB — the world's largest collabor
         default: 30000,
         minimum: 5000,
         maximum: 120000
+      },
+      MAX_TOKEN_CALL: {
+        type: 'number',
+        title: 'Max Token Limit',
+        description: 'Maximum number of tokens allowed per tool call result. Prevents context window overflow. Set to 0 to disable.',
+        default: 20000,
+        minimum: 0,
+        maximum: 200000
       }
     },
     dependencies: {
