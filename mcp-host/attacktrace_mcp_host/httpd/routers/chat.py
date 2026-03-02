@@ -101,9 +101,11 @@ async def create_chat(  # noqa: PLR0913
     response = stream.get_response()
     query_input = QueryInput(text=message, images=images, documents=documents)
 
+    x_project_id = request.headers.get("X-Project-ID")
+
     async def process() -> None:
         async with stream:
-            processor = ChatProcessor(app, request.state, stream)
+            processor = ChatProcessor(app, request.state, stream, project_id=x_project_id)
             await processor.handle_chat(chat_id, query_input, None)
 
     stream.add_task(process)
@@ -186,9 +188,11 @@ async def edit_chat(  # noqa: PLR0913
     response = stream.get_response()
     query_input = QueryInput(text=content, images=images, documents=documents)
 
+    x_project_id = request.headers.get("X-Project-ID")
+
     async def process() -> None:
         async with stream:
-            processor = ChatProcessor(app, request.state, stream)
+            processor = ChatProcessor(app, request.state, stream, project_id=x_project_id)
             await processor.handle_chat(chat_id, query_input, message_id)
 
     stream.add_task(process)
@@ -216,9 +220,11 @@ async def retry_chat(
     stream = EventStreamContextManager()
     response = stream.get_response()
 
+    x_project_id = request.headers.get("X-Project-ID")
+
     async def process() -> None:
         async with stream:
-            processor = ChatProcessor(app, request.state, stream)
+            processor = ChatProcessor(app, request.state, stream, project_id=x_project_id)
             await processor.handle_chat(chat_id, None, message_id)
 
     stream.add_task(process)

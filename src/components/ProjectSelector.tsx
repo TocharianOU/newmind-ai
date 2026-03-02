@@ -1,15 +1,13 @@
-import React, { useEffect, useState } from "react"
-import { useAtom, useAtomValue, useSetAtom } from "jotai"
+import React, { useEffect } from "react"
+import { useAtomValue, useSetAtom } from "jotai"
 import { 
-  currentProjectIdAtom, 
   projectsAtom, 
   loadProjectsAtom, 
-  switchProjectAtom,
   loadCurrentProjectIdAtom,
   projectsLoadingAtom
 } from "@/atoms/projectState"
 import { oapUserAtom } from "@/atoms/oapState"
-import { restartHost } from "@/ipc/host"
+import { useProjectSwitch } from "@/hooks/useProjectSwitch"
 import Select from "./Select"
 import { useTranslation } from "react-i18next"
 import Tooltip from "./Tooltip"
@@ -20,14 +18,12 @@ interface ProjectSelectorProps {
 
 const ProjectSelector: React.FC<ProjectSelectorProps> = ({ onManageClick }) => {
   const { t } = useTranslation()
-  const [currentProjectId, setCurrentProjectId] = useAtom(currentProjectIdAtom)
   const projects = useAtomValue(projectsAtom)
   const loading = useAtomValue(projectsLoadingAtom)
   const loadProjects = useSetAtom(loadProjectsAtom)
-  const switchProject = useSetAtom(switchProjectAtom)
   const loadCurrentId = useSetAtom(loadCurrentProjectIdAtom)
   const currentUser = useAtomValue(oapUserAtom)
-  const [isRestarting, setIsRestarting] = useState(false)
+  const { switchToProject, isRestarting, currentProjectId } = useProjectSwitch()
 
   // Load current project ID and projects list on mount
   useEffect(() => {
@@ -38,48 +34,6 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({ onManageClick }) => {
     }
     init()
   }, [loadCurrentId, loadProjects, currentUser?.hubUrl])
-
-  const handleProjectSwitch = async (projectId: string) => {
-    // If switching to the same project, do nothing
-    if (projectId === currentProjectId) return
-
-    console.log(`[ProjectSelector] Switching from ${currentProjectId} to ${projectId}`)
-    setIsRestarting(true)
-    
-    try {
-      // Step 1: Switch project (saves to file)
-      const result = await switchProject(projectId)
-      if (!result.success) {
-        console.error(`[ProjectSelector] Project switch failed`)
-        setIsRestarting(false)
-        return
-      }
-      
-      console.log(`[ProjectSelector] Project switched successfully to ${projectId}`)
-      
-      // Step 2: Restart Host to load new project's MCP config
-      console.log(`[ProjectSelector] Restarting MCP Host...`)
-      const restartResult = await restartHost()
-      
-      if (!restartResult.success) {
-        console.error(`[ProjectSelector] Host restart failed:`, restartResult.error)
-        alert(`Failed to restart MCP Host: ${restartResult.error}. Please restart the application manually.`)
-        setIsRestarting(false)
-        return
-      }
-      
-      console.log(`[ProjectSelector] Host restarted successfully on port ${restartResult.port}`)
-      
-      // Step 3: Reload the page to refresh all UI state
-      console.log(`[ProjectSelector] Reloading page...`)
-      window.location.reload()
-      
-    } catch (error) {
-      console.error(`[ProjectSelector] Error during project switch:`, error)
-      alert(`Failed to switch project: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      setIsRestarting(false)
-    }
-  }
 
   // Find current project to display its name
   const currentProject = projects.find(p => p.id === currentProjectId)
@@ -109,7 +63,7 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({ onManageClick }) => {
       <Select
         options={options}
         value={currentProjectId}
-        onSelect={handleProjectSwitch}
+        onSelect={switchToProject}
         placeholder={isRestarting ? t("projects.restarting") || "Restarting..." : (loading ? t("project.loading") : displayName)}
         className="project-select-button"
         fullWidth={false}

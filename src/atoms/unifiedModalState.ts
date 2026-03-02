@@ -9,7 +9,7 @@ export type ModalConfig =
     }
   | {
       type: "editProject"
-      data: { id: string; name: string; description?: string }
+      data: { id: string; name: string; description?: string; initialTab?: "info" | "prompt" }
     }
   | {
       type: "confirm"

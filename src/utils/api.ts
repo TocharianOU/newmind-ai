@@ -1,15 +1,22 @@
 import { getCurrentProject } from "@/ipc/project"
 
+type ApiFetchInit = RequestInit & {
+  /** Explicitly override which project ID is sent in X-Project-ID.
+   *  Useful when editing a project that is NOT the currently active one. */
+  projectId?: string
+}
+
 /**
  * Enhanced fetch wrapper that automatically injects X-Project-ID and X-Auth-Token headers
  */
 export async function apiFetch(
   input: RequestInfo | URL,
-  init?: RequestInit
+  init?: ApiFetchInit
 ): Promise<Response> {
-  const currentProjectId = await getCurrentProject()
+  const { projectId: overrideProjectId, ...restInit } = init || {}
+  const currentProjectId = overrideProjectId ?? await getCurrentProject()
 
-  const headers = new Headers(init?.headers || {})
+  const headers = new Headers(restInit?.headers || {})
   
   // Inject X-Project-ID header for all project-scoped requests
   if (currentProjectId) {
@@ -27,7 +34,7 @@ export async function apiFetch(
   }
 
   const enhancedInit: RequestInit = {
-    ...init,
+    ...restInit,
     headers
   }
 

@@ -36,7 +36,8 @@ from attacktrace_mcp_host.host.errors import LogBufferNotFoundError
 from attacktrace_mcp_host.host.store.base import FileType, StoreManagerProtocol
 from attacktrace_mcp_host.host.tools.log import LogEvent, LogManager, LogMsg
 from attacktrace_mcp_host.host.tools.model_types import ClientState
-from attacktrace_mcp_host.httpd.conf.prompt import PromptKey
+from attacktrace_mcp_host.httpd.conf.prompt import PromptKey, PromptManager
+from attacktrace_mcp_host.httpd.conf.project_context import get_project_dir
 from attacktrace_mcp_host.httpd.database.models import (
     ChatMessage,
     Message,
@@ -271,11 +272,13 @@ class ChatProcessor:
         app: AttackTraceHostAPI,
         request_state: State,
         stream: EventStreamContextManager,
+        project_id: str | None = None,
     ) -> None:
         """Initialize chat processor."""
         self.app = app
         self.request_state = request_state
         self.stream = stream
+        self.project_id = project_id
         self.store: StoreManagerProtocol = app.store
         self.attacktrace_host: AttackTraceMcpHost = app.attacktrace_host["default"]
         self._str_output_parser = StrOutputParser()
@@ -285,6 +288,16 @@ class ChatProcessor:
             if app.model_config_manager.full_config
             else False
         )
+
+        # Build project-specific prompt manager when a project_id is given
+        if project_id:
+            project_rules_path = str(get_project_dir(project_id) / "custom_rules")
+            self._prompt_manager: PromptManager = PromptManager(
+                custom_rules_path=project_rules_path
+            )
+            self._prompt_manager.initialize()
+        else:
+            self._prompt_manager = app.prompt_config_manager
         
         # Initialize memory components if available
         self._memory_retriever = None
@@ -621,7 +634,7 @@ class ChatProcessor:
         if any(isinstance(m, SystemMessage) for m in messages):
             prompt = _prompt_cb
         elif self.disable_dive_system_prompt and (
-            custom_prompt := self.app.prompt_config_manager.get_prompt(PromptKey.CUSTOM)
+            custom_prompt := self._prompt_manager.get_prompt(PromptKey.CUSTOM)
         ):
             # Prepend memory context to custom prompt if available
             if memory_context:
@@ -632,7 +645,7 @@ class ChatProcessor:
                 ]
             else:
                 prompt = custom_prompt
-        elif system_prompt := self.app.prompt_config_manager.get_prompt(
+        elif system_prompt := self._prompt_manager.get_prompt(
             PromptKey.SYSTEM
         ):
             # Prepend memory context to system prompt if available

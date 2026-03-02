@@ -6,7 +6,6 @@ import PopupConfirm from "../../../components/PopupConfirm"
 import { configAtom, modelVerifyListAtom, writeEmptyConfigAtom } from "../../../atoms/configState"
 import GroupCreator from "./Popup/GroupCreator"
 import ModelsEditor from "./Popup/ModelsEditor"
-import ParameterPopup from "./ParameterPopup"
 import { showToastAtom } from "../../../atoms/toastState"
 import GroupEditor from "./Popup/GroupEditor"
 import { modelGroupsAtom, modelSettingsAtom } from "../../../atoms/modelState"
@@ -18,7 +17,6 @@ import { getGroupAndModel, getGroupTerm, getTermFromRawModelConfig, removeGroup 
 import isMatch from "lodash/isMatch"
 import { getVerifyKey } from "../../../helper/verify"
 import { getVerifyStatus } from "./ModelVerify"
-import { commonFlashAtom } from "../../../atoms/globalState"
 import { isOAPUsageLimitAtom } from "../../../atoms/oapState"
 
 const PageLayout = () => {
@@ -28,7 +26,6 @@ const PageLayout = () => {
   const [showGroupCreator, setShowGroupCreator] = useState(false)
   const [showGrupEditor, setShowGroupEditor] = useState(false)
   const [showModelEditorPopup, setShowModelEditorPopup] = useState(false)
-  const [showParameterPopup, setShowParameterPopup] = useState(false)
   const [showDeleteModel, setShowDeleteModel] = useState(false)
   const [showNoModelAfterDelete, setShowNoModelAfterDelete] = useState(false)
   const [showNoModelAfterToggle, setShowNoModelAfterToggle] = useState(false)
@@ -43,7 +40,6 @@ const PageLayout = () => {
 
   const [settings, setSettings] = useAtom(modelSettingsAtom)
   const { writeGroupBuffer, writeModelsBuffer, getLatestBuffer, pushModelBufferWithModelNames, flush } = useModelsProvider()
-  const [commonFlash, setCommonFlash] = useAtom(commonFlashAtom)
 
   const isGroupNoModelAvailble = (groups: LLMGroup[]) => {
     return groups
@@ -61,13 +57,6 @@ const PageLayout = () => {
       return prev
     })
   })
-
-  useEffect(() => {
-    if(commonFlash === "openPromtSetting") {
-      setShowParameterPopup(true)
-      setCommonFlash(null)
-    }
-  }, [])
 
   const handleNewGroupSubmit = () => {
     setShowGroupCreator(false)
@@ -204,12 +193,6 @@ const PageLayout = () => {
               >
                 {t("models.newProvider")}
               </button>
-              <div
-                className="models-parameter-btn"
-                onClick={() => setShowParameterPopup(true)}
-              >
-                {t("modelConfig.customInstructions")}
-              </div>
             </div>
           </div>
           <div className={`providers-list ${isOAPUsageLimit ? "oap-usage-limit" : ""}`}>
@@ -334,11 +317,6 @@ const PageLayout = () => {
               </div>
             </div>
           </PopupConfirm>
-        )}
-        {showParameterPopup && (
-          <ParameterPopup
-            onClose={() => setShowParameterPopup(false)}
-          />
         )}
       </div>
     </div>

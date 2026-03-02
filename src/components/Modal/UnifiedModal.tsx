@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from "react"
-import { useSetAtom } from "jotai"
-import { closeModalAtom, type Modal, type ModalSize } from "../../atoms/unifiedModalState"
+import React, { useEffect, useRef, useState } from "react"
+import { useSetAtom, useAtomValue } from "jotai"
+import { closeModalAtom, type Modal } from "../../atoms/unifiedModalState"
 import Button from "../Button"
 import WrappedInput from "../WrappedInput"
 import WrappedTextarea from "../WrappedTextarea"
 import { useTranslation } from "react-i18next"
+import { apiFetch } from "../../utils/api"
 import "./UnifiedModal.scss"
 import {
   createProjectAtom,
@@ -13,7 +14,6 @@ import {
   type UpdateProjectRequest
 } from "../../atoms/projectState"
 import { oapUserAtom } from "../../atoms/oapState"
-import { useAtomValue } from "jotai"
 
 type UnifiedModalProps = {
   modal: Modal
@@ -164,27 +164,48 @@ const CreateProjectModal: React.FC<{ modalId: string; data?: { name?: string; de
 }
 
 // Edit Project Modal
-const EditProjectModal: React.FC<{ modalId: string; data: { id: string; name: string; description?: string } }> = ({ modalId, data }) => {
+const EditProjectModal: React.FC<{ modalId: string; data: { id: string; name: string; description?: string; initialTab?: "info" | "prompt" } }> = ({ modalId, data }) => {
   const { t } = useTranslation()
   const closeModal = useSetAtom(closeModalAtom)
   const updateProject = useSetAtom(updateProjectAtom)
   const currentUser = useAtomValue(oapUserAtom)
-  const [formData, setFormData] = React.useState<UpdateProjectRequest>({
+  const [activeTab, setActiveTab] = useState<"info" | "prompt">(data.initialTab ?? "info")
+  const [formData, setFormData] = useState<UpdateProjectRequest>({
     name: data.name,
     description: data.description || ""
   })
-  const [error, setError] = React.useState("")
-  const [loading, setLoading] = React.useState(false)
+  const [systemPrompt, setSystemPrompt] = useState("")
+  const [initialPrompt, setInitialPrompt] = useState("")
+  const [promptLoading, setPromptLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async () => {
+  useEffect(() => {
+    const fetchPrompt = async () => {
+      setPromptLoading(true)
+      try {
+        const res = await apiFetch("/api/config/customrules", { projectId: data.id })
+        const json = await res.json()
+        if (json.success) {
+          setSystemPrompt(json.rules)
+          setInitialPrompt(json.rules)
+        }
+      } catch {
+        // ignore
+      } finally {
+        setPromptLoading(false)
+      }
+    }
+    fetchPrompt()
+  }, [data.id])
+
+  const handleSubmitInfo = async () => {
     if (!formData.name?.trim()) {
       setError(t("project.nameRequired"))
       return
     }
-
     setLoading(true)
     setError("")
-
     try {
       const hubUrl = currentUser?.hubUrl
       await updateProject(data.id, formData, hubUrl)
@@ -196,41 +217,104 @@ const EditProjectModal: React.FC<{ modalId: string; data: { id: string; name: st
     }
   }
 
+  const handleSubmitPrompt = async () => {
+    setLoading(true)
+    setError("")
+    try {
+      const res = await apiFetch("/api/config/customrules", {
+        method: "POST",
+        body: systemPrompt,
+        projectId: data.id,
+      })
+      const json = await res.json()
+      if (json.success) {
+        setInitialPrompt(systemPrompt)
+        closeModal(modalId)
+      } else {
+        setError(t("project.systemPromptFailed"))
+      }
+    } catch {
+      setError(t("project.systemPromptFailed"))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const promptChanged = systemPrompt !== initialPrompt
+
   return (
     <>
       <div className="modal-header">
-        <h3>{t("project.edit")}</h3>
+        <h3>{t("project.edit")}: {data.name}</h3>
         <button className="close-btn" onClick={() => closeModal(modalId)}>×</button>
       </div>
+      <div className="modal-tabs">
+        <button
+          className={`modal-tab ${activeTab === "info" ? "active" : ""}`}
+          onClick={() => setActiveTab("info")}
+        >
+          {t("project.tabInfo")}
+        </button>
+        <button
+          className={`modal-tab ${activeTab === "prompt" ? "active" : ""}`}
+          onClick={() => setActiveTab("prompt")}
+        >
+          {t("project.tabPrompt")}
+        </button>
+      </div>
       <div className="modal-body">
-        <div className="form-group">
-          <label>{t("project.name")}</label>
-          <WrappedInput
-            value={formData.name || ""}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder={t("project.namePlaceholder")}
-            disabled={loading}
-          />
-        </div>
-        <div className="form-group">
-          <label>{t("project.description")}</label>
-          <WrappedTextarea
-            value={formData.description || ""}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            placeholder={t("project.descriptionPlaceholder")}
-            rows={3}
-            disabled={loading}
-          />
-        </div>
+        {activeTab === "info" ? (
+          <>
+            <div className="form-group">
+              <label>{t("project.name")}</label>
+              <WrappedInput
+                value={formData.name || ""}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder={t("project.namePlaceholder")}
+                disabled={loading}
+              />
+            </div>
+            <div className="form-group">
+              <label>{t("project.description")}</label>
+              <WrappedTextarea
+                value={formData.description || ""}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder={t("project.descriptionPlaceholder")}
+                rows={3}
+                disabled={loading}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="form-group">
+              <label>{t("project.systemPrompt")}</label>
+              <WrappedTextarea
+                value={promptLoading ? "" : systemPrompt}
+                onChange={(e) => setSystemPrompt(e.target.value)}
+                placeholder={promptLoading ? t("project.loading") : t("project.systemPromptPlaceholder")}
+                rows={8}
+                disabled={loading || promptLoading}
+              />
+              <div className="form-hint">{t("project.systemPromptDescription")}</div>
+            </div>
+          </>
+        )}
         {error && <div className="form-error">{error}</div>}
       </div>
       <div className="modal-footer">
         <Button onClick={() => closeModal(modalId)} variant="secondary" disabled={loading}>
           {t("common.cancel")}
         </Button>
-        <Button onClick={handleSubmit} disabled={loading}>
-          {loading ? t("common.saving") : t("common.save")}
-        </Button>
+        {activeTab === "info" ? (
+          <Button onClick={handleSubmitInfo} disabled={loading}>
+            {loading ? t("common.saving") : t("common.save")}
+          </Button>
+        ) : (
+          <Button onClick={handleSubmitPrompt} disabled={loading || !promptChanged}>
+            {loading ? t("common.saving") : t("common.save")}
+          </Button>
+        )}
       </div>
     </>
   )

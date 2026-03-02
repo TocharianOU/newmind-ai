@@ -269,8 +269,18 @@ class AttackTraceHostAPI(FastAPI):
             logger.info("Server Prepare Complete")
             yield
 
-    async def load_host_config(self) -> HostConfig:
-        """Generate all host configs."""
+    async def load_host_config(
+        self,
+        mcp_manager: MCPServerManager | None = None,
+    ) -> HostConfig:
+        """Generate all host configs.
+
+        Args:
+            mcp_manager: Optional MCPServerManager to use instead of the global one.
+                         Pass this when you want to reload the host with a project-specific
+                         config without changing the global manager (e.g. after saving a
+                         project-scoped mcpserver config via X-Project-ID).
+        """
         model_setting = self._model_config_manager.current_setting
         if model_setting is None:
             model_setting = LLMConfig(
@@ -287,8 +297,10 @@ class AttackTraceHostAPI(FastAPI):
         if self._model_config_manager.full_config is None:
             raise ValueError("Model config manager is not initialized")
 
+        effective_manager = mcp_manager or self._mcp_server_config_manager
+
         mcp_servers: dict[str, ServerConfig] = {}
-        servers = await self._mcp_server_config_manager.get_enabled_servers()
+        servers = await effective_manager.get_enabled_servers()
         for server_name, server_config in servers.items():
             if not server_config.enabled:
                 continue

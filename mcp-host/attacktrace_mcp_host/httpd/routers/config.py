@@ -5,7 +5,8 @@ from fastapi import APIRouter, Depends, Header, Request
 from pydantic import BaseModel, Field
 
 from attacktrace_mcp_host.httpd.conf.mcp_servers import Config as McpServers, MCPServerManager
-from attacktrace_mcp_host.httpd.conf.project_context import get_project_config_path
+from attacktrace_mcp_host.httpd.conf.project_context import get_project_config_path, get_project_dir
+from attacktrace_mcp_host.httpd.conf.prompt import PromptManager
 from attacktrace_mcp_host.httpd.dependencies import get_app
 from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 
@@ -95,6 +96,7 @@ async def get_mcp_server(
 @config.post("/mcpserver")
 async def post_mcp_server(
     new_config: McpServers,
+    x_project_id: Optional[str] = Header(None, alias="X-Project-ID"),
     app: AttackTraceHostAPI = Depends(get_app),
     force: bool = False,
 ) -> SaveConfigResult:
@@ -102,18 +104,29 @@ async def post_mcp_server(
 
     Args:
         new_config (McpServers): The server configurations to save.
+        x_project_id (str | None): Project ID from X-Project-ID header.
+                                   When provided, writes to the project-specific
+                                   mcp_config.json instead of the global config.
         app (AttackTraceHostAPI): The AttackTraceHostAPI instance.
         force (bool): If True, reload all mcp servers even if they are not changed.
 
     Returns:
         SaveConfigResult: Result of the save operation with any errors.
     """
-    # Update conifg
-    if not await app.mcp_server_config_manager.update_all_configs(new_config):
+    # Select the right manager: project-scoped or global.
+    if x_project_id:
+        config_path = str(get_project_config_path(x_project_id))
+        target_manager = MCPServerManager(config_path=config_path, project_id=x_project_id)
+        target_manager.initialize()
+    else:
+        target_manager = app.mcp_server_config_manager
+
+    # Update config
+    if not await target_manager.update_all_configs(new_config):
         raise ValueError("Failed to update MCP server configurations")
 
-    # Reload host
-    host_config = await app.load_host_config()
+    # Reload host using the same manager so the running host immediately reflects changes.
+    host_config = await app.load_host_config(mcp_manager=target_manager if x_project_id else None)
     await app.attacktrace_host["default"].reload(new_config=host_config, force_mcp=force)
 
     # Get failed MCP servers
@@ -279,28 +292,49 @@ async def get_model_interface() -> InterfaceResult:
 
 
 @config.get("/customrules")
-async def get_custom_rules(app: AttackTraceHostAPI = Depends(get_app)) -> RulesResult:
+async def get_custom_rules(
+    x_project_id: Optional[str] = Header(None, alias="X-Project-ID"),
+    app: AttackTraceHostAPI = Depends(get_app),
+) -> RulesResult:
     """Get custom rules configuration.
+
+    When X-Project-ID is provided, returns project-specific custom rules.
+    Otherwise returns the global custom rules.
 
     Returns:
         RulesResult: Custom rules as a string.
     """
-    custom_rules = app.prompt_config_manager.load_custom_rules()
+    if x_project_id:
+        project_rules_path = str(get_project_dir(x_project_id) / "custom_rules")
+        pm = PromptManager(custom_rules_path=project_rules_path)
+        custom_rules = pm.load_custom_rules()
+    else:
+        custom_rules = app.prompt_config_manager.load_custom_rules()
     return RulesResult(success=True, rules=custom_rules)
 
 
 @config.post("/customrules")
 async def post_custom_rules(
     request: Request,
+    x_project_id: Optional[str] = Header(None, alias="X-Project-ID"),
     app: AttackTraceHostAPI = Depends(get_app),
 ) -> ResultResponse:
     """Save custom rules configuration.
+
+    When X-Project-ID is provided, saves to project-specific custom rules file.
+    Otherwise saves to the global custom rules file.
 
     Returns:
         ResultResponse: Result of the save operation.
     """
     raw_rules = await request.body()
     rules = raw_rules.decode("utf-8")
-    app.prompt_config_manager.write_custom_rules(rules)
-    app.prompt_config_manager.update_prompts()
+
+    if x_project_id:
+        project_rules_path = str(get_project_dir(x_project_id) / "custom_rules")
+        pm = PromptManager(custom_rules_path=project_rules_path)
+        pm.write_custom_rules(rules)
+    else:
+        app.prompt_config_manager.write_custom_rules(rules)
+        app.prompt_config_manager.update_prompts()
     return ResultResponse(success=True)

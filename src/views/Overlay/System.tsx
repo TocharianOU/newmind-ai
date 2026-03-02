@@ -1,16 +1,13 @@
-import { useAtom, useAtomValue, useSetAtom } from "jotai"
+import { useAtom, useAtomValue } from "jotai"
 import { useTranslation } from "react-i18next"
 import Select from "../../components/Select"
-import { openDrawerAtom } from "../../atoms/drawerState"
 import React, { useState, useEffect } from "react"
-import { apiFetch } from "../../utils/api"
 
 import ThemeSwitch from "../../components/ThemeSwitch"
 import Switch from "../../components/Switch"
 import { getAutoDownload, setAutoDownload as _setAutoDownload } from "../../updater"
 import { disableDiveSystemPromptAtom, updateDisableDiveSystemPromptAtom } from "../../atoms/configState"
 import { getIPCAutoLaunch, getIPCMinimalToTray, setIPCAutoLaunch, setIPCMinimalToTray } from "../../ipc/system"
-import { commonFlashAtom } from "../../atoms/globalState"
 import "../../styles/overlay/_System.scss"
 
 const System = () => {
@@ -21,8 +18,6 @@ const System = () => {
   const [minimalToTray, setMinimalToTray] = useState(false)
   const disableDiveSystemPrompt = useAtomValue(disableDiveSystemPromptAtom)
   const [, updateDisableDiveSystemPrompt] = useAtom(updateDisableDiveSystemPromptAtom)
-  const openDrawer = useSetAtom(openDrawerAtom)
-  const [, setCommonFlash] = useAtom(commonFlashAtom)
 
   useEffect(() => {
     getIPCAutoLaunch().then(setAutoLaunch)
@@ -47,25 +42,6 @@ const System = () => {
   const handleLanguageChange = async (value: string) => {
     setLanguage(value)
     await i18n.changeLanguage(value === "default" ? navigator.language : value)
-
-    if (value !== "default") {
-      setDefaultInstructions()
-    }
-  }
-
-  const setDefaultInstructions = async () => {
-    try {
-      const response = await apiFetch("/api/config/customrules")
-      const data = await response.json()
-      if (data.success && data.rules === "") {
-        await fetch("/api/config/customrules", {
-          method: "POST",
-          body: t("system.defaultInstructions")
-        })
-      }
-    } catch (error) {
-      console.error("Failed to fetch custom rules:", error)
-    }
   }
 
   const handleMinimalToTrayChange = (value: boolean) => {
@@ -75,11 +51,6 @@ const System = () => {
 
   const handleDefaultSystemPromptChange = async (value: boolean) => {
     await updateDisableDiveSystemPrompt({ value })
-  }
-
-  const openPromtSetting = () => {
-    openDrawer({ id: "Settings", page: "Settings", tab: "Model" })
-    setCommonFlash("openPromtSetting")
   }
 
   return (
@@ -176,10 +147,6 @@ const System = () => {
               </div>
             </div>
             <span className="system-list-description">{t("system.defaultSystemPromptDescription")}</span>
-            <div className="custom-prompt-container">
-              <span className="custom-prompt-description">{t("system.customPromptDescription")}</span>
-              <button className="custom-prompt-button" onClick={openPromtSetting}>{t("system.customPromptButton")}</button>
-            </div>
           </div>
         </div>
       </div>

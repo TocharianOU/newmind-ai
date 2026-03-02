@@ -8,7 +8,8 @@ from fastapi import APIRouter, Depends, Request
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
-from attacktrace_mcp_host.httpd.conf.prompt import PromptKey
+from attacktrace_mcp_host.httpd.conf.prompt import PromptKey, PromptManager
+from attacktrace_mcp_host.httpd.conf.project_context import get_project_dir
 from attacktrace_mcp_host.httpd.dependencies import get_app
 from attacktrace_mcp_host.httpd.routers.models import ResultResponse, StreamMessage
 from attacktrace_mcp_host.httpd.routers.utils import ChatProcessor, EventStreamContextManager
@@ -177,6 +178,8 @@ async def create_chat_completion(
         else:
             messages.append(HumanMessage(content=message.content))
 
+    x_project_id = request.headers.get("X-Project-ID")
+
     if not has_system_message:
         disable_dive_system_prompt = (
             app.model_config_manager.full_config.disable_dive_system_prompt
@@ -184,10 +187,17 @@ async def create_chat_completion(
             else False
         )
 
+        prompt_manager = app.prompt_config_manager
+        if x_project_id:
+            project_rules_path = str(get_project_dir(x_project_id) / "custom_rules")
+            pm = PromptManager(custom_rules_path=project_rules_path)
+            pm.initialize()
+            prompt_manager = pm
+
         if disable_dive_system_prompt:
-            system_prompt = app.prompt_config_manager.get_prompt(PromptKey.CUSTOM)
+            system_prompt = prompt_manager.get_prompt(PromptKey.CUSTOM)
         else:
-            system_prompt = app.prompt_config_manager.get_prompt(PromptKey.SYSTEM)
+            system_prompt = prompt_manager.get_prompt(PromptKey.SYSTEM)
 
         if system_prompt:
             messages.insert(
@@ -208,7 +218,7 @@ async def create_chat_completion(
     async def process() -> tuple[CompletionsMessageResp, CompletionsUsage]:
         async with stream:
             task = asyncio.create_task(abort_handler())
-            processor = ChatProcessor(app, request.state, stream)
+            processor = ChatProcessor(app, request.state, stream, project_id=x_project_id)
             result, usage = await processor.handle_chat_with_history(
                 chat_id,
                 None,
