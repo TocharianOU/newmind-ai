@@ -2,13 +2,11 @@
 import React, { useEffect, useState, useMemo, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import Select from "../../../../components/Select"
-import Switch from "../../../../components/Switch"
 import Tooltip from "../../../../components/Tooltip"
 import { 
   isKeychainReference, 
   parseKeychainReference, 
   generateKeychainReference,
-  setPassword as keychainSetPassword,
   isKeychainAvailable
 } from "../../../../ipc/keychain"
 
@@ -19,10 +17,73 @@ interface SchemaFormProps {
   disabled?: boolean
 }
 
+interface OneOfGroupsProps {
+  schema: Record<string, any>
+  formData: Record<string, any>
+  disabled?: boolean
+  renderField: (key: string, fieldSchema: any) => React.ReactNode
+  t: (key: string) => string
+}
+
+const OneOfGroups: React.FC<OneOfGroupsProps> = ({ schema, formData, disabled, renderField, t }) => {
+  const [activeModeIndex, setActiveModeIndex] = useState(0)
+
+  useEffect(() => {
+    if (!schema.oneOf) return
+    const currentOption = schema.oneOf[activeModeIndex]
+    const currentModeHasValues = currentOption?.required?.some(
+      (field: string) => formData[field] && formData[field] !== ""
+    )
+    if (currentModeHasValues) return
+
+    const matchIndex = schema.oneOf.findIndex((option: any) => {
+      if (!option.required) return false
+      return option.required.every((field: string) => formData[field] && formData[field] !== "")
+    })
+    if (matchIndex !== -1 && matchIndex !== activeModeIndex) {
+      setActiveModeIndex(matchIndex)
+    }
+  }, [formData, schema.oneOf, activeModeIndex])
+
+  if (!schema.oneOf) return null
+
+  const options = schema.oneOf.map((option: any, index: number) => ({
+    label: option.title || `Option ${index + 1}`,
+    value: index,
+    option
+  }))
+
+  const activeOption = schema.oneOf[activeModeIndex]
+  const activeFields = activeOption?.required || Object.keys(activeOption?.properties || {})
+
+  return (
+    <div className="schema-form-oneof-container">
+      {options.length > 1 && (
+        <div className="field-item mode-selector">
+          <label>{t("tools.authMode") || "Authentication Mode"}</label>
+          <Select
+            options={options}
+            value={activeModeIndex}
+            onSelect={(val) => setActiveModeIndex(val as number)}
+            disabled={disabled}
+          />
+        </div>
+      )}
+
+      {activeFields.map((fieldKey: string) => {
+        const fieldSchema = schema.properties?.[fieldKey] || activeOption?.properties?.[fieldKey]
+        if (fieldSchema) {
+          return renderField(fieldKey, fieldSchema)
+        }
+        return null
+      })}
+    </div>
+  )
+}
+
 const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disabled }) => {
   const { t } = useTranslation()
   const [formData, setFormData] = useState<Record<string, any>>({})
-  const [useKeychainForField, setUseKeychainForField] = useState<Record<string, boolean>>({})
   const [keychainPasswordInputs, setKeychainPasswordInputs] = useState<Record<string, string>>({})
   const [keychainAvailable, setKeychainAvailable] = useState(false)
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
@@ -35,51 +96,46 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
   // Initialize form data from config array
   useEffect(() => {
     const initialData: Record<string, any> = {}
-    const initialKeychainFlags: Record<string, boolean> = {}
-    
     config.forEach(([key, value]) => {
       initialData[key] = value
-      // Check if this field uses keychain
-      if (typeof value === "string" && isKeychainReference(value)) {
-        initialKeychainFlags[key] = true
-      }
     })
-    
-    // 只在数据真正变化时才更新，避免覆盖用户输入
     setFormData(prev => {
       const isEqual = Object.keys(prev).length === Object.keys(initialData).length &&
         Object.keys(initialData).every(k => prev[k] === initialData[k])
       return isEqual ? prev : initialData
     })
-    
-    // Only update keychain flags for fields that are newly added or changed from/to keychain reference
-    setUseKeychainForField(prev => {
-      const updated = { ...prev }
-      let hasChanges = false
-      
-      Object.keys(initialKeychainFlags).forEach(key => {
-        if (prev[key] === undefined || prev[key] !== initialKeychainFlags[key]) {
-          // Only update if the field is new OR the value changed from non-keychain to keychain
-          const oldValue = formData[key]
-          const newValue = initialData[key]
-          if (!oldValue || !isKeychainReference(oldValue)) {
-            updated[key] = initialKeychainFlags[key]
-            hasChanges = true
-          }
-        }
-      })
-      
-      // Don't override user's manual toggle if they turned it off and value is now empty
-      Object.keys(prev).forEach(key => {
-        if (prev[key] === false && initialData[key] === "") {
-          updated[key] = false
-          hasChanges = true
-        }
-      })
-      
-      return hasChanges ? updated : prev
-    })
   }, [config])
+
+  // Auto-generate keychain references for empty/plain-text sensitive fields when keychain is available
+  useEffect(() => {
+    if (!keychainAvailable) return
+
+    const properties = schema.properties || {}
+    const updates: Record<string, string> = {}
+
+    Object.entries(properties).forEach(([key, fieldSchema]: [string, any]) => {
+      const isSensitive =
+        fieldSchema?.format === "password" ||
+        key.includes("KEY") || key.includes("PASSWORD") || key.includes("SECRET")
+      if (!isSensitive) return
+
+      const currentValue = formData[key]
+      if (!currentValue || !isKeychainReference(String(currentValue))) {
+        updates[key] = generateKeychainReference(`attacktrace-${key.toLowerCase()}`, "default")
+      }
+    })
+
+    if (Object.keys(updates).length === 0) return
+
+    const newFormData = { ...formData, ...updates }
+    setFormData(newFormData)
+
+    const mergedConfig: [string, unknown, boolean][] = config.map(([k, v, err]) => [
+      k, updates[k] !== undefined ? updates[k] : v, err
+    ])
+    onChange(mergedConfig)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keychainAvailable])
 
   // Handle field change
   const handleChange = (key: string, value: any) => {
@@ -166,28 +222,12 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
     const title = fieldSchema.title || key
     const description = fieldSchema.description
     
-    // Secret/Password field
+    // Secret/Password field — always use keychain when available
     if (fieldSchema.format === "password" || key.includes("KEY") || key.includes("PASSWORD") || key.includes("SECRET")) {
-      const useKeychain = useKeychainForField[key] || false
       const parsedKeychain = isKeychainReference(value) ? parseKeychainReference(value) : null
-      
-      const handleKeychainToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const checked = e.target.checked
-        if (!checked) {
-          // Switch to plain text mode - clear the keychain reference
-          setUseKeychainForField(prev => ({ ...prev, [key]: false }))
-          setKeychainPasswordInputs(prev => ({ ...prev, [key]: "" }))
-          handleChange(key, "")
-        } else {
-          // Switch to keychain mode - generate reference
-          const service = `attacktrace-${key.toLowerCase()}`
-          const account = "default"
-          setUseKeychainForField(prev => ({ ...prev, [key]: true }))
-          setKeychainPasswordInputs(prev => ({ ...prev, [key]: "" }))
-          handleChange(key, generateKeychainReference(service, account))
-        }
-      }
-      
+      const keychainService = parsedKeychain?.service ?? `attacktrace-${key.toLowerCase()}`
+      const keychainAccount = parsedKeychain?.account ?? "default"
+
       return (
         <div key={key} className="field-item">
           <label>
@@ -198,34 +238,18 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
               </Tooltip>
             )}
           </label>
-          
-          {keychainAvailable && (
-            <div className="keychain-toggle" style={{ marginBottom: "8px" }}>
-              <Switch
-                checked={useKeychain}
-                onChange={handleKeychainToggle}
-                disabled={disabled}
-              />
-              <span style={{ marginLeft: "8px", fontSize: "14px" }}>
-                {t("tools.keychain.useKeychain") || "🔐 Use System Keychain"}
-              </span>
-            </div>
-          )}
-          
-          {useKeychain && parsedKeychain ? (
+
+          {keychainAvailable ? (
             <input
               id={`keychain-password-${key}`}
               type="password"
               value={keychainPasswordInputs[key] || ""}
-              onChange={(e) => {
-                const nextValue = e.target.value
-                setKeychainPasswordInputs(prev => ({ ...prev, [key]: nextValue }))
-              }}
+              onChange={(e) => setKeychainPasswordInputs(prev => ({ ...prev, [key]: e.target.value }))}
               placeholder={t("tools.keychain.enterPassword") || "Enter password"}
               disabled={disabled}
               className="schema-form-input"
-              data-keychain-service={parsedKeychain.service}
-              data-keychain-account={parsedKeychain.account}
+              data-keychain-service={keychainService}
+              data-keychain-account={keychainAccount}
             />
           ) : (
             <input
@@ -426,95 +450,25 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
     )
   }
 
-  // Handle oneOf mutually exclusive groups
-  const renderOneOfGroups = () => {
-    if (!schema.oneOf) return null
-
-    // Check if we have titles for the oneOf options to create a mode selector
-    const options = schema.oneOf.map((option: any, index: number) => ({
-      label: option.title || `Option ${index + 1}`,
-      value: index,
-      option
-    }))
-
-    // Determine active mode
-    // If formData matches the required fields of an option, select it
-    // Default to 0
-    const [activeModeIndex, setActiveModeIndex] = useState(0)
-
-    // Check on mount/update if formData satisfies a specific mode
-    // Only auto-switch if the current mode's required fields are empty
-    useEffect(() => {
-        const currentOption = schema.oneOf[activeModeIndex]
-        const currentModeHasValues = currentOption.required?.some((field: string) => 
-            formData[field] && formData[field] !== ""
-        )
-        
-        // Don't auto-switch if user is actively filling the current mode
-        if (currentModeHasValues) return
-        
-        const matchIndex = schema.oneOf.findIndex((option: any) => {
-            if (!option.required) return false
-            // Check if all required fields in this option have values
-            return option.required.every((field: string) => formData[field] && formData[field] !== "")
-        })
-        if (matchIndex !== -1 && matchIndex !== activeModeIndex) {
-            setActiveModeIndex(matchIndex)
-        }
-    }, [formData, schema.oneOf, activeModeIndex])
-
-    const activeOption = schema.oneOf[activeModeIndex]
-    
-    // Get fields for the active option
-    // It could be a list of properties or required fields that are defined in the main properties
-    const activeFields = activeOption.required || Object.keys(activeOption.properties || {})
-
-    return (
-      <div className="schema-form-oneof-container">
-        {options.length > 1 && (
-            <div className="field-item mode-selector">
-                <label>{t("tools.authMode") || "Authentication Mode"}</label>
-                <Select
-                    options={options}
-                    value={activeModeIndex}
-                    onSelect={(val) => {
-                        setActiveModeIndex(val as number)
-                        // Optional: Clear fields from other modes?
-                        // For now, we keep data but only show relevant fields
-                    }}
-                    disabled={disabled}
-                />
-            </div>
-        )}
-        
-        {activeFields.map((fieldKey: string) => {
-            // Find field definition in main properties or inside the oneOf option
-            const fieldSchema = schema.properties?.[fieldKey] || activeOption.properties?.[fieldKey]
-            if (fieldSchema) {
-                return renderField(fieldKey, fieldSchema)
-            }
-            return null
-        })}
-      </div>
-    )
-  }
-
   return (
     <div className="schema-form-container">
       {/* Render common fields (those not in oneOf groups or explicitly common) */}
       {visibleFields.map(key => {
-        // Skip fields that are handled by oneOf logic if they are specific to a group
-        // Simple check: if schema.oneOf exists, and this key is inside one of the groups, skip it here
-        // UNLESS it is required by ALL groups (common field)
-        
         const inOneOf = schema.oneOf?.some((opt: any) => opt.required?.includes(key) || opt.properties?.[key])
         if (inOneOf) return null
-
         return renderField(key, schema.properties[key])
       })}
 
       {/* Render mutually exclusive fields */}
-      {renderOneOfGroups()}
+      {schema.oneOf && (
+        <OneOfGroups
+          schema={schema}
+          formData={formData}
+          disabled={disabled}
+          renderField={renderField}
+          t={t}
+        />
+      )}
     </div>
   )
 }

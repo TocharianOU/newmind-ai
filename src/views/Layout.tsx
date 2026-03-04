@@ -10,12 +10,24 @@ import Overlay from "./Overlay"
 import KeymapModal from "../components/Modal/KeymapModal"
 import CodeModal from "./Chat/CodeModal"
 import { overlaysAtom } from "../atoms/layerState"
+import { isLoggedInOAPAtom } from "../atoms/oapState"
+import Login from "./Login"
 
 const Layout = () => {
   const isConfigNotInitialized = useAtomValue(isConfigNotInitializedAtom)
   const [theme] = useAtom(themeAtom)
   const [systemTheme] = useAtom(systemThemeAtom)
   const overlays = useAtomValue(overlaysAtom)
+  const isLoggedIn = useAtomValue(isLoggedInOAPAtom)
+
+  if (!isLoggedIn) {
+    return (
+      <div className="app-container" data-theme={theme === "system" ? systemTheme : theme}>
+        <Login />
+        <GlobalToast />
+      </div>
+    )
+  }
 
   return (
     <div className="app-container" data-theme={theme === "system" ? systemTheme : theme}>

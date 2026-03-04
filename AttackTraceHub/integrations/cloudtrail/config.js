@@ -59,7 +59,7 @@ AWS API audit trail lookup and advanced threat hunting via CloudTrail management
 ## 工具
 
 ### 管理事件查询
-- **lookup_events** – 查询 **90 天内**的 CloudTrail 管理事件。过滤维度：\`attributeKey\`（Username/EventName/AccessKeyId/ResourceName/ResourceType/EventSource/ReadOnly/EventId）+ \`attributeValue\`。支持 ISO 或相对时间（如 \`"2 hours ago"\`）、\`maxResults`\`（1–50）和分页（\`nextToken\`）
+- **lookup_events** – 查询 **90 天内**的 CloudTrail 管理事件。过滤维度：\`attributeKey\`（Username/EventName/AccessKeyId/ResourceName/ResourceType/EventSource/ReadOnly/EventId）+ \`attributeValue\`。支持 ISO 或相对时间（如 \`"2 hours ago"\`）、\`maxResults\`（1–50）和分页（\`nextToken\`）
 
 ### CloudTrail Lake SQL 分析
 - **lake_query** – 对 CloudTrail Lake 事件数据存储运行 SQL 查询，支持聚合、JOIN 和超出 90 天的历史查询。返回 \`queryId\` 用于异步获取结果

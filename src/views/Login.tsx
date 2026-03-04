@@ -1,10 +1,7 @@
-import React, { useEffect, useState } from "react"
+import React, { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import "@/styles/pages/_Login.scss"
-import { useAtomValue, useSetAtom } from "jotai"
-import { useNavigate } from "react-router-dom"
-import { isLoggedInOAPAtom, oapUserAtom } from "../atoms/oapState"
-import { openOapLoginPage, oapGetMe, oapLogin, oapLoginWithToken, oapGetOAuthConfig, oapLoginWithOAuth } from "../ipc/oap"
+import { openOapLoginPage, oapLoginWithToken, oapGetOAuthConfig, oapLoginWithOAuth } from "../ipc/oap"
 import Button from "../components/Button"
 import EmbeddedLogin from "../components/EmbeddedLogin"
 
@@ -20,18 +17,9 @@ interface OAuthConfig {
 }
 
 const Login = () => {
-  const navigate = useNavigate()
   const { t } = useTranslation()
-  const isLoggedInOAP = useAtomValue(isLoggedInOAPAtom)
-  const setOapUser = useSetAtom(oapUserAtom)
   const [showEmbeddedLogin, setShowEmbeddedLogin] = useState(false)
   const [oauthConfig, setOAuthConfig] = useState<OAuthConfig | null>(null)
-
-  useEffect(() => {
-    if (isLoggedInOAP) {
-      setIsInitialized(true)
-    }
-  }, [isLoggedInOAP])
 
   // 获取OAuth配置
   useEffect(() => {
@@ -50,10 +38,6 @@ const Login = () => {
     fetchOAuthConfig()
   }, [])
 
-  const setIsInitialized = (value: boolean) => {
-    localStorage.setItem("isInitialized", value ? "true" : "false")
-  }
-
   const handleEmbeddedLoginSuccess = async (token: string) => {
     try {
       console.log('🚀 Starting embedded login with token:', token.substring(0, 8) + '...')
@@ -65,13 +49,10 @@ const Login = () => {
       console.log('✅ OAP login flow initiated successfully')
       
       setShowEmbeddedLogin(false)
-      setIsInitialized(true)
       
     } catch (error) {
       console.error('❌ Login integration error:', error)
-      // Fallback: still close modal and continue
       setShowEmbeddedLogin(false)
-      setIsInitialized(true)
     }
   }
 
@@ -107,33 +88,12 @@ const Login = () => {
 
         <div className="options-container">
           <div className="option-card">
-            <h2 className="option-title">{t("login.title1")}</h2>
-            <p className="option-description">
-              {t("login.description1")}
-            </p>
-            <div className="button-container">
-              <Button
-                color="blue"
-                size="fit"
-                padding="xxl"
-                onClick={() => {
-                  navigate("/setup")
-                  setIsInitialized(true)
-                }}
-              >{t("login.button1")}</Button>
-            </div>
-          </div>
-
-          <div className="option-gap"></div>
-
-          <div className="option-card">
-            {/* 品牌文案 */}
             {oauthConfig?.brandText && (
               <div className="oauth-brand-badge">
                 {oauthConfig.brandText}
               </div>
             )}
-            
+
             <h2 className="option-title">{t("login.title2")}</h2>
             <p className="option-description">
               {t("login.description2")}
@@ -151,8 +111,7 @@ const Login = () => {
                 padding="n"
                 onClick={handleLoginClick}
               >{t("login.button3")}</Button>
-              
-              {/* OAuth登录选项（动态显示） */}
+
               {oauthConfig?.oauthEnabled && oauthConfig.providers.length > 0 && (
                 <>
                   <div className="oauth-divider">
@@ -173,21 +132,6 @@ const Login = () => {
               )}
             </div>
           </div>
-        </div>
-        
-        {/* Debug info */}
-        <div style={{ 
-          position: 'fixed', 
-          bottom: '10px', 
-          right: '10px', 
-          background: 'rgba(0,0,0,0.7)', 
-          color: 'white', 
-          padding: '10px', 
-          borderRadius: '4px',
-          fontSize: '12px',
-          zIndex: 999
-        }}>
-          Embedded Login: {showEmbeddedLogin ? 'SHOWN' : 'HIDDEN'}
         </div>
       </div>
 

@@ -524,27 +524,28 @@ ls -lh mcp-<toolname>-v1.0.0.tar.gz
 
 ### 4.4 上传到 GitHub Release
 
-> **命名规则**：Release 的 `--title` 必须与 tag 保持一致，统一为 `v{version}`（如 `v1.0.1`），**不要**加项目名前缀。
+> **命名规则**：Release 的 `--title` 必须统一为 `v{version}`（如 `v1.0.0`），**不要**加项目名前缀（❌ `jira-mcp v1.0.0`，✅ `v1.0.0`）。
+
+使用 GitHub CLI（`gh`）创建 Release 并上传资产：
 
 ```bash
-GITHUB_TOKEN="your_token"
-REPO="TocharianOU/mcp-<toolname>"
-RELEASE_ID="xxxxxxx"   # 从 API 获取：curl https://api.github.com/repos/$REPO/releases/tags/v1.0.0
+# 在项目目录下执行（已完成 git tag 并 push）
+VERSION=$(node -p "require('./package.json').version")
+PACKAGE_NAME="<toolname>-mcp"   # 如 jira-mcp、splunk-mcp
+TARBALL="${PACKAGE_NAME}-v${VERSION}.tar.gz"
 
-# 上传 tar.gz
-curl -X POST \
-  -H "Authorization: token $GITHUB_TOKEN" \
-  -H "Content-Type: application/gzip" \
-  --data-binary @mcp-<toolname>-v1.0.0.tar.gz \
-  "https://uploads.github.com/repos/$REPO/releases/$RELEASE_ID/assets?name=mcp-<toolname>-v1.0.0.tar.gz"
-
-# 上传校验和
-curl -X POST \
-  -H "Authorization: token $GITHUB_TOKEN" \
-  -H "Content-Type: text/plain" \
-  --data-binary @mcp-<toolname>-v1.0.0.tar.gz.sha256 \
-  "https://uploads.github.com/repos/$REPO/releases/$RELEASE_ID/assets?name=mcp-<toolname>-v1.0.0.tar.gz.sha256"
+gh release create "v${VERSION}" \
+  "${TARBALL}" \
+  "${TARBALL}.sha256" \
+  "${TARBALL}.sha512" \
+  --title "v${VERSION}" \
+  --notes "See RELEASE.md for changelog."
 ```
+
+> ⚠️ `--title` 只写版本号，不含项目名。如已创建 Release 但 title 有误，用以下命令修正：
+> ```bash
+> gh release edit v1.0.0 --repo TocharianOU/<repo> --title "v1.0.0"
+> ```
 
 ### 4.5 版本更新时清理缓存
 

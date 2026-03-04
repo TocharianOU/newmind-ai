@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+  <rect width="240" height="80" rx="8" fill="#0052CC"/>
+  <g transform="translate(16,16)">
+    <path d="M24 4L8 24l16 7L40 24z" fill="#2684FF" opacity="0.8"/>
+    <path d="M8 24l16 28L40 24l-16 7z" fill="white" opacity="0.9"/>
+    <path d="M24 4L8 24l16 7V4z" fill="white"/>
+  </g>
+  <text x="72" y="38" font-family="Arial,sans-serif" font-size="22" font-weight="bold" fill="white">Jira</text>
+  <text x="72" y="58" font-family="Arial,sans-serif" font-size="13" fill="#B8D4FF">MCP Server</text>
+</svg>
