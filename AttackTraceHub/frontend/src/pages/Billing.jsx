@@ -14,7 +14,7 @@ const PLAN_HIERARCHY = {
 };
 
 const Billing = () => {
-  const { user, fetchUser } = useAuth();
+  const { user } = useAuth();
   const { t } = useLanguage();
   const [packages, setPackages] = useState([]);
   const [history, setHistory] = useState([]);
@@ -22,6 +22,7 @@ const Billing = () => {
   const [loadingPurchase, setLoadingPurchase] = useState(null);
   const [showExtendModal, setShowExtendModal] = useState(false);
   const [pendingPurchase, setPendingPurchase] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -62,12 +63,11 @@ const Billing = () => {
           window.location.href = url;
           return;
         }
-        alert('Checkout URL not available.');
+        setErrorMessage(t('billing.checkoutUnavailable', 'Checkout URL not available.'));
         setLoadingPurchase(null);
       }
     } catch (error) {
-      console.error('Error creating checkout:', error);
-      alert('Failed to create checkout session');
+      setErrorMessage(t('billing.checkoutFailed', 'Failed to create checkout session. Please try again.'));
       setLoadingPurchase(null);
     }
   };
@@ -100,17 +100,14 @@ const Billing = () => {
           window.location.href = url;
           return;
         }
-        alert('Subscription checkout URL not available.');
+        setErrorMessage(t('billing.subscriptionCheckoutUnavailable', 'Subscription checkout URL not available.'));
       }
     } catch (error) {
-      console.error('Error creating subscription checkout:', error);
-      
-      // 检查是否是降级错误
-      if (error.response?.data?.error?.includes('downgrade') || 
+      if (error.response?.data?.error?.includes('downgrade') ||
           error.response?.data?.error?.includes('lower plan')) {
-        alert('Cannot downgrade while active plan exists. Please wait for current plan to expire.');
+        setErrorMessage(t('billing.noDowngrade', 'Cannot downgrade while active plan exists. Please wait for current plan to expire.'));
       } else {
-        alert('Failed to create subscription checkout');
+        setErrorMessage(t('billing.subscriptionFailed', 'Failed to create subscription checkout. Please try again.'));
       }
     }
   };
@@ -174,6 +171,15 @@ const Billing = () => {
         <h1>{t('billing.title', 'Billing & Payments')}</h1>
         <p className="subtitle">{t('billing.subtitle', 'Manage your tokens and subscription')}</p>
       </div>
+
+      {errorMessage && (
+        <div
+          style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '12px 16px', marginBottom: 20, color: '#dc2626', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        >
+          <span>{errorMessage}</span>
+          <button onClick={() => setErrorMessage('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontWeight: 700, fontSize: 16 }}>×</button>
+        </div>
+      )}
 
       {/* Token Balance Card */}
       <section className="balance-section">

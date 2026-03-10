@@ -2,6 +2,8 @@
 import hashlib
 import json
 import logging
+import os
+import re
 import shutil
 import subprocess
 import tarfile
@@ -13,6 +15,21 @@ from pathlib import Path
 import httpx
 
 logger = logging.getLogger("PackageManager")
+
+# Only alphanumeric characters, hyphens, underscores, and dots are allowed in
+# package names and versions. This prevents path traversal via crafted names.
+_SAFE_PKG_RE = re.compile(r'^[a-zA-Z0-9._-]{1,128}$')
+
+# Maximum download size: 512 MB. Prevents disk-exhaustion DoS.
+_MAX_DOWNLOAD_BYTES = 512 * 1024 * 1024
+
+
+def _assert_safe_pkg_param(value: str, label: str) -> None:
+    """Raise ValueError if the package name or version is not safe."""
+    if not value or not _SAFE_PKG_RE.match(value):
+        raise ValueError(
+            f"Invalid {label} '{value}': only alphanumeric, '-', '_', '.' are allowed (max 128 chars)"
+        )
 
 
 @dataclass
@@ -64,6 +81,8 @@ class PackageManager:
     
     def get_package(self, name: str, version: str) -> PackageInfo | None:
         """Get a specific package"""
+        _assert_safe_pkg_param(name, "name")
+        _assert_safe_pkg_param(version, "version")
         install_dir = self.packages_dir / f"{name}@{version}"
         if not install_dir.exists():
             return None
@@ -166,8 +185,18 @@ class PackageManager:
         Returns:
             PackageInfo object
         """
+        # Validate name and version to prevent path traversal.
+        _assert_safe_pkg_param(name, "name")
+        _assert_safe_pkg_param(version, "version")
+
+        # Only allow https:// downloads to prevent SSRF via file:// or http://.
+        if not download_url.startswith("https://"):
+            raise ValueError(
+                f"download_url must use https:// scheme, got: {download_url[:40]!r}"
+            )
+
         install_dir = self.packages_dir / f"{name}@{version}"
-        
+
         # If package already exists, return it directly
         if install_dir.exists():
             logger.info(f"Package {name}@{version} already exists at {install_dir}")
@@ -199,6 +228,10 @@ class PackageManager:
                             async for chunk in response.aiter_bytes(chunk_size=8192):
                                 f.write(chunk)
                                 downloaded += len(chunk)
+                                if downloaded > _MAX_DOWNLOAD_BYTES:
+                                    raise ValueError(
+                                        f"Download size exceeds limit of {_MAX_DOWNLOAD_BYTES // (1024*1024)} MB"
+                                    )
                                 if total_size > 0:
                                     # Progress: 5-60% for download
                                     progress = int(5 + (downloaded / total_size) * 55)
@@ -234,20 +267,19 @@ class PackageManager:
             install_dir.mkdir(parents=True, exist_ok=True)
             
             with tarfile.open(temp_path, 'r:gz') as tar:
-                # Security check: prevent path traversal attacks
-                def is_within_directory(directory, target):
-                    abs_directory = Path(directory).resolve()
-                    abs_target = Path(target).resolve()
-                    return abs_target.is_relative_to(abs_directory)
-                
-                members = tar.getmembers()
-                total_members = len(members)
-                for idx, member in enumerate(members):
-                    member_path = install_dir / member.name
-                    if not is_within_directory(install_dir, member_path):
-                        raise Exception(f"Attempted path traversal in tar file: {member.name}")
-                
-                tar.extractall(install_dir)
+                resolved_install = install_dir.resolve()
+
+                safe_members = []
+                for member in tar.getmembers():
+                    member_target = (resolved_install / member.name).resolve()
+                    if member_target != resolved_install and not str(member_target).startswith(
+                        str(resolved_install) + os.sep
+                    ):
+                        logger.warning("[Security] Skipping tar entry that escapes install dir: %s", member.name)
+                        continue
+                    safe_members.append(member)
+
+                tar.extractall(install_dir, members=safe_members)
                 
                 # Progress: 65-80% for extraction
                 if progress_callback:
@@ -304,6 +336,8 @@ class PackageManager:
     
     def delete_package(self, name: str, version: str) -> bool:
         """Delete package (does not check if in use by instances)"""
+        _assert_safe_pkg_param(name, "name")
+        _assert_safe_pkg_param(version, "version")
         install_dir = self.packages_dir / f"{name}@{version}"
         if install_dir.exists():
             try:

@@ -2,7 +2,8 @@ import { app, BrowserWindow, shell, ipcMain } from "electron"
 import path from "node:path"
 import os from "node:os"
 import AppState from "./state"
-import { cleanup, initMCPClient } from "./service"
+import { cleanup, initMCPClient, restartHost } from "./service"
+import { runSync, isSyncEnabled, startPeriodicSync, stopPeriodicSync } from "./syncService"
 import { getDarwinSystemPath, modifyPath } from "./util"
 import { binDirList, darwinPathList, __dirname, VITE_DEV_SERVER_URL, RENDERER_DIST, logDir } from "./constant"
 import { update } from "./update"
@@ -13,6 +14,7 @@ import { initProtocol } from "./protocol"
 import log from "electron-log/main"
 import { deeplinkHandler, refreshConfig, setOAPTokenToHost, setupAppImageDeepLink } from "./deeplink"
 import { oapClient } from "./oap"
+import { refreshProjectContextForCurrentUser } from "./ipc/project"
 import electronDl from "electron-dl"
 import "./ipc/mcp.js"  // Import MCP IPC handlers
 import "./ipc/project.js"  // Import Project IPC handlers
@@ -63,7 +65,7 @@ if (process.defaultApp) {
 }
 
 let win: BrowserWindow | null = null
-const preload = path.join(__dirname, "../preload/index.mjs")
+const preload = path.join(__dirname, "../preload/index.cjs")
 const indexHtml = path.join(RENDERER_DIST, "index.html")
 
 async function onReady() {
@@ -87,27 +89,45 @@ async function onReady() {
     setOAPTokenToHost(import.meta.env.VITE_OAP_TOKEN)
   }
 
-  oapClient.registEvent("login", () => {
+  oapClient.registEvent("login", async () => {
+    // Account switched: refresh project context cache for this user first.
+    refreshProjectContextForCurrentUser()
+    // Restart host so ATTACKTRACE_USER_ID is populated with the freshly logged-in user.
+    const result = await restartHost()
+    if (result.success && result.port) {
+      win!.webContents.send("app-port", result.port)
+    }
+    // Notify renderer only after host/user context has switched.
     win!.webContents.send("oap:login")
+    // Kick off a sync after login so the user's history is available immediately.
+    runSync().then(r => {
+      if (r.success) {
+        win!.webContents.send("sync:completed", r)
+      }
+    }).catch(console.error)
+    // Start periodic background sync if the user has it enabled.
+    if (isSyncEnabled()) startPeriodicSync()
   })
 
-  oapClient.registEvent("logout", () => {
+  oapClient.registEvent("logout", async () => {
+    // Clear account-bound project context before restarting host.
+    refreshProjectContextForCurrentUser()
     win!.webContents.send("oap:logout")
+    stopPeriodicSync()
+    // Restart host with an empty ATTACKTRACE_USER_ID so that no user-specific
+    // data is accessible while the login screen is shown.  This prevents
+    // cross-account data leakage in the edge case where API requests slip
+    // through between a logout and the next login restart.
+    try {
+      const result = await restartHost()
+      if (result.success && result.port) {
+        win!.webContents.send("app-port", result.port)
+      }
+    } catch (err) {
+      console.error(err)
+    }
   })
 
-  oapClient.onReceiveWebSocketMessage((message) => {
-    if (VITE_DEV_SERVER_URL) {
-      console.log("receive websocket message", message)
-    }
-
-    switch (message.type) {
-      case "user.settings.mcps.updated":
-      case "user.account.subscription.update":
-        refreshConfig()
-        break
-      default:
-    }
-  })
 }
 
 export async function createWindow() {
@@ -131,12 +151,11 @@ export async function createWindow() {
     backgroundMaterial: process.platform === "win32" ? "acrylic" : undefined,
     webPreferences: {
       preload,
-      // Warning: Enable nodeIntegration and disable contextIsolation is not secure in production
-      // nodeIntegration: true,
-
-      // Consider using contextBridge.exposeInMainWorld
-      // Read more on https://www.electronjs.org/docs/latest/tutorial/context-isolation
-      // contextIsolation: false,
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false,        // preload needs Node APIs; keep sandbox off while preload is not sandboxed
+      webSecurity: true,
+      allowRunningInsecureContent: false,
     },
   })
 
@@ -216,16 +235,6 @@ app.on("window-all-closed", async () => {
   }
 })
 
-app.on("second-instance", () => {
-  if (win) {
-    // Focus on the main window if the user tried to open another
-    if (win.isMinimized())
-      win.restore()
-
-    win.focus()
-  }
-})
-
 app.on("before-quit", () => {
   AppState.setIsQuitting(true)
 })
@@ -243,19 +252,3 @@ app.on("activate", () => {
   }
 })
 
-// New window example arg: new windows url
-ipcMain.handle("open-win", (_, arg) => {
-  const childWindow = new BrowserWindow({
-    webPreferences: {
-      preload,
-      nodeIntegration: true,
-      contextIsolation: false,
-    },
-  })
-
-  if (VITE_DEV_SERVER_URL) {
-    childWindow.loadURL(`${VITE_DEV_SERVER_URL}#${arg}`)
-  } else {
-    childWindow.loadFile(indexHtml, { hash: arg })
-  }
-})

@@ -161,7 +161,10 @@ async function main() {
 
   const targetDir = path.join(process.cwd(), "bin", "uv", `${platformDir}-${arch}`)
 
-  if (fs.existsSync(path.join(targetDir, platform === "win32" ? "uv.exe" : "uv"))) {
+  const uvBin = path.join(targetDir, platform === "win32" ? "uv.exe" : "uv")
+  if (fs.existsSync(uvBin)) {
+    // Ensure execute bit is set even on cached binaries
+    if (platform !== "win32") fs.chmodSync(uvBin, 0o755)
     console.log(`UV v${UV_VERSION} already exists in ./${targetDir}`)
     return
   }
@@ -177,6 +180,14 @@ async function main() {
 
     console.log("Extracting...")
     await extract(tempFile, targetDir, uvConfig.extractCmd)
+
+    // Ensure the binary is executable on Unix platforms
+    if (platform !== "win32") {
+      const uvBin = path.join(targetDir, "uv")
+      if (fs.existsSync(uvBin)) {
+        fs.chmodSync(uvBin, 0o755)
+      }
+    }
 
     console.log("Cleaning up...")
     rimraf("temp").catch(() => {})

@@ -3,6 +3,7 @@ import { version } from "../../../package.json"
 import { useTranslation } from "react-i18next"
 import { imgPrefix } from "../../ipc"
 import "../../styles/overlay/_About.scss"
+import { ENV_CONFIG } from "../../config/env"
 
 const About = () => {
   const { t } = useTranslation()
@@ -12,7 +13,7 @@ const About = () => {
       <div className="about-content">
         <div className="about-header">
           <img src={`${imgPrefix}logo_oap.png`} alt="App Logo" className="about-logo" />
-          <h1 className="about-title">AttackTrace Agent</h1>
+          <h1 className="about-title">{ENV_CONFIG.APP_NAME} Agent</h1>
           <p className="about-version">Version {version}</p>
         </div>
 
@@ -27,7 +28,7 @@ const About = () => {
         </div>
 
         <div className="about-footer">
-          <p className="about-copyright">© 2024 AttackTrace. All rights reserved.</p>
+          <p className="about-copyright">© 2024 {ENV_CONFIG.APP_NAME}. All rights reserved.</p>
         </div>
       </div>
     </div>

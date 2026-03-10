@@ -8,6 +8,7 @@ interface Props{
   size?: "fit" | "normal" | "full" | "round"
   padding?: "xxs" | "xs" | "s" | "n" | "l" | "xl" | "xxl"
   border?: "none" | "normal"
+  variant?: "primary" | "secondary" | "danger"
   minHeight?: string
   className?: string
   disabled?: boolean
@@ -22,6 +23,7 @@ const Button = forwardRef<HTMLButtonElement, Props>(({
   size = "normal",
   padding = "n",
   border = "normal",
+  variant,
   minHeight,
   className = "",
   disabled = false,
@@ -34,7 +36,7 @@ const Button = forwardRef<HTMLButtonElement, Props>(({
       ref={ref}
       type={type}
       disabled={disabled || loading}
-      className={`custom-button ${className} ${color} ${size} padding-${padding} border-${border} ${disabled ? "disabled" : ""} ${loading ? "loading" : ""}`}
+      className={`custom-button ${className} ${color} ${size} padding-${padding} border-${border} ${variant ? `variant-${variant}` : ""} ${disabled ? "disabled" : ""} ${loading ? "loading" : ""}`}
       style={{ minHeight: minHeight || "" }}
       onClick={(e) => {
         if (disabled || loading) {

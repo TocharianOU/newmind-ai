@@ -23,6 +23,7 @@ interface Props<T = string>{
   align?: "center" | "start" | "end"
   leftSlotType?: "col" | "row"
   equalCustomizer?: (a: T, b: T) => boolean
+  disabled?: boolean
 }
 
 /** DropdownMenu */
@@ -49,6 +50,7 @@ const Select = forwardRef<HTMLButtonElement|null, Props>(({
   align = "start",
   leftSlotType = "col",
   equalCustomizer = isEqual,
+  disabled,
   ...rest
 }, ref) => {
   const currentOption = useMemo(() => options.find((option) =>
@@ -69,11 +71,12 @@ const Select = forwardRef<HTMLButtonElement|null, Props>(({
 
   return (
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild ref={ref} {...rest} >
+      <DropdownMenu.Trigger asChild ref={ref} disabled={disabled} {...rest} >
         <button
           className={`select-button ${className} ${error ? "error" : ""} ${fill ? "fill" : ""} ${type} ${size}`}
           color="neutralGrey"
           ref={triggerRef}
+          disabled={disabled}
         >
           <span>{displayLabel}</span>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 22 22" width="16" height="16">

@@ -19,6 +19,8 @@ import {
   getCurrentProjectFilePath,
   getProjectDir,
   getProjectDbPath,
+  getProjectConfigPath,
+  getLegacyProjectDbPath,
 } from "./constant.js"
 import spawn from "cross-spawn"
 import { ChildProcess, SpawnOptions, StdioOptions } from "node:child_process"
@@ -94,10 +96,13 @@ async function extractKeychainReferences(mcpConfigPath: string): Promise<Map<str
  * Load keychain credentials and inject as environment variables
  * Environment variable format: ATTACKTRACE_KEYCHAIN_<SERVICE>_<ACCOUNT> = password
  */
-async function injectKeychainCredentials(projectId: string, env: Record<string, string>): Promise<void> {
+async function injectKeychainCredentials(
+  projectId: string,
+  userId: string | undefined,
+  env: Record<string, string>,
+): Promise<void> {
   try {
-    const projectsDir = path.join(configDir, "..", "projects")
-    const mcpConfigPath = path.join(projectsDir, projectId, "mcp_config.json")
+    const mcpConfigPath = getProjectConfigPath(projectId, userId)
     
     const keychainRefs = await extractKeychainReferences(mcpConfigPath)
     
@@ -152,7 +157,7 @@ function ensureAuthToken() {
   if (!authTokenGenerated) {
     serviceStatus.authToken = crypto.randomBytes(32).toString('hex')
     authTokenGenerated = true
-    console.log(`[Security] Generated MCP Host auth token: ${serviceStatus.authToken.substring(0, 8)}...`)
+    console.log("[Security] MCP Host auth token generated")
   }
   return serviceStatus.authToken
 }
@@ -161,6 +166,12 @@ let hostProcess: ChildProcess | null = null
 const ipcEventEmitter = new EventEmitter()
 
 const spawned: Set<ChildProcess> = new Set()
+
+// Bus file watcher — kept so it can be closed before each new startHostService call
+let busWatcher: ReturnType<typeof fse.watch> | null = null
+
+// Mutex for restartHost — prevents concurrent restarts from spawning multiple host processes
+let isRestarting = false
 
 let installHostDependenciesLog: string[] = []
 export const getInstallHostDependenciesLog = () => installHostDependenciesLog
@@ -259,6 +270,12 @@ export async function initMCPClient(win: BrowserWindow) {
 export async function cleanup() {
   console.log("cleanup")
 
+  // Close the bus file watcher so it doesn't fire after the host is gone
+  if (busWatcher) {
+    busWatcher.close()
+    busWatcher = null
+  }
+
   for (const child of spawned) {
     if (!child.killed) {
       child.kill("SIGTERM")
@@ -285,6 +302,12 @@ export async function cleanup() {
  * Kills the current host and starts a new one with the current project context
  */
 export async function restartHost(): Promise<{ success: boolean; port?: number; error?: string }> {
+  if (isRestarting) {
+    console.warn("[restartHost] Already restarting — ignoring concurrent call")
+    return { success: false, error: "Restart already in progress" }
+  }
+
+  isRestarting = true
   try {
     console.log("[restartHost] Starting host restart process...")
     
@@ -339,13 +362,15 @@ export async function restartHost(): Promise<{ success: boolean; port?: number; 
     
     console.log(`[restartHost] Host restarted successfully on port ${port}`)
     return { success: true, port }
-    
+
   } catch (error) {
     console.error("[restartHost] Failed to restart host:", error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : "Unknown error" 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error"
     }
+  } finally {
+    isRestarting = false
   }
 }
 
@@ -580,10 +605,15 @@ async function startHostService() {
       : ["-I", "-c", `import sys; sys.path.extend(['${hostSrcPath.replace(/\\/g, "\\\\")}', '${hostDepsPath.replace(/\\/g, "\\\\")}']); from attacktrace_mcp_host.httpd._main import main; main()`]
     : ["run", "attacktrace_httpd"]
 
-  // Load current project ID and generate project-specific config
+  // Security: Get OAP token and user ID from encrypted storage (if available)
+  const { getToken, getUserId } = await import("./oap")
+  const oapToken = getToken()
+  const oapUserId = getUserId()
+
+  // Load current project ID from the user-scoped (or legacy) tracking file
   let currentProjectId = "default"
   try {
-    const currentProjectFile = getCurrentProjectFilePath()
+    const currentProjectFile = getCurrentProjectFilePath(oapUserId)
     if (await fse.pathExists(currentProjectFile)) {
       const data = await fse.readJSON(currentProjectFile)
       currentProjectId = data.projectId || "default"
@@ -592,17 +622,38 @@ async function startHostService() {
     console.error("[Project] Failed to load current project, using default:", error)
   }
 
-  console.log(`[Host] Starting with project: ${currentProjectId}`)
+  console.log(`[Host] Starting with project: ${currentProjectId}, user: ${oapUserId || "(none)"}`)
+
+  // ── First-login DB migration ──────────────────────────────────────────────
+  // If a user-scoped DB doesn't exist yet but a legacy (machine-level) DB does,
+  // copy the legacy DB into the user-scoped path so existing history is preserved.
+  // The legacy file is renamed to .legacy after the first copy so subsequent
+  // OAP accounts don't inherit the same data.
+  if (oapUserId) {
+    try {
+      const userScopedDbPath = getProjectDbPath(currentProjectId, oapUserId)
+      const legacyDbPath = getLegacyProjectDbPath(currentProjectId)
+
+      const userScopedExists = await fse.pathExists(userScopedDbPath)
+      const legacyExists = await fse.pathExists(legacyDbPath)
+
+      if (!userScopedExists && legacyExists) {
+        await fse.ensureDir(getProjectDir(currentProjectId, oapUserId))
+        await fse.copy(legacyDbPath, userScopedDbPath)
+        // Rename legacy file so the next user doesn't inherit this data
+        await fse.move(legacyDbPath, `${legacyDbPath}.legacy`, { overwrite: false })
+        console.log(`[Migration] Copied legacy DB → user-scoped path for user ${oapUserId}`)
+      }
+    } catch (err) {
+      console.warn("[Migration] Legacy DB migration failed (non-critical):", err)
+    }
+  }
 
   // Ensure auth token is generated (only happens once)
   const authToken = ensureAuthToken()
 
-  // Generate project-specific database configuration
-  const projectHttpdConfig = getProjectHttpdConfig(currentProjectId)
-  
-  // Security: Get OAP token from encrypted storage (if available)
-  const { getToken } = await import("./oap")
-  const oapToken = getToken()
+  // Generate user-scoped, project-specific database configuration
+  const projectHttpdConfig = getProjectHttpdConfig(currentProjectId, oapUserId)
   
   const httpdEnv: any = {
     ...process.env,
@@ -615,12 +666,16 @@ async function startHostService() {
     ATTACKTRACE_AUTH_TOKEN: authToken,
     // Security: Pass OAP token via environment variable (not persisted to disk)
     ATTACKTRACE_OAP_TOKEN: oapToken || "",
+    // Identity: Pass OAP user ID for per-user data isolation in the database
+    ATTACKTRACE_USER_ID: oapUserId || "",
+    // Identity: Pass current project ID so sync routes can scope data correctly
+    ATTACKTRACE_PROJECT_ID: currentProjectId,
   }
 
   // Inject keychain credentials as environment variables
   try {
     if (currentProjectId) {
-      await injectKeychainCredentials(currentProjectId, httpdEnv)
+      await injectKeychainCredentials(currentProjectId, oapUserId, httpdEnv)
     }
   } catch (error) {
     console.error("[Keychain] Failed to load current project for keychain injection:", error)
@@ -635,23 +690,21 @@ async function startHostService() {
     await fse.chmod(busPath, 0o666)
   }
 
-  fse.watch(busPath, async (eventType, filename) => {
-    if (!filename)
-      return
+  // Close the previous watcher before creating a new one to avoid listener accumulation
+  if (busWatcher) {
+    busWatcher.close()
+    busWatcher = null
+  }
 
-    if (eventType !== "change")
-      return
-
-    const buffer = Buffer.alloc(1024 * 32)
-    await fse.read(await fse.open(busPath, "r"), buffer, 0, buffer.length, 0)
-
-    if (!buffer.length)
+  busWatcher = fse.watch(busPath, async (eventType, filename) => {
+    if (!filename || eventType !== "change")
       return
 
     try {
-      const content = buffer.toString().trim().replace(/\0/g, "")
-      if (!content)
-        return
+      // Use readFile to avoid leaking file descriptors (fse.open never closed them)
+      const raw = await fse.readFile(busPath, "utf-8")
+      const content = raw.trim().replace(/\0/g, "")
+      if (!content) return
 
       const message = JSON.parse(content)
       if (message) {
@@ -659,7 +712,7 @@ async function startHostService() {
         console.log("received message from host service", message)
       }
     } catch (error) {
-      console.error("Failed to parse bus content:", buffer.toString().trim(), error)
+      console.error("Failed to parse bus content:", error)
     }
   })
 
@@ -670,7 +723,9 @@ async function startHostService() {
     "--report_status_file",
     busPath,
     "--cors",
-    "*",
+    // In dev the renderer runs via Vite at localhost:5173; in production the
+    // renderer is loaded as a file:// resource and CORS is not enforced.
+    VITE_DEV_SERVER_URL ? new URL(VITE_DEV_SERVER_URL).origin : "http://localhost",
     "--log_dir",
     path.join(envPath.log, "host"),
     "--plugin_config",
@@ -768,17 +823,18 @@ async function installHostDependencies(win: BrowserWindow) {
 
 function promiseSpawn(command: string, args: any[], cwd: string, stdio: StdioOptions = "inherit", timeout = 60 * 1000 * 5, stdout?: (data: string) => void) {
   return new Promise((resolve, reject) => {
-    // timeout after 5 minutes
-    setTimeout(reject, timeout)
+    const timeoutId = setTimeout(() => reject(new Error(`promiseSpawn timed out after ${timeout}ms`)), timeout)
 
     const child = spawn(command, args, { cwd, stdio })
     spawned.add(child)
     child.on("close", () => {
+      clearTimeout(timeoutId)
       spawned.delete(child)
       resolve(1)
     })
 
     child.on("error", e => {
+      clearTimeout(timeoutId)
       console.error(e)
       spawned.delete(child)
       reject(e)
@@ -801,15 +857,11 @@ function promiseSpawn(command: string, args: any[], cwd: string, stdio: StdioOpt
 }
 
 function createMD5(filePath: string) {
-  return new Promise((res, _rej) => {
+  return new Promise<string>((resolve, reject) => {
     const hash = crypto.createHash("md5")
-
     const rStream = fse.createReadStream(filePath)
-    rStream.on("data", (data) => {
-      hash.update(data)
-    })
-    rStream.on("end", () => {
-      res(hash.digest("hex"))
-    })
+    rStream.on("data", (data) => { hash.update(data) })
+    rStream.on("end", () => { resolve(hash.digest("hex")) })
+    rStream.on("error", (err) => { reject(err) })
   })
 }

@@ -1,11 +1,10 @@
-import { ipcMain } from 'electron';
 import { MCPPackageManager } from '../package-manager.js';
 import { appDir } from '../constant.js';
+import { safeRegisterHandler } from '../utils/ipcRegistry.js';
 
 const packageManager = new MCPPackageManager(appDir);
 
-// Install MCP package
-ipcMain.handle('mcp:install-package', async (_, { name, version, downloadUrl }) => {
+safeRegisterHandler('mcp:install-package', async (_, { name, version, downloadUrl }) => {
   try {
     const installPath = await packageManager.downloadAndInstall(name, version, downloadUrl);
     return { success: true, installPath };
@@ -14,8 +13,7 @@ ipcMain.handle('mcp:install-package', async (_, { name, version, downloadUrl }) 
   }
 });
 
-// Check if package is installed
-ipcMain.handle('mcp:is-installed', async (_, { name, version }) => {
+safeRegisterHandler('mcp:is-installed', async (_, { name, version }) => {
   try {
     const isInstalled = await packageManager.isInstalled(name, version);
     return { success: true, isInstalled };
@@ -24,8 +22,7 @@ ipcMain.handle('mcp:is-installed', async (_, { name, version }) => {
   }
 });
 
-// Get package install path
-ipcMain.handle('mcp:get-install-path', async (_, { name, version }) => {
+safeRegisterHandler('mcp:get-install-path', async (_, { name, version }) => {
   try {
     const installPath = packageManager.getInstallPath(name, version);
     return { success: true, installPath };
@@ -34,8 +31,7 @@ ipcMain.handle('mcp:get-install-path', async (_, { name, version }) => {
   }
 });
 
-// Uninstall package
-ipcMain.handle('mcp:uninstall-package', async (_, { name, version }) => {
+safeRegisterHandler('mcp:uninstall-package', async (_, { name, version }) => {
   try {
     await packageManager.uninstall(name, version);
     return { success: true };

@@ -106,7 +106,7 @@ class LogBuffer:
 
 
         async def listener(log: LogMsg) -> None:
-            print(log)
+            logger.info("%s", log)
 
 
         # The listener is a context manager,
@@ -224,7 +224,7 @@ class LogBuffer:
         Example:
             ```python
             async def listener(log: LogMsg) -> None:
-                print(log)
+                logger.info("%s", log)
 
 
             async with buffer.add_listener(listener):
@@ -327,7 +327,7 @@ class LogManager:
 
 
         async def listener(log: LogMsg) -> None:
-            print(log)
+            logger.info("%s", log)
 
 
         # register the buffer and listen to log updates
@@ -388,7 +388,7 @@ class LogManager:
         Example:
             ```python
             async def listener(log: LogMsg) -> None:
-                print(log)
+                logger.info("%s", log)
 
 
             async with log_manager.listen_log(buffer.name, listener):

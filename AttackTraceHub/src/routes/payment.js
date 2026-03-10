@@ -5,6 +5,9 @@ import { createResponse } from '../config/constants.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { addTokens } from '../utils/tokenBalance.js';
 import logger from '../utils/logger.js';
+import { writeAudit, AUDIT_ACTIONS, RESOURCE_TYPES } from '../utils/auditLog.js';
+import { validateBody } from '../middleware/validate.js';
+import { CreateTokenCheckoutSchema, CreateSubscriptionCheckoutSchema } from '../schemas/payment.schemas.js';
 
 const router = express.Router();
 
@@ -20,12 +23,12 @@ router.get('/token-packages', authenticateToken, async (req, res) => {
 });
 
 // POST /api/v1/payment/create-token-checkout - 创建 Token 包购买会话
-router.post('/create-token-checkout', authenticateToken, async (req, res) => {
+router.post('/create-token-checkout', authenticateToken, validateBody(CreateTokenCheckoutSchema), async (req, res) => {
   try {
     const { packageId } = req.body;
     const user = req.user;
     
-    if (!packageId || !TOKEN_PACKAGES[packageId]) {
+    if (!TOKEN_PACKAGES[packageId]) {
       return res.status(400).json(createResponse(null, 'Invalid package ID'));
     }
     
@@ -79,6 +82,14 @@ router.post('/create-token-checkout', authenticateToken, async (req, res) => {
     });
     
     logger.info(`🛒 Created checkout session for user ${user.email}: ${package_.name}`);
+
+    await writeAudit(req, {
+      userId: user.id,
+      action: AUDIT_ACTIONS.PAYMENT_CHECKOUT_CREATED,
+      resourceType: RESOURCE_TYPES.PAYMENT,
+      resourceId: session.id,
+      metadata: { packageId: package_.id, packageName: package_.name, amount: package_.price },
+    });
     
     res.json(createResponse({ sessionId: session.id, url: session.url }));
   } catch (error) {
@@ -88,17 +99,13 @@ router.post('/create-token-checkout', authenticateToken, async (req, res) => {
 });
 
 // POST /api/v1/payment/create-subscription-checkout - 创建订阅购买会话（手动支付模式）
-router.post('/create-subscription-checkout', authenticateToken, async (req, res) => {
+router.post('/create-subscription-checkout', authenticateToken, validateBody(CreateSubscriptionCheckoutSchema), async (req, res) => {
   try {
     const { planId, period } = req.body; // period: 'monthly' | 'yearly'
     const user = req.user;
     
-    if (!planId || !SUBSCRIPTION_PLANS[planId]) {
+    if (!SUBSCRIPTION_PLANS[planId]) {
       return res.status(400).json(createResponse(null, 'Invalid plan ID'));
-    }
-    
-    if (!['monthly', 'yearly'].includes(period)) {
-      return res.status(400).json(createResponse(null, 'Invalid period'));
     }
     
     // 检查是否尝试降级
@@ -153,6 +160,14 @@ router.post('/create-subscription-checkout', authenticateToken, async (req, res)
     });
     
     logger.info(`📅 Created manual subscription checkout for user ${user.email}: ${plan.name} (${period})`);
+
+    await writeAudit(req, {
+      userId: user.id,
+      action: AUDIT_ACTIONS.SUBSCRIPTION_CHECKOUT_CREATED,
+      resourceType: RESOURCE_TYPES.PAYMENT,
+      resourceId: session.id,
+      metadata: { planId: plan.id, planName: plan.name, period, amount: price },
+    });
     
     res.json(createResponse({ sessionId: session.id, url: session.url }));
   } catch (error) {

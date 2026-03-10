@@ -1,6 +1,6 @@
 {
   "header": {
-    "title": "AttackTrace",
+    "title": "{{appName}}",
     "openSidebar": "打开侧边栏",
     "closeSidebar": "关闭侧边栏",
     "settings": "设置"
@@ -29,7 +29,7 @@
     "retry": "重试",
     "noModelAlert": "无可用模型",
     "noModelBanner": "无模型可用，请先选择模型",
-    "onLimit": "您已达到 {{plan}} 方案用量限制，AttackTrace模型无法使用",
+    "onLimit": "您已达到 {{plan}} 方案用量限制，{{appName}}模型无法使用",
     "modelSettings": "模型设置",
     "copy": "复制",
     "copied": "已复制",
@@ -48,7 +48,7 @@
     }
   },
   "welcome": {
-    "title": "欢迎使用 AttackTrace",
+    "title": "欢迎使用 {{appName}}",
     "subtitle": "开始你的安全调查",
     "startChat": "开始对话"
   },
@@ -79,7 +79,7 @@
     "system": "系统设置",
     "manageAndSettings": "管理",
     "integrationMarket": "集成市场",
-    "New mindhub": "OAP 平台",
+    "New mindhub": "{{platformName}}",
     "signOut": "登出",
     "accountSettings": "账号设置",
     "chat": {
@@ -329,7 +329,7 @@
     "tab": {
       "all": "所有工具",
       "oap": "集成工具",
-      "AttackTrace": "AttackTrace工具",
+      "AttackTrace": "{{appName}}工具",
       "custom": "自定义工具"
     },
     "oapStoreLinkAlt": "详细说明",
@@ -341,7 +341,7 @@
       "cancel": "取消更改",
       "save": "保存"
     },
-    "oauthAlert": "请确认你信任此连接器：此连接器尚未经过 AttackTrace 验证。你需自行承担使用 AttackTrace 执行所有操作的责任。",
+    "oauthAlert": "请确认你信任此连接器：此连接器尚未经过 {{appName}} 验证。你需自行承担使用 {{appName}} 执行所有操作的责任。",
     "reload": {
       "headerBtn": "重新加载",
       "headerBtnAlt": "重新加载并更新 MCP Tools"
@@ -368,7 +368,7 @@
       "headerBtnAlt": "新增 / 查看安全集成工具",
       "marketplace": "浏览集成",
       "marketplaceAlt": "浏览云端可用的集成工具",
-      "edit_managed_notice": "此集成由 OAP 平台管理。请在下方配置所需设置。",
+      "edit_managed_notice": "此集成由 {{platformName}} 管理。请在下方配置所需设置。",
       "simplified_config": "简化配置"
     },
     "custom": {
@@ -513,24 +513,24 @@
     "title": "系统设置",
     "language": "系统语言",
     "languageDefault": "系统默认",
-    "languageDescription": "系统界面显示时所使用的语言。模型中使用的语言可以在模型设置页面中的提示词里修改，这里是指 AttackTrace 界面上显示的语言",
+    "languageDescription": "系统界面显示时所使用的语言。模型中使用的语言可以在模型设置页面中的提示词里修改，这里是指 {{appName}} 界面上显示的语言",
     "theme": "深色模式",
     "themeDescription": "切换系统默认 / Darkmode 显示模式",
     "defaultInstructions": "以简体中文回應",
     "autoDownload": "自动下载更新",
-    "autoDownloadDescription": "自动在后台下载新版本 AttackTrace，用户下次重启后或点击菜单页的「新版本升级」按钮，即会启用新版本",
+    "autoDownloadDescription": "自动在后台下载新版本 {{appName}}，用户下次重启后或点击菜单页的「新版本升级」按钮，即会启用新版本",
     "autoLaunch": "自动启动",
-    "autoLaunchDescription": "开机时自动启动 AttackTrace",
-    "loginTitle": "AttackTrace 登录",
-    "loginDescription": "登录 OAP 平台以使用团队协作功能、共享调查案例、集中管理安全工具集成",
+    "autoLaunchDescription": "开机时自动启动 {{appName}}",
+    "loginTitle": "{{appName}} 登录",
+    "loginDescription": "登录 {{platformName}} 以使用团队协作功能、共享调查案例、集中管理安全工具集成",
     "personalInformationTitle": "个人信息",
     "minimalToTray": "最小化",
     "minimalToTrayDescription": "关闭窗口时不会将程序关闭，而是缩放成最小化 icon",
     "defaultSystemPrompt": "默认系统提示词",
-    "defaultSystemPromptDescription": "默认系统提示词用来作为 chat 预设的系统提示词。跟 LLM 说明 AttackTrace chat 的内容支持 KaTeX / Markdown / Mermaid 等输出的提示。",
-    "usageAnalytics": "前往 OAP 平台的 Dashboard 页面查看",
+    "defaultSystemPromptDescription": "默认系统提示词用来作为 chat 预设的系统提示词。跟 LLM 说明 {{appName}} chat 的内容支持 KaTeX / Markdown / Mermaid 等输出的提示。",
+    "usageAnalytics": "前往 {{platformName}} 的 Dashboard 页面查看",
     "usageAnalyticsTitle": "使用分析",
-    "userEdit": "前往 OAP 平台的 Account 页面查看",
+    "userEdit": "前往 {{platformName}} 的 Account 页面查看",
     "planSectionTitle": "当前计划用量",
     "subscriptionDate": "订阅日期",
     "remainingUsage": "剩余使用量",
@@ -579,7 +579,7 @@
     "title1": "自定义模型",
     "description1": "使用自己的 LLM API 密钥（如 Claude、OpenAI）或本地部署的模型",
     "button1": "配置模型",
-    "title2": "OAP 平台",
+    "title2": "{{platformName}}",
     "description2": "团队协作平台，管理用户权限、共享调查案例、统一配置安全集成工具",
     "button2": "注册账号",
     "button3": "登录"
@@ -591,7 +591,8 @@
     "tip": "下载发生错误时，请先关闭此窗口，重新启动应用程序即可重新下载。"
   },
   "deeplink": {
-    "mcpInstallConfirm": "新增 stdio MCP 服务 - 你将会通过下列命令新增 MCP，请确认："
+    "mcpInstallConfirm": "新增 stdio MCP 服务 - 你将会通过下列命令新增 MCP，请确认：",
+    "mcpInstallInvalid": "无效的 MCP 安装链接，无法解析 deeplink 数据。"
   },
   "memory": {
     "title": "记忆",

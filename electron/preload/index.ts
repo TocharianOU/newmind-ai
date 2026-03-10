@@ -3,23 +3,52 @@ import { ipcRenderer, contextBridge } from "electron"
 import type { OAPModelDescriptionParam, MCPServerSearchParam } from "../../types/oap"
 import type { ModelGroupSetting } from "../../types/model"
 
+/**
+ * Allowlist for generic IPC channels.
+ * Only channels matching these prefixes (or exact names) may pass through the
+ * generic on/off/invoke bridge.  Named wrapper methods above are always preferred;
+ * these are kept for update, open-external, and direct project calls.
+ */
+const INVOKE_CHANNEL_PREFIXES = [
+  "util:", "project:", "system:", "window:", "llm:", "env:",
+  "oap:", "sync:", "keychain:", "mcp:", "show-"
+]
+const INVOKE_CHANNEL_EXACT = new Set([
+  "check-update", "start-download", "quit-and-install",
+  "open-external-url",
+  "show-selection-context-menu", "show-input-context-menu",
+  "save_clipboard_image_to_cache", "download_image",
+])
+const LISTEN_CHANNEL_PREFIXES = ["oap:", "mcp:", "sync:", "keychain:"]
+const LISTEN_CHANNEL_EXACT = new Set([
+  "download-progress", "update-downloaded", "update-error",
+  "update-can-available", "refresh", "mcp.install",
+  "app-port", "install-host-dependencies-log",
+])
+
+function isAllowedInvoke(ch: string) {
+  return INVOKE_CHANNEL_EXACT.has(ch) || INVOKE_CHANNEL_PREFIXES.some(p => ch.startsWith(p))
+}
+function isAllowedListen(ch: string) {
+  return LISTEN_CHANNEL_EXACT.has(ch) || LISTEN_CHANNEL_PREFIXES.some(p => ch.startsWith(p))
+}
+
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld("ipcRenderer", {
-  on(...args: Parameters<typeof ipcRenderer.on>) {
-    const [channel, listener] = args
+  on(channel: string, listener: (...args: any[]) => void) {
+    if (!isAllowedListen(channel)) return () => {}
     return ipcRenderer.on(channel, (event, ...args) => listener(event, ...args))
   },
-  off(...args: Parameters<typeof ipcRenderer.off>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.off(channel, ...omit)
+  off(channel: string, listener: (...args: any[]) => void) {
+    if (!isAllowedListen(channel)) return
+    return ipcRenderer.off(channel, listener)
   },
-  send(...args: Parameters<typeof ipcRenderer.send>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.send(channel, ...omit)
-  },
-  invoke(...args: Parameters<typeof ipcRenderer.invoke>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.invoke(channel, ...omit)
+  invoke(channel: string, ...args: any[]) {
+    if (!isAllowedInvoke(channel)) {
+      console.warn(`[preload] Blocked ipcRenderer.invoke on channel: ${channel}`)
+      return Promise.reject(new Error(`IPC channel not allowed: ${channel}`))
+    }
+    return ipcRenderer.invoke(channel, ...args)
   },
 
   // listener
@@ -33,6 +62,11 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
     ipcRenderer.on("install-host-dependencies-log", listener as any)
     return () => ipcRenderer.off("install-host-dependencies-log", listener as any)
   },
+  onReceiveSyncCompleted: (callback: (result: { success: boolean; pushed: number; pulled: number }) => void) => {
+    const listener = (_event: Electron.IpcMainInvokeEvent, value: { success: boolean; pushed: number; pulled: number }) => callback(value)
+    ipcRenderer.on("sync:completed", listener as any)
+    return () => ipcRenderer.off("sync:completed", listener as any)
+  },
 
   // util
   fillPathToConfig: (config: string) => ipcRenderer.invoke("util:fillPathToConfig", config),
@@ -45,13 +79,18 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
   getInstallHostDependenciesLog: () => ipcRenderer.invoke("util:getInstallHostDependenciesLog"),
   readLocalLogo: (logoPath: string) => ipcRenderer.invoke("util:readLocalLogo", logoPath),
 
+  // sync
+  syncGetStatus: () => ipcRenderer.invoke("sync:getStatus"),
+  syncSetEnabled: (enabled: boolean) => ipcRenderer.invoke("sync:setEnabled", enabled),
+  syncRun: () => ipcRenderer.invoke("sync:run"),
+
   // project
   getCurrentProject: () => ipcRenderer.invoke("project:getCurrentProject"),
   setCurrentProject: (projectId: string) => ipcRenderer.invoke("project:setCurrentProject", projectId),
-  projectList: (hubUrl?: string) => ipcRenderer.invoke("project:list", hubUrl),
-  projectCreate: (data: { name: string; description?: string }, hubUrl?: string) => ipcRenderer.invoke("project:create", data, hubUrl),
-  projectUpdate: (projectId: string, data: { name?: string; description?: string }, hubUrl?: string) => ipcRenderer.invoke("project:update", projectId, data, hubUrl),
-  projectDelete: (projectId: string, hubUrl?: string) => ipcRenderer.invoke("project:delete", projectId, hubUrl),
+  projectList: () => ipcRenderer.invoke("project:list"),
+  projectCreate: (data: { name: string; description?: string }) => ipcRenderer.invoke("project:create", data),
+  projectUpdate: (projectId: string, data: { name?: string; description?: string }) => ipcRenderer.invoke("project:update", projectId, data),
+  projectDelete: (projectId: string) => ipcRenderer.invoke("project:delete", projectId),
 
   // system
   openScriptsDir: () => ipcRenderer.invoke("system:openScriptsDir"),
@@ -108,8 +147,8 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
     ipcRenderer.on("refresh", cb)
     return () => ipcRenderer.off("refresh", cb)
   },
-  listenMcpApply: (cb: (id: string) => void) => {
-    const listener = (_event: Electron.IpcMainInvokeEvent, id: string) => cb(id)
+  listenMcpApply: (cb: (data: { name: string; config: string }) => void) => {
+    const listener = (_event: Electron.IpcMainInvokeEvent, data: { name: string; config: string }) => cb(data)
     ipcRenderer.on("mcp.install", listener as any)
     return () => ipcRenderer.off("mcp.install", listener as any)
   },

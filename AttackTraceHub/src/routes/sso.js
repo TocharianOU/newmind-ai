@@ -6,10 +6,16 @@
 import express from 'express';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../config/database.js';
 import { createResponse } from '../config/constants.js';
 import logger from '../utils/logger.js';
 import ssoRegistry from '../sso/index.js';
+import { writeAudit, AUDIT_ACTIONS, RESOURCE_TYPES } from '../utils/auditLog.js';
+
+function hashToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
 
 const router = express.Router();
 
@@ -138,11 +144,34 @@ router.get('/:provider/callback', async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
 
+    // Generate and store hashed refresh token (same as password login flow)
+    const refreshToken = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d' }
+    );
+    await prisma.refreshToken.create({
+      data: {
+        id: uuidv4(),
+        userId: user.id,
+        token: hashToken(refreshToken),
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      }
+    });
+
     logger.info(`SSO login successful for user: ${user.email}`);
 
-    // Determine redirect URL
+    await writeAudit(req, {
+      userId: user.id,
+      action: AUDIT_ACTIONS.SSO_LOGIN_SUCCESS,
+      resourceType: RESOURCE_TYPES.AUTH,
+      resourceId: user.id,
+      metadata: { provider, email: user.email },
+    });
+
+    // Determine redirect URL — pass both tokens so the frontend can store refreshToken
     const hubFrontendUrl = process.env.HUB_FRONTEND_URL || 'http://localhost:23001';
-    let redirectUrl = `${hubFrontendUrl}/login?token=${accessToken}`;
+    let redirectUrl = `${hubFrontendUrl}/login?token=${accessToken}&refreshToken=${refreshToken}`;
 
     // Add appRedirect parameter if specified (for AttackTrace)
     if (stateData.appRedirect) {
@@ -154,6 +183,12 @@ router.get('/:provider/callback', async (req, res) => {
 
   } catch (error) {
     logger.error('SSO callback error:', error);
+    await writeAudit(req, {
+      userId: 'anonymous',
+      action: AUDIT_ACTIONS.SSO_LOGIN_FAILURE,
+      resourceType: RESOURCE_TYPES.AUTH,
+      metadata: { error: error.message },
+    });
     const hubFrontendUrl = process.env.HUB_FRONTEND_URL || 'http://localhost:23001';
     res.redirect(
       `${hubFrontendUrl}/login?error=${encodeURIComponent('SSO login failed. Please try again.')}`
@@ -177,9 +212,9 @@ async function findOrCreateSSOUser(provider, userInfo) {
       }
     },
     include: {
-      user: {
+      User: {
         include: {
-          subscription: true
+          Subscription: true
         }
       }
     }
@@ -203,24 +238,24 @@ async function findOrCreateSSOUser(provider, userInfo) {
         where: { id: authIdentity.id },
         data: { ...updateData, updatedAt: new Date() },
         include: {
-          user: {
+          User: {
             include: {
-              subscription: true
+              Subscription: true
             }
           }
         }
       });
     }
 
-    logger.info(`Existing SSO user found: ${authIdentity.user.email}`);
-    return authIdentity.user;
+    logger.info(`Existing SSO user found: ${authIdentity.User.email}`);
+    return authIdentity.User;
   }
 
   // Check if user exists by email (link existing account)
   if (userInfo.email) {
     const existingUser = await prisma.user.findUnique({
       where: { email: userInfo.email },
-      include: { subscription: true }
+      include: { Subscription: true }
     });
 
     if (existingUser) {
@@ -247,12 +282,14 @@ async function findOrCreateSSOUser(provider, userInfo) {
   
   const newUser = await prisma.user.create({
     data: {
+      id: uuidv4(),
       email: userInfo.email || `${provider}_${userInfo.providerUserId}@sso.local`,
       username: userInfo.displayName || `${provider}_user`,
       password: null, // SSO-only user
       picture: userInfo.profilePicture,
       subscription: {
         create: {
+          id: uuidv4(),
           planName: 'BASE',
           isDefaultPlan: true,
           isActive: true
@@ -266,6 +303,15 @@ async function findOrCreateSSOUser(provider, userInfo) {
           displayName: userInfo.displayName,
           profilePicture: userInfo.profilePicture,
           metadata: userInfo.metadata
+        }
+      },
+      Project: {
+        create: {
+          id: 'default',
+          name: 'Default',
+          description: 'Default project',
+          isDefault: true,
+          updatedAt: new Date(),
         }
       }
     },

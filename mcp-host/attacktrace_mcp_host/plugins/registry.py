@@ -21,6 +21,23 @@ from attacktrace_mcp_host.plugins.error import (
 
 logger = logging.getLogger(__name__)
 
+# Only modules whose dotted path starts with one of these prefixes may be
+# loaded as plugins. This prevents arbitrary code execution if a plugin config
+# file is ever tampered with or points to a user-controlled path.
+_ALLOWED_PLUGIN_MODULE_PREFIXES: tuple[str, ...] = (
+    "attacktrace_mcp_host.",
+    "attacktrace_plugins.",
+)
+
+
+def _assert_safe_plugin_module(module_path: str, label: str = "module") -> None:
+    """Raise PluginLoadError if the module path is not in the allowed prefix list."""
+    if not any(module_path.startswith(prefix) for prefix in _ALLOWED_PLUGIN_MODULE_PREFIXES):
+        raise PluginLoadError(
+            f"Refusing to load {label} '{module_path}': not in allowed plugin namespace. "
+            f"Allowed prefixes: {_ALLOWED_PLUGIN_MODULE_PREFIXES}"
+        )
+
 type PlugInName = str
 type HookPoint = str
 type CallbackName = str
@@ -279,15 +296,18 @@ def _load_plugin(plugin_info: PluginDef) -> LoadedPlugin:
         PluginLoadError: If the plugin cannot be loaded.
     """
     try:
-        # Import the plugin module
+        # Validate all module paths before importing.
+        _assert_safe_plugin_module(plugin_info.module, "module")
         module = import_module(plugin_info.module)
 
-        module_path, func_name = plugin_info.ctx_manager.rsplit(".", 1)
-        ctx_manager = getattr(import_module(module_path), func_name)
+        ctx_module_path, func_name = plugin_info.ctx_manager.rsplit(".", 1)
+        _assert_safe_plugin_module(ctx_module_path, "ctx_manager")
+        ctx_manager = getattr(import_module(ctx_module_path), func_name)
 
         if plugin_info.static_callbacks:
-            module_path, func_name = plugin_info.static_callbacks.rsplit(".", 1)
-            static_callbacks = getattr(import_module(module_path), func_name)()
+            sc_module_path, func_name = plugin_info.static_callbacks.rsplit(".", 1)
+            _assert_safe_plugin_module(sc_module_path, "static_callbacks")
+            static_callbacks = getattr(import_module(sc_module_path), func_name)()
         else:
             static_callbacks = None
 

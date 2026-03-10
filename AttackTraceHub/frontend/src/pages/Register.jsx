@@ -26,15 +26,10 @@ const Register = () => {
     (async () => {
       try {
         const response = await api.get('/api/auth/config');
-        console.log('🔧 Register config response:', response?.data);
         if (response?.data?.status === 'success') {
-          const required = Boolean(response.data.data.inviteCodeRequired);
-          console.log('🔧 Invite code required:', required);
-          setInviteCodeRequired(required);
+          setInviteCodeRequired(Boolean(response.data.data.inviteCodeRequired));
         }
-      } catch (_error) {
-        console.error('🔧 Config fetch error:', _error);
-        // Default to false if API fails
+      } catch {
         setInviteCodeRequired(false);
       } finally {
         setConfigLoading(false);
@@ -52,8 +47,18 @@ const Register = () => {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError(t('auth.passwordTooShort'));
+    if (formData.password.length < 8) {
+      setError(t('auth.passwordTooShort', 'Password must be at least 8 characters'));
+      return;
+    }
+
+    if (!/[a-zA-Z]/.test(formData.password)) {
+      setError(t('auth.passwordNeedsLetter', 'Password must contain at least one letter'));
+      return;
+    }
+
+    if (!/[0-9]/.test(formData.password)) {
+      setError(t('auth.passwordNeedsNumber', 'Password must contain at least one number'));
       return;
     }
 
@@ -131,7 +136,7 @@ const Register = () => {
               required
               placeholder={t('auth.passwordPlaceholder')}
               autoComplete="new-password"
-              minLength="6"
+              minLength="8"
             />
           </div>
 

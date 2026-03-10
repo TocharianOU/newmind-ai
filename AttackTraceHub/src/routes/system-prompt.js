@@ -2,6 +2,7 @@ import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { createResponse } from '../config/constants.js';
 import logger from '../utils/logger.js';
+import { writeAudit, AUDIT_ACTIONS, RESOURCE_TYPES } from '../utils/auditLog.js';
 import { spawn } from 'child_process';
 import path from 'path';
 
@@ -35,6 +36,13 @@ router.post('/set', authenticateToken, async (req, res) => {
     process.env.DIVE_OVERRIDE_SYSTEM_PROMPT = content;
     
     logger.info(`✅ System prompt set by ${req.user.email} (length: ${content.length})`);
+
+    await writeAudit(req, {
+      userId: req.user.id,
+      action: AUDIT_ACTIONS.SYSTEM_PROMPT_SET,
+      resourceType: RESOURCE_TYPES.SYSTEM_PROMPT,
+      metadata: { length: content.length },
+    });
     
     res.json(createResponse({
       message: 'System prompt set successfully',
@@ -53,6 +61,12 @@ router.delete('/', authenticateToken, async (req, res) => {
     delete process.env.DIVE_OVERRIDE_SYSTEM_PROMPT;
     
     logger.info(`✅ System prompt cleared by ${req.user.email}`);
+
+    await writeAudit(req, {
+      userId: req.user.id,
+      action: AUDIT_ACTIONS.SYSTEM_PROMPT_CLEARED,
+      resourceType: RESOURCE_TYPES.SYSTEM_PROMPT,
+    });
     
     res.json(createResponse({
       message: 'System prompt cleared successfully',

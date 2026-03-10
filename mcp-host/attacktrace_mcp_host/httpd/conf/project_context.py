@@ -5,16 +5,69 @@ Manages the current active project and project-related paths
 from pathlib import Path
 from typing import Optional
 import json
+import logging
+import re
 from contextlib import contextmanager
 import threading
+import os
 
 from ...env import ATTACKTRACE_CONFIG_DIR
+
+logger = logging.getLogger(__name__)
+
+# Only allow safe project/user IDs: alphanumeric, hyphens, underscores, dots.
+# Max 128 characters to prevent overly long paths.
+_SAFE_ID_RE = re.compile(r'^[a-zA-Z0-9._-]{1,128}$')
+
+
+def _assert_safe_id(value: str, label: str = "id") -> str:
+    """Validate that a project/user ID is safe to use as a filesystem path component.
+
+    Raises ValueError if the value contains path-traversal sequences or
+    characters outside the allowed set.
+    """
+    if not value or not _SAFE_ID_RE.match(value):
+        raise ValueError(
+            f"Invalid {label} '{value}': only alphanumeric, '-', '_', '.' characters "
+            f"are allowed (max 128 chars)"
+        )
+    return value
 
 # Thread-local storage for current request's project ID
 _thread_local = threading.local()
 
 # Default project ID
 DEFAULT_PROJECT_ID = "default"
+
+
+def _current_user_id() -> str | None:
+    """Return current process user id (injected by Electron)."""
+    uid = os.environ.get("ATTACKTRACE_USER_ID")
+    return uid or None
+
+
+def _project_root_dir() -> Path:
+    """Return project root directory for current user context.
+
+    Authenticated user:
+      ~/.attacktrace/users/{user_id}/projects/
+    Legacy/offline fallback:
+      ~/.attacktrace/projects/
+    """
+    base = ATTACKTRACE_CONFIG_DIR.parent
+    uid = _current_user_id()
+    if uid:
+        return base / "users" / uid / "projects"
+    return base / "projects"
+
+
+def _current_project_file_path() -> Path:
+    """Return current project file path for current user context."""
+    base = ATTACKTRACE_CONFIG_DIR.parent
+    uid = _current_user_id()
+    if uid:
+        return base / "users" / uid / "current_project.json"
+    return base / "current_project.json"
 
 
 def get_current_project_id() -> str:
@@ -27,7 +80,9 @@ def get_current_project_id() -> str:
 
 def set_current_project_id(project_id: Optional[str]):
     """Set current thread's project ID"""
-    _thread_local.project_id = project_id or DEFAULT_PROJECT_ID
+    pid = project_id or DEFAULT_PROJECT_ID
+    _assert_safe_id(pid, "project_id")
+    _thread_local.project_id = pid
 
 
 @contextmanager
@@ -44,21 +99,29 @@ def project_context(project_id: Optional[str]):
 def get_project_dir(project_id: Optional[str] = None) -> Path:
     """
     Get project directory path
-    
+
     Args:
         project_id: Project ID, uses current thread's project ID if None
-        
+
     Returns:
         Project directory path
+
+    Raises:
+        ValueError: if project_id contains unsafe characters (path traversal prevention)
     """
     pid = project_id or get_current_project_id()
-    
-    # Project directory: ~/.attacktrace/projects/{project_id}/
-    project_dir = ATTACKTRACE_CONFIG_DIR.parent / "projects" / pid
-    
-    # Ensure directory exists
+    _assert_safe_id(pid, "project_id")
+
+    root = _project_root_dir()
+    project_dir = root / pid
+
+    # Belt-and-suspenders: verify the resolved path stays inside the root
+    resolved = project_dir.resolve()
+    resolved_root = root.resolve()
+    if resolved != resolved_root and not str(resolved).startswith(str(resolved_root) + os.sep):
+        raise ValueError(f"Resolved project path escapes root: {resolved}")
+
     project_dir.mkdir(parents=True, exist_ok=True)
-    
     return project_dir
 
 
@@ -125,7 +188,7 @@ def load_current_project() -> str:
     Returns:
         Project ID, defaults to 'default'
     """
-    current_project_file = ATTACKTRACE_CONFIG_DIR.parent / "current_project.json"
+    current_project_file = _current_project_file_path()
     
     if current_project_file.exists():
         try:
@@ -145,14 +208,14 @@ def save_current_project(project_id: str):
     Args:
         project_id: Project ID
     """
-    current_project_file = ATTACKTRACE_CONFIG_DIR.parent / "current_project.json"
+    current_project_file = _current_project_file_path()
     
     try:
         current_project_file.parent.mkdir(parents=True, exist_ok=True)
         with open(current_project_file, 'w') as f:
             json.dump({'projectId': project_id}, f, indent=2)
     except Exception as e:
-        print(f"Failed to save current project: {e}")
+        logger.error("Failed to save current project: %s", e)
 
 
 def ensure_default_project():
@@ -166,13 +229,12 @@ def ensure_default_project():
     new_config_path = default_dir / "mcp_config.json"
     
     if old_config_path.exists() and not new_config_path.exists():
-        # Migrate old config to default project
         import shutil
         try:
             shutil.copy2(old_config_path, new_config_path)
-            print(f"Migrated old config to default project: {new_config_path}")
+            logger.info("Migrated old config to default project: %s", new_config_path)
         except Exception as e:
-            print(f"Failed to migrate old config: {e}")
+            logger.error("Failed to migrate old config: %s", e)
     
     # Also handle database file
     old_db_path = ATTACKTRACE_CONFIG_DIR / "db.sqlite"
@@ -182,6 +244,6 @@ def ensure_default_project():
         import shutil
         try:
             shutil.copy2(old_db_path, new_db_path)
-            print(f"Migrated old database to default project: {new_db_path}")
+            logger.info("Migrated old database to default project: %s", new_db_path)
         except Exception as e:
-            print(f"Failed to migrate old database: {e}")
+            logger.error("Failed to migrate old database: %s", e)

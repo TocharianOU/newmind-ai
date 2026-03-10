@@ -1,4 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from "react"
+import { ENV_CONFIG } from "../../config/env"
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import ChatMessages, { Message } from "./ChatMessages"
 import ChatInput from "../../components/ChatInput"
@@ -71,7 +72,7 @@ const ChatWindow = () => {
 
       if (data.success) {
         currentChatId.current = id
-        document.title = `${data.data.chat.title.substring(0, 40)}${data.data.chat.title.length > 40 ? "..." : ""} - AttackTrace`
+        document.title = `${data.data.chat.title.substring(0, 40)}${data.data.chat.title.length > 40 ? "..." : ""} - ${ENV_CONFIG.APP_NAME}`
 
         const rawToMessage = (msg: RawMessage): Message => ({
           id: String(msg.messageId || msg.id || currentId.current++),
@@ -446,7 +447,7 @@ const ChatWindow = () => {
                 break
 
               case "chat_info":
-                document.title = `${data.content.title.substring(0, 40)}${data.content.title.length > 40 ? "..." : ""} - AttackTrace AI`
+                document.title = `${data.content.title.substring(0, 40)}${data.content.title.length > 40 ? "..." : ""} - ${ENV_CONFIG.APP_NAME}`
                 currentChatId.current = data.content.id
                 navigate(`/chat/${data.content.id}`, { replace: true })
                 break

@@ -13,6 +13,7 @@ import { queryGroup } from "./helper/model"
 import { modelGroupsAtom, modelSettingsAtom } from "./atoms/modelState"
 import { installToolBufferAtom, loadMcpConfigAtom, loadToolsAtom } from "./atoms/toolState"
 import { loadCurrentProjectIdAtom } from "./atoms/projectState"
+import { clearHistoriesAtom, loadHistoriesAtom } from "./atoms/historyState"
 import { useTranslation } from "react-i18next"
 import { setModelSettings } from "./ipc/config"
 import { oapGetMe, oapGetToken, oapLogout, registBackendEvent } from "./ipc"
@@ -21,6 +22,7 @@ import { openDrawerAtom } from "./atoms/drawerState"
 import PopupConfirm from "./components/PopupConfirm"
 import DrawerPortal from "./components/Drawer/DrawerPortal"
 import ModalPortal from "./components/Modal/ModalPortal"
+import { currentChatIdAtom } from "./atoms/chatState"
 
 function App() {
   const { t } = useTranslation()
@@ -40,6 +42,9 @@ function App() {
   const loadMcpConfig = useSetAtom(loadMcpConfigAtom)
   const openDrawer = useSetAtom(openDrawerAtom)
   const loadCurrentProjectId = useSetAtom(loadCurrentProjectIdAtom)
+  const clearHistories = useSetAtom(clearHistoriesAtom)
+  const loadHistories = useSetAtom(loadHistoriesAtom)
+  const setCurrentChatId = useSetAtom(currentChatIdAtom)
 
   const showToast = useSetAtom(showToastAtom)
   const setInstallToolBuffer = useSetAtom(installToolBufferAtom)
@@ -69,7 +74,7 @@ function App() {
 
   // init app
   useEffect(() => {
-    window.postMessage({ payload: "removeLoading" }, "*")
+    window.postMessage({ payload: "removeLoading" }, window.location.origin || "*")
     window.addEventListener("resize", handleWindowResize)
     window.addEventListener("keydown", handleGlobalHotkey)
     return () => {
@@ -107,15 +112,24 @@ function App() {
   useEffect(() => {
     const unregistLogin = registBackendEvent("login", () => {
       console.info("oap login")
+      // Clear UI state immediately so old account sessions are never shown.
+      setCurrentChatId("")
+      clearHistories()
       updateOAPUser()
         .catch(console.error)
         .then(() => removeOapConfig())
         .then(() => writeOapConfig())
+        .then(() => loadCurrentProjectId())
+        .then(() => loadMcpConfig())
+        .then(() => loadTools())
+        .then(() => loadHistories())
         .catch(console.error)
     })
 
     const unregistLogout = registBackendEvent("logout", () => {
       console.info("oap logout")
+      setCurrentChatId("")
+      clearHistories()
       removeOapConfig()
       setOAPUser(null)
       setOAPUsage(null)
@@ -134,18 +148,22 @@ function App() {
     })
 
     const unlistenMcpInstall = registBackendEvent("mcp.install", (data: { name: string, config: string }) => {
-      const _config = JSON.parse(atob(data.config))
-      if (!_config.transport) {
-        return
-      }
+      try {
+        if (!data?.config || typeof data.config !== "string") return
+        const _config = JSON.parse(atob(data.config))
+        if (!_config || typeof _config !== "object" || !_config.transport) return
 
-      if (_config.transport === "stdio") {
-        setInstallToolConfirm(true)
-        installToolBuffer.current = { name: data.name, config: _config }
-        return
-      }
+        if (_config.transport === "stdio") {
+          setInstallToolConfirm(true)
+          installToolBuffer.current = { name: data.name, config: _config }
+          return
+        }
 
-      openToolPageWithMcpServerJson({ name: data.name, config: _config })
+        openToolPageWithMcpServerJson({ name: data.name, config: _config })
+      } catch (e) {
+        console.error("[deeplink] mcp.install: invalid payload", e)
+        showToast({ message: t("deeplink.mcpInstallInvalid"), type: "error", duration: 4000 })
+      }
     })
 
     return () => {
@@ -240,7 +258,7 @@ function App() {
           className="mcp-install-confirm-modal"
         >
           {t("deeplink.mcpInstallConfirm")}
-          <pre>{installToolBuffer.current!.config.command} {installToolBuffer.current!.config.args.join(" ")}</pre>
+          <pre>{installToolBuffer.current?.config?.command} {installToolBuffer.current?.config?.args?.join(" ")}</pre>
         </PopupConfirm>
     }
     </>

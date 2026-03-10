@@ -169,23 +169,6 @@ const ProjectManagement: React.FC = () => {
                   <p className="pm-card__desc">{project.description}</p>
                 )}
 
-                {project._count && (
-                  <div className="pm-card__stats">
-                    <div className="pm-stat">
-                      <svg className="pm-stat__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                      <span>{project._count.chatSessions || 0} {t("project.sessions")}</span>
-                    </div>
-                    <div className="pm-stat">
-                      <svg className="pm-stat__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                      </svg>
-                      <span>{project._count.userMcpConfigs || 0} {t("project.integrations")}</span>
-                    </div>
-                  </div>
-                )}
-
                 <div className="pm-card__footer">
                   <button className="pm-btn pm-btn--prompt" onClick={() => handleEditPrompt(project)}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

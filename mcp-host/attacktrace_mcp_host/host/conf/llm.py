@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from logging import getLogger
 from typing import Annotated, Literal, Self
 
 from httpx import AsyncClient, Client
@@ -13,6 +14,8 @@ from pydantic import (
     model_validator,
 )
 from pydantic.alias_generators import to_camel, to_snake
+
+logger = getLogger(__name__)
 
 SpecialProvider = Literal["dive", "__load__"]
 """
@@ -132,6 +135,13 @@ class LLMConfig(BaseLLMConfig):
         if self.model_provider == "ollama":
             remove_keys.extend(["provider"])
         if kwargs.get("skip_tls_verify"):
+            logger.warning(
+                "[Security] TLS certificate verification is DISABLED for provider '%s' "
+                "(model: %s). This exposes connections to MITM attacks. "
+                "Do not use in production.",
+                self.model_provider,
+                self.model,
+            )
             if self.model_provider == "ollama":
                 kwargs.update({"client_kwargs": {"verify": False}})
             elif self.model_provider == "openai":

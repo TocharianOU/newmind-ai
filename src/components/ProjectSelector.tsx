@@ -42,20 +42,18 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({ onManageClick }) => {
   const options = projects.length > 0 ? projects.map(project => ({
     value: project.id,
     label: (
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "6px", overflow: "hidden" }}>
         {project.isDefault && (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ opacity: 0.6 }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style={{ opacity: 0.5, flexShrink: 0 }}>
             <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
           </svg>
         )}
-        <span>{project.name}</span>
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{project.name}</span>
       </div>
     ),
-    info: project.description
   })) : [{
     value: "default",
     label: <span>Default</span>,
-    info: "Default project"
   }]
 
   return (

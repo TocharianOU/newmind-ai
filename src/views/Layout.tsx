@@ -2,6 +2,7 @@ import React from "react"
 import { Outlet } from "react-router-dom"
 import HistorySidebar from "../components/HistorySidebar"
 import Header from "../components/Header"
+import WindowControls from "../components/WindowControls"
 import { useAtom, useAtomValue } from "jotai"
 import { isConfigNotInitializedAtom } from "../atoms/configState"
 import GlobalToast from "../components/GlobalToast"
@@ -23,6 +24,11 @@ const Layout = () => {
   if (!isLoggedIn) {
     return (
       <div className="app-container" data-theme={theme === "system" ? systemTheme : theme}>
+        <div className="login-titlebar" style={{ WebkitAppRegion: "drag" } as React.CSSProperties}>
+          <div style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+            <WindowControls variant="header" />
+          </div>
+        </div>
         <Login />
         <GlobalToast />
       </div>

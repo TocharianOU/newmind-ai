@@ -205,11 +205,10 @@ class McpServer(ContextProtocol):
         - Exception (Literal python exception)
         - ProgressResult (ServerNotification) ... etc
         """
-        logger.info(
-            "handling message for %s, type: %s, content: %s",
+        logger.debug(
+            "handling message for %s, type: %s",
             self.name,
             type(message).__name__,
-            message,
         )
 
         if isinstance(message, Exception):
@@ -443,7 +442,15 @@ class McpServer(ContextProtocol):
         Restart the client if need.
         Only this watcher can set the client status to RUNNING / FAILED.
         """
-        env = os.environ.copy()
+        # Use a minimal environment to avoid leaking parent-process secrets
+        # (API keys, tokens, credentials) into MCP subprocesses.
+        _ENV_WHITELIST = {
+            "PATH", "HOME", "USER", "LOGNAME", "SHELL",
+            "TMPDIR", "TEMP", "TMP",
+            "LANG", "LC_ALL", "LC_CTYPE",
+            "SystemRoot", "USERPROFILE", "APPDATA", "LOCALAPPDATA",
+        }
+        env = {k: v for k, v in os.environ.items() if k in _ENV_WHITELIST}
         env.update(self.config.env)
         start_time = time.time()
         while (
@@ -833,7 +840,13 @@ class McpServer(ContextProtocol):
 
     async def _local_http_process_watcher(self) -> None:
         """Watcher the local http server process."""
-        env = os.environ.copy()
+        _ENV_WHITELIST = {
+            "PATH", "HOME", "USER", "LOGNAME", "SHELL",
+            "TMPDIR", "TEMP", "TMP",
+            "LANG", "LC_ALL", "LC_CTYPE",
+            "SystemRoot", "USERPROFILE", "APPDATA", "LOCALAPPDATA",
+        }
+        env = {k: v for k, v in os.environ.items() if k in _ENV_WHITELIST}
         env.update(self.config.env)
         while True:
             should_break = False

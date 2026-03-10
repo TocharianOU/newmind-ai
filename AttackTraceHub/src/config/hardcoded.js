@@ -6,17 +6,24 @@
  * docker-compose restart backend
  */
 
+import featureFlags from './featureFlags.js';
+
+// Parse invite codes from environment variable (comma-separated).
+// Example: INVITE_CODES=code1,code2,code3
+const _rawCodes = process.env.INVITE_CODES || '';
+const _parsedCodes = _rawCodes
+  .split(',')
+  .map(c => c.trim())
+  .filter(Boolean);
+
 export const HARDCODED_CONFIG = {
   // ==================== 邀请码配置 ====================
-  // 是否启用邀请码功能
-  INVITE_CODE_ENABLED: false,
-  
-  // 有效的邀请码列表
-  VALID_INVITE_CODES: [
-    'attacktrace',
-    'attacktrace2026',
-    'welcome'
-  ],
+  // Controlled by the INVITE_CODE_ENABLED feature flag.
+  get INVITE_CODE_ENABLED() { return featureFlags.INVITE_CODE_ENABLED; },
+
+  // Codes are read from INVITE_CODES env var (comma-separated).
+  // Never hardcode secrets in source.
+  VALID_INVITE_CODES: _parsedCodes,
 
   // ==================== 下载地址配置 ====================
   // 从环境变量读取，如果未配置则使用空字符串

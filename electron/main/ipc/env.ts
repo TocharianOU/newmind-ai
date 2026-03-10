@@ -14,7 +14,14 @@ export function ipcEnvHandler(_win: BrowserWindow) {
   })
 
   safeRegisterHandler("env:getResourcesPath", async (_, p: string) => {
-    return app.isPackaged ? path.join(process.resourcesPath, p) : p
+    if (!app.isPackaged) return p
+    const base = path.resolve(process.resourcesPath)
+    const resolved = path.resolve(base, p)
+    if (!resolved.startsWith(base + path.sep) && resolved !== base) {
+      console.warn(`[IPC] env:getResourcesPath blocked path traversal: ${resolved}`)
+      return null
+    }
+    return resolved
   })
 
   safeRegisterHandler("env:isDev", async () => {

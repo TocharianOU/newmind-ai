@@ -5,15 +5,23 @@ export const preferencesStore = new Store({
   defaults: {
     autoLaunch: false,
     minimalToTray: false,
+    syncEnabled: false,
+    lastSyncAt: "",
   }
 })
 
-export const oapStore = new Store({
+export const oapStore = new Store<{
+  oap: { token: string }
+  token: string
+  encryptedToken: string
+  encryptedRefreshToken: string
+}>({
   name: "oap",
   defaults: {
-    oap: {
-      token: "",
-    }
+    oap: { token: "" },
+    token: "",
+    encryptedToken: "",
+    encryptedRefreshToken: "",
   }
 })
 

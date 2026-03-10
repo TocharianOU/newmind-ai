@@ -199,7 +199,17 @@ class AttackTraceHostAPI(FastAPI):
                 # Continue - not critical for functionality
         
         if db_config.migrate:
-            db_migration(uri=db_uri)
+            try:
+                db_migration(uri=db_uri)
+            except Exception as migration_exc:
+                logger.critical(
+                    "[Database] Migration failed — aborting startup to prevent "
+                    "running against an inconsistent schema: %s",
+                    migration_exc,
+                )
+                raise RuntimeError(
+                    f"Database migration failed: {migration_exc}"
+                ) from migration_exc
 
         self._engine = create_async_engine(
             async_db_uri,

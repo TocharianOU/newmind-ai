@@ -1,5 +1,8 @@
 import { app, BrowserWindow } from "electron"
 import { exec } from "node:child_process"
+import { promisify } from "node:util"
+
+const execAsync = promisify(exec)
 import path from "node:path"
 import fs from "fs-extra"
 import { oapClient } from "./oap"
@@ -144,13 +147,15 @@ NoDisplay=true
     console.info(`Created/Updated desktop file: ${desktopFilePath}`)
 
     // Update the desktop database
-    // It"s important to update the database for the changes to take effect
+    // It's important to update the database for the changes to take effect
     try {
-      const { stdout, stderr } = exec(`update-desktop-database ${escapePathForExec(applicationsDir)}`)
+      const { stdout, stderr } = await execAsync(`update-desktop-database ${escapePathForExec(applicationsDir)}`)
       if (stderr) {
         console.warn(`update-desktop-database stderr: ${stderr}`)
       }
-      console.info(`update-desktop-database stdout: ${stdout}`)
+      if (stdout) {
+        console.info(`update-desktop-database stdout: ${stdout}`)
+      }
       console.info("Desktop database updated successfully.")
     } catch (updateError) {
       console.error("Failed to update desktop database:", updateError)

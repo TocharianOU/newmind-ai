@@ -2,7 +2,11 @@ import express from 'express';
 import { prisma } from '../config/database.js';
 import { createResponse } from '../config/constants.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { requireAdmin } from '../middleware/requireAdmin.js';
+import { writeAudit, AUDIT_ACTIONS, RESOURCE_TYPES } from '../utils/auditLog.js';
 import logger from '../utils/logger.js';
+import { validateBody } from '../middleware/validate.js';
+import { UpdateSettingsSchema, UpdatePreferencesSchema } from '../schemas/user.schemas.js';
 
 const router = express.Router();
 
@@ -27,6 +31,7 @@ router.get('/me', authenticateToken, async (req, res) => {
       username: user.username,
       picture: user.picture || '',
       team: user.team || '',
+      role: user.role,
       tokenBalance: user.tokenBalance || 0,
       subscription: {
         PlanName: user.Subscription?.planName || 'BASE',
@@ -119,6 +124,14 @@ router.post('/logout', authenticateToken, async (req, res) => {
 
     logger.info(`User logged out: ${req.user.email}`);
 
+    await writeAudit(req, {
+      userId: req.user.id,
+      action: AUDIT_ACTIONS.LOGOUT,
+      resourceType: RESOURCE_TYPES.AUTH,
+      resourceId: req.user.id,
+      metadata: { email: req.user.email },
+    });
+
     res.json(createResponse({ message: 'Logged out successfully' }));
   } catch (error) {
     logger.error('Logout error:', error);
@@ -154,7 +167,7 @@ router.get('/settings', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/v1/user/settings - Update user settings
-router.put('/settings', authenticateToken, async (req, res) => {
+router.put('/settings', authenticateToken, validateBody(UpdateSettingsSchema), async (req, res) => {
   try {
     const { username, picture, team } = req.body;
 
@@ -227,7 +240,7 @@ router.get('/preferences', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/v1/user/preferences - Update user preferences
-router.put('/preferences', authenticateToken, async (req, res) => {
+router.put('/preferences', authenticateToken, validateBody(UpdatePreferencesSchema), async (req, res) => {
   try {
     const { theme, language, notifications, emailNotifications } = req.body;
 
@@ -363,13 +376,8 @@ router.get('/stats', authenticateToken, async (req, res) => {
 });
 
 // GET /api/v1/user/admin/users - Get all users list (enterprise only)
-router.get('/admin/users', authenticateToken, async (req, res) => {
+router.get('/admin/users', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    // Authorization check - only enterprise@test.com can access
-    if (req.user.email !== 'enterprise@test.com') {
-      logger.warn(`Unauthorized admin users access attempt by ${req.user.email}`);
-      return res.status(403).json(createResponse(null, 'Access denied. Admin privileges required.'));
-    }
 
     // Get all users with their subscription info
     const users = await prisma.user.findMany({
@@ -380,7 +388,7 @@ router.get('/admin/users', authenticateToken, async (req, res) => {
         picture: true,
         team: true,
         createdAt: true,
-        subscription: {
+        Subscription: {
           select: {
             planName: true,
             startDate: true,
@@ -430,6 +438,12 @@ router.get('/admin/users', authenticateToken, async (req, res) => {
     }));
 
     logger.info(`Admin users list accessed by ${req.user.email}`);
+    await writeAudit(req, {
+      userId: req.user.id,
+      action: AUDIT_ACTIONS.ADMIN_LIST_USERS,
+      resourceType: RESOURCE_TYPES.ADMIN,
+      metadata: { userCount: usersWithUsage.length },
+    });
     res.json(createResponse(usersWithUsage));
   } catch (error) {
     logger.error('Error fetching admin users:', error);
@@ -438,13 +452,8 @@ router.get('/admin/users', authenticateToken, async (req, res) => {
 });
 
 // GET /api/v1/user/admin/users/:userId/stats - Get specific user statistics (enterprise only)
-router.get('/admin/users/:userId/stats', authenticateToken, async (req, res) => {
+router.get('/admin/users/:userId/stats', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    // Authorization check - only enterprise@test.com can access
-    if (req.user.email !== 'enterprise@test.com') {
-      logger.warn(`Unauthorized admin user stats access attempt by ${req.user.email}`);
-      return res.status(403).json(createResponse(null, 'Access denied. Admin privileges required.'));
-    }
 
     const { userId } = req.params;
     const { range = '30d' } = req.query;
@@ -459,7 +468,7 @@ router.get('/admin/users/:userId/stats', authenticateToken, async (req, res) => 
         picture: true,
         team: true,
         createdAt: true,
-        subscription: {
+        Subscription: {
           select: {
             planName: true,
             startDate: true,
@@ -573,6 +582,13 @@ router.get('/admin/users/:userId/stats', authenticateToken, async (req, res) => 
     };
 
     logger.info(`Admin accessed user stats for ${targetUser.email} by ${req.user.email}`);
+    await writeAudit(req, {
+      userId: req.user.id,
+      action: AUDIT_ACTIONS.ADMIN_VIEW_USER_STATS,
+      resourceType: RESOURCE_TYPES.ADMIN,
+      resourceId: targetUser.id,
+      metadata: { targetEmail: targetUser.email, range },
+    });
     res.json(createResponse(stats));
   } catch (error) {
     logger.error('Error fetching user stats:', error);
@@ -581,13 +597,8 @@ router.get('/admin/users/:userId/stats', authenticateToken, async (req, res) => 
 });
 
 // GET /api/v1/user/admin/stats - Get admin statistics (enterprise only)
-router.get('/admin/stats', authenticateToken, async (req, res) => {
+router.get('/admin/stats', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    // Authorization check - only enterprise@test.com can access
-    if (req.user.email !== 'enterprise@test.com') {
-      logger.warn(`Unauthorized admin stats access attempt by ${req.user.email}`);
-      return res.status(403).json(createResponse(null, 'Access denied. Admin privileges required.'));
-    }
 
     const { range = '30d' } = req.query;
 
@@ -693,10 +704,86 @@ router.get('/admin/stats', authenticateToken, async (req, res) => {
     };
 
     logger.info(`Admin stats accessed by ${req.user.email} for range ${range}`);
+    await writeAudit(req, {
+      userId: req.user.id,
+      action: AUDIT_ACTIONS.ADMIN_VIEW_STATS,
+      resourceType: RESOURCE_TYPES.ADMIN,
+      metadata: { range },
+    });
     res.json(createResponse(stats));
   } catch (error) {
     logger.error('Error fetching admin stats:', error);
     res.status(500).json(createResponse(null, 'Failed to fetch admin stats'));
+  }
+});
+
+// DELETE /api/v1/user/account - Permanently delete the authenticated user's account
+// All user data is cascade-deleted via Prisma schema (AuditLog, ChatSession, Message,
+// Project, RefreshToken, Subscription, TokenPurchase, UsageRecord, UserPreferences).
+router.delete('/account', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const email  = req.user.email;
+
+    // Write audit entry before deletion (the record disappears with the user)
+    await writeAudit(req, {
+      userId,
+      action: AUDIT_ACTIONS.ACCOUNT_DELETED,
+      resourceType: RESOURCE_TYPES.USER,
+      resourceId: userId,
+      metadata: { email },
+    });
+
+    await prisma.user.delete({ where: { id: userId } });
+
+    logger.info(`Account permanently deleted: ${email} (${userId})`);
+    res.json(createResponse({ message: 'Account and all associated data have been permanently deleted.' }));
+  } catch (error) {
+    logger.error('Error deleting account:', error);
+    res.status(500).json(createResponse(null, 'Failed to delete account'));
+  }
+});
+
+// GET /api/v1/user/data-export - Export all personal data for the authenticated user (GDPR)
+router.get('/data-export', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const [user, projects, sessions, preferences] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, email: true, username: true, picture: true, team: true, role: true, createdAt: true, updatedAt: true },
+      }),
+      prisma.project.findMany({
+        where: { userId },
+        select: { id: true, name: true, description: true, isDefault: true, createdAt: true, updatedAt: true },
+      }),
+      prisma.chatSession.findMany({
+        where: { userId },
+        select: { id: true, title: true, isStarred: true, createdAt: true, updatedAt: true, projectId: true },
+      }),
+      prisma.userPreferences.findUnique({ where: { userId } }),
+    ]);
+
+    await writeAudit(req, {
+      userId,
+      action: AUDIT_ACTIONS.DATA_EXPORT,
+      resourceType: RESOURCE_TYPES.USER,
+      resourceId: userId,
+    });
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="my-data-${Date.now()}.json"`);
+    res.json({
+      exportedAt: new Date().toISOString(),
+      profile: user,
+      preferences,
+      projects,
+      chatSessions: sessions,
+    });
+  } catch (error) {
+    logger.error('Error exporting user data:', error);
+    res.status(500).json(createResponse(null, 'Failed to export data'));
   }
 });
 

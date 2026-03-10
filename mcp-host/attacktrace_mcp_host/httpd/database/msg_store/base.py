@@ -6,6 +6,7 @@ from sqlalchemy import delete, desc, exists, func, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from attacktrace_mcp_host.httpd.database.encryption import get_encryption_manager
 from attacktrace_mcp_host.httpd.database.models import (
     Chat,
     ChatMessage,
@@ -20,6 +21,7 @@ from attacktrace_mcp_host.httpd.database.orm_models import Message as ORMMessage
 from attacktrace_mcp_host.httpd.database.orm_models import (
     ResourceUsage as ORMResourceUsage,
 )
+from attacktrace_mcp_host.httpd.conf.project_context import get_current_project_id
 from attacktrace_mcp_host.httpd.routers.models import SortBy
 
 from .abstract import AbstractMessageStore
@@ -42,6 +44,28 @@ class BaseMessageStore(AbstractMessageStore):
             session: Database session.
         """
         self._session = session
+        # Encryption is scoped to the current project so that each project's
+        # data is protected by an independent key stored in the OS keychain.
+        project_id = get_current_project_id()
+        self._enc = get_encryption_manager(project_id)
+
+    # ── Encryption helpers ─────────────────────────────────────────────────
+
+    def _encrypt(self, plaintext: str) -> str:
+        """Encrypt a string field value before persisting to SQLite."""
+        if not plaintext:
+            return plaintext
+        return self._enc.encrypt(plaintext)
+
+    def _decrypt(self, value: str) -> str:
+        """Decrypt a string field value read from SQLite.
+
+        Falls back to the original value when decryption fails so that
+        pre-encryption (legacy) rows are returned as-is without errors.
+        """
+        if not value:
+            return value
+        return self._enc.decrypt(value)
 
     async def get_all_chats(
         self,
@@ -197,13 +221,14 @@ class BaseMessageStore(AbstractMessageStore):
                 else None
             )
             tool_calls = msg.tool_calls if msg.tool_calls else []
-            files = json.loads(msg.files) if msg.files else []
+            raw_files = self._decrypt(msg.files) if msg.files else "[]"
+            files = json.loads(raw_files) if raw_files else []
 
             messages.append(
                 Message(
                     id=msg.id,
                     message_id=msg.message_id,
-                    content=msg.content,
+                    content=self._decrypt(msg.content),
                     role=Role(msg.role),
                     createdAt=msg.created_at,
                     files=files,
@@ -226,23 +251,31 @@ class BaseMessageStore(AbstractMessageStore):
         Returns:
             Created Message object.
         """
-        # Create the message
+        # Create the message — encrypt sensitive fields before persisting.
         query = insert(ORMMessage).values(
             message_id=message.message_id,
-            content=message.content,
+            content=self._encrypt(message.content),
             role=message.role,
             chat_id=message.chat_id,
             created_at=message.created_at,
-            files=json.dumps(message.files) if message.files else "[]",
+            files=self._encrypt(json.dumps(message.files) if message.files else "[]"),
             tool_calls=message.tool_calls,
         )
         result = await self._session.execute(query)
+        # Keep chat.updated_at aligned with latest message creation time so
+        # incremental sync can detect message-only updates reliably.
+        await self._session.execute(
+            update(ORMChat)
+            .where(ORMChat.id == message.chat_id)
+            .values(updated_at=message.created_at)
+        )
         await self._session.flush()
 
         # Get the inserted message ID
         message_id = result.inserted_primary_key[0]
 
-        # Return the created Message object
+        # Return the original (plaintext) values — we encrypted only what goes
+        # into the DB; the caller receives the unencrypted representation.
         return Message(
             id=message_id,
             message_id=message.message_id,
@@ -387,8 +420,8 @@ class BaseMessageStore(AbstractMessageStore):
             update(ORMMessage)
             .where(ORMMessage.message_id == message_id)
             .values(
-                content=data.text or "",
-                files=json.dumps(data.images or []),
+                content=self._encrypt(data.text or ""),
+                files=self._encrypt(json.dumps(data.images or [])),
                 tool_calls=data.tool_calls,
             )
             .returning(ORMMessage)
@@ -398,13 +431,14 @@ class BaseMessageStore(AbstractMessageStore):
         if not result:
             raise ValueError(f"Message {message_id} not found")
 
+        raw_files = self._decrypt(result.files) if result.files else "[]"
         return Message(
             id=result.id,
             message_id=result.message_id,
-            content=result.content,
+            content=self._decrypt(result.content),
             role=Role(result.role),
             createdAt=result.created_at,
-            files=json.loads(result.files) if result.files else [],
+            files=json.loads(raw_files) if raw_files else [],
             tool_calls=json.loads(result.tool_calls) if result.tool_calls else [],
         )
 
@@ -442,12 +476,13 @@ class BaseMessageStore(AbstractMessageStore):
         if not result:
             raise ValueError(f"No AI message found after {message_id}")
 
+        raw_files = self._decrypt(result.files) if result.files else "[]"
         return Message(
             id=result.id,
             message_id=result.message_id,
-            content=result.content,
+            content=self._decrypt(result.content),
             role=Role(result.role),
             createdAt=result.created_at,
-            files=json.loads(result.files) if result.files else [],
+            files=json.loads(raw_files) if raw_files else [],
             tool_calls=json.loads(result.tool_calls) if result.tool_calls else [],
         )

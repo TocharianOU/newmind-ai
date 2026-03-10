@@ -5,6 +5,7 @@ import "./styles/index.scss"
 import "pretendard/dist/web/static/pretendard.css"
 import "./i18n"
 import Root from "./Root.tsx"
+import ErrorBoundary from "./components/ErrorBoundary"
 import { initPlatform, isElectron } from "./ipc/env.ts"
 import logger from "electron-log/renderer"
 import { error as tauriErrorLog } from "@tauri-apps/plugin-log"
@@ -63,7 +64,9 @@ window.isDev = import.meta.env.DEV
 initPlatform().finally(() => {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
-      <Root />
+      <ErrorBoundary>
+        <Root />
+      </ErrorBoundary>
     </StrictMode>,
   )
 })

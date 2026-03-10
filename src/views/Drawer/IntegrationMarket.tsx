@@ -343,7 +343,7 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
           // Find all instances of this tool
           const instances = installedInstances.filter(inst => {
             const match = inst.tool_id === tool.id
-            if (process.env.NODE_ENV === 'development') {
+            if (import.meta.env.DEV) {
               console.log(`[IntegrationMarket] Matching tool ${tool.name}:`, { 
                 toolId: tool.id, 
                 instToolId: inst.tool_id, 
@@ -431,7 +431,7 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
         await installPackage(tool)
         
         const initialConfig: [string, unknown, boolean][] = []
-        const properties = tool.configSchema.properties || {}
+        const properties = (tool.configSchema?.properties as Record<string, any>) || {}
         Object.entries(properties).forEach(([key, prop]: [string, any]) => {
           initialConfig.push([key, prop.default || "", false])
         })
@@ -676,8 +676,8 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
       }
       
       Object.keys(requestBody).forEach(key => {
-        if (requestBody[key] === undefined) {
-          delete requestBody[key]
+        if ((requestBody as Record<string, unknown>)[key] === undefined) {
+          delete (requestBody as Record<string, unknown>)[key]
         }
       })
       
@@ -1180,7 +1180,10 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
                         const parent = e.currentTarget.parentElement
                         if (parent) {
                           parent.style.background = 'linear-gradient(135deg, var(--bg-pri-blue) 0%, var(--bg-hover-blue) 100%)'
-                          parent.innerHTML = `<span style="color: white; font-size: 32px; font-weight: 700;">${selectedTool.name.substring(0, 2).toUpperCase()}</span>`
+                          const span = document.createElement('span')
+                          span.style.cssText = 'color: white; font-size: 32px; font-weight: 700;'
+                          span.textContent = selectedTool.name.substring(0, 2).toUpperCase()
+                          parent.replaceChildren(span)
                         }
                       }}
                     />

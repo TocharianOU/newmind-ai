@@ -124,7 +124,18 @@ export default defineConfig(({ command }) => {
               minify: isBuild,
               outDir: "dist-electron/preload",
               rollupOptions: {
-                external: Object.keys("dependencies" in pkg ? pkg.dependencies : {}),
+                // package.json has "type":"module" which makes Node treat .mjs as ESM.
+                // Electron preload scripts need CommonJS (they use require internally).
+                // Force CJS output and use .cjs extension so Node always treats it as CJS,
+                // regardless of the package.json "type" field.
+                output: {
+                  format: "cjs",
+                  entryFileNames: "[name].cjs",
+                },
+                external: [
+                  "electron",
+                  ...Object.keys("dependencies" in pkg ? pkg.dependencies : {}),
+                ],
               },
             },
             server: {

@@ -58,6 +58,7 @@ export const authenticateToken = async (req, res, next) => {
       id: user.id,
       email: user.email,
       username: user.username,
+      role: user.role,
       planName: user.Subscription?.planName || 'BASE'
     };
 

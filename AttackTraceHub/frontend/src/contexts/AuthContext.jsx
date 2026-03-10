@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import CryptoJS from 'crypto-js';
 import api from '../config/api';
 
 const AuthContext = createContext(null);
@@ -26,38 +25,31 @@ export const AuthProvider = ({ children }) => {
     const urlToken = urlParams.get('token');
 
     if (urlToken) {
-      console.log('🔗 Token found in URL, attempting auto-login...');
       try {
-        // Store the token from URL
         localStorage.setItem('authToken', urlToken);
+        const urlRefreshToken = urlParams.get('refreshToken');
+        if (urlRefreshToken) {
+          localStorage.setItem('refreshToken', urlRefreshToken);
+        }
 
         // Verify the token by calling /api/v1/user/me
         const response = await api.get('/api/v1/user/me');
         if (response.data.status === 'success') {
           setUser(response.data.data);
-          console.log('🔗 Auto-login successful');
 
-          // Clean up URL by removing token parameter
-          // BUT preserve appRedirect parameter for Login.jsx to handle deep link
+          // Clean up URL — preserve appRedirect for Login.jsx deep-link handling
           const appRedirect = urlParams.get('appRedirect');
-          if (appRedirect) {
-            const newUrl = `${window.location.pathname}?appRedirect=${appRedirect}`;
-            window.history.replaceState({}, document.title, newUrl);
-            console.log('🔗 Preserved appRedirect parameter for deep link handling');
-          } else {
-            const newUrl = window.location.pathname;
-            window.history.replaceState({}, document.title, newUrl);
-          }
+          const newUrl = appRedirect
+            ? `${window.location.pathname}?appRedirect=${appRedirect}`
+            : window.location.pathname;
+          window.history.replaceState({}, document.title, newUrl);
 
           setLoading(false);
           return;
         }
-      } catch (error) {
-        console.error('🔗 Auto-login failed:', error);
+      } catch {
         localStorage.removeItem('authToken');
-        // Remove token from URL even if login failed
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, newUrl);
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
 
@@ -73,8 +65,7 @@ export const AuthProvider = ({ children }) => {
       if (response.data.status === 'success') {
         setUser(response.data.data);
       }
-    } catch (error) {
-      console.error('Auth check failed:', error);
+    } catch {
       localStorage.removeItem('authToken');
     } finally {
       setLoading(false);
@@ -91,6 +82,9 @@ export const AuthProvider = ({ children }) => {
     });
     if (response.data.success) {
       localStorage.setItem('authToken', response.data.data.accessToken);
+      if (response.data.data.refreshToken) {
+        localStorage.setItem('refreshToken', response.data.data.refreshToken);
+      }
       setUser(response.data.data.user);
       return response.data;
     }
@@ -124,9 +118,10 @@ export const AuthProvider = ({ children }) => {
     try {
       await api.post('/api/v1/user/logout');
     } catch (error) {
-      console.error('Logout error:', error);
+      // silently ignore logout errors
     } finally {
       localStorage.removeItem('authToken');
+      localStorage.removeItem('refreshToken');
       setUser(null);
       window.location.href = '/login';
     }

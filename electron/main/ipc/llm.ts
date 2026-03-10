@@ -52,23 +52,12 @@ export function ipcLlmHandler(_win: BrowserWindow) {
 
   safeRegisterHandler("llm:openaiCompatibleModelList", async (_, apiKey: string, baseURL: string) => {
     try {
-      console.log(`[DEBUG] OpenAI Compatible Model List - baseURL: ${baseURL}, apiKey: ${apiKey ? apiKey.substring(0, 10) + '...' : 'undefined'}`)
-      
       const client = new OpenAI({ apiKey, baseURL })
       const list = await client.models.list()
-      
-      console.log(`[DEBUG] OpenAI Compatible API Response:`, {
-        dataLength: list.data?.length || 0,
-        firstModel: list.data?.[0]?.id || 'none',
-        fullResponse: JSON.stringify(list, null, 2)
-      })
-      
-      // Extract model names and metadata
+
       const modelsWithMetadata = list.data.map((model) => {
-        // Check if model has metadata indicating real provider
         const metadata = (model as any).metadata
         if (metadata?.real_provider) {
-          console.log(`[DEBUG] Found model ${model.id} with real_provider: ${metadata.real_provider}`)
           return {
             id: model.id,
             real_provider: metadata.real_provider,
@@ -79,22 +68,23 @@ export function ipcLlmHandler(_win: BrowserWindow) {
         }
         return { id: model.id }
       })
-      
-      return { 
-        results: list.data.map((model) => model.id), 
+
+      return {
+        results: list.data.map((model) => model.id),
         metadata: modelsWithMetadata,
-        error: null 
+        error: null
       }
     } catch (error) {
-      console.error(`[DEBUG] OpenAI Compatible API Error:`, error)
       return { results: [], error: (error as Error).message }
     }
   })
 
   safeRegisterHandler("llm:googleGenaiModelList", async (_, apiKey: string) => {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
-      const response = await fetch(url)
+      // Pass the key in a header to avoid leaking it in logs/Referer
+      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models", {
+        headers: { "x-goog-api-key": apiKey },
+      })
       const data = await response.json() as { models: { name: string }[] }
       return { results: data.models.map((model) => model.name), error: null }
     } catch (error) {

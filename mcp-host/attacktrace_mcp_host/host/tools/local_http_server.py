@@ -51,7 +51,6 @@ async def local_http_server(  # noqa: C901, PLR0913, PLR0915
     headers = (headers or config.headers).copy()
     assert config.url is not None, "url is required"
 
-    logger.error("env: %s", env)
 
     def _sse_client(
         url: str,

@@ -1,14 +1,31 @@
 """Instance Manager - Manages MCP instance creation, deletion, and updates"""
 import logging
+import re
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlparse
 
 from attacktrace_mcp_host.httpd.conf.mcp_servers import Config, MCPServerConfig
 
 from .package_manager import PackageManager
 
 logger = logging.getLogger("InstanceManager")
+
+# Hostnames that the OAP device token must never be forwarded to.
+# Allow only the known OAP SaaS domain and localhost for development.
+_ALLOWED_TOKEN_URL_RE = re.compile(
+    r'^https://([\w.-]+\.)?oap\.attacktrace\.io(:\d+)?(/.*)?$'
+    r'|^https?://localhost(:\d+)?(/.*)?$'
+    r'|^https?://127\.0\.0\.1(:\d+)?(/.*)?$'
+)
+
+
+def _is_safe_token_url(url: str | None) -> bool:
+    """Return True if it is safe to attach the OAP device token to a request for this URL."""
+    if not url:
+        return False
+    return bool(_ALLOWED_TOKEN_URL_RE.match(url))
 
 
 @dataclass
@@ -154,7 +171,16 @@ class InstanceManager:
                     resolved_env[k] = v
                 config_params["env"] = resolved_env
         else:
-            # Handle http/sse/streamable transport
+            # Handle http/sse/streamable transport.
+            # Only attach the device token when the target URL is a trusted host.
+            if not _is_safe_token_url(request.url):
+                logger.warning(
+                    "[Security] Refusing to attach device token to untrusted URL: %s",
+                    request.url,
+                )
+                raise ValueError(
+                    f"OAP instance URL is not in the allowed domain list: {request.url}"
+                )
             config_params["url"] = request.url
             config_params["headers"] = {
                 "Authorization": f"Bearer {self.device_token}",

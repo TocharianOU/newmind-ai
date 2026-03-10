@@ -6,10 +6,14 @@ import api from '../config/api';
 import './Settings.css';
 
 const Settings = () => {
-  const { user, checkAuth } = useAuth();
+  const { user, checkAuth, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
 
   // Profile settings
   const [profileData, setProfileData] = useState({
@@ -112,6 +116,41 @@ const Settings = () => {
     };
     
     setPreferences(newPreferences);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') return;
+    setDeleteLoading(true);
+    try {
+      await api.delete('/api/v1/user/account');
+      logout();
+    } catch (error) {
+      setMessage({ type: 'error', text: error.response?.data?.error || t('settings.deleteAccountError', 'Failed to delete account') });
+      setShowDeleteConfirm(false);
+      setDeleteConfirmText('');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleDataExport = async () => {
+    setExportLoading(true);
+    try {
+      const response = await api.get('/api/v1/user/data-export', { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([response.data], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `my-data-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setMessage({ type: 'success', text: t('settings.dataExportSuccess', 'Your data has been downloaded.') });
+    } catch (error) {
+      setMessage({ type: 'error', text: t('settings.dataExportError', 'Failed to export data') });
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   const handlePreferencesSubmit = async (e) => {
@@ -342,12 +381,72 @@ const Settings = () => {
                 </div>
               </div>
 
-              <div className="danger-zone">
+              {/* Data Export */}
+              <div className="settings-section" style={{ marginTop: 24 }}>
+                <h3>{t('settings.dataPrivacy', 'Data & Privacy')}</h3>
+                <p style={{ color: '#666', fontSize: 14, marginBottom: 12 }}>
+                  {t('settings.dataExportDesc', 'Download a copy of all your personal data (profile, projects, chat sessions).')}
+                </p>
+                <button
+                  className="save-button"
+                  type="button"
+                  onClick={handleDataExport}
+                  disabled={exportLoading}
+                  style={{ width: 'auto' }}
+                >
+                  {exportLoading
+                    ? t('settings.exporting', 'Exporting...')
+                    : t('settings.downloadMyData', 'Download My Data')}
+                </button>
+              </div>
+
+              {/* Danger Zone */}
+              <div className="danger-zone" style={{ marginTop: 32 }}>
                 <h3>{t('settings.dangerZone', 'Danger Zone')}</h3>
                 <p>{t('settings.dangerZoneDesc', 'Irreversible actions that affect your account')}</p>
-                <button className="danger-button" type="button">
-                  {t('settings.deleteAccount', 'Delete Account')}
-                </button>
+                {!showDeleteConfirm ? (
+                  <button
+                    className="danger-button"
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(true)}
+                  >
+                    {t('settings.deleteAccount', 'Delete Account')}
+                  </button>
+                ) : (
+                  <div style={{ background: '#fff5f5', border: '1px solid #fca5a5', borderRadius: 8, padding: 16, marginTop: 8 }}>
+                    <p style={{ color: '#dc2626', fontWeight: 600, marginBottom: 8 }}>
+                      {t('settings.deleteAccountWarning', 'This action is permanent and cannot be undone. All your data will be deleted.')}
+                    </p>
+                    <p style={{ color: '#666', fontSize: 13, marginBottom: 12 }}>
+                      {t('settings.deleteAccountConfirmPrompt', 'Type DELETE to confirm:')}
+                    </p>
+                    <input
+                      type="text"
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      placeholder="DELETE"
+                      style={{ border: '1px solid #fca5a5', borderRadius: 6, padding: '8px 12px', marginBottom: 12, width: '100%', boxSizing: 'border-box' }}
+                    />
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        className="danger-button"
+                        type="button"
+                        onClick={handleDeleteAccount}
+                        disabled={deleteConfirmText !== 'DELETE' || deleteLoading}
+                      >
+                        {deleteLoading ? t('settings.deleting', 'Deleting...') : t('settings.confirmDelete', 'Permanently Delete')}
+                      </button>
+                      <button
+                        className="save-button"
+                        type="button"
+                        onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }}
+                        style={{ background: '#6b7280' }}
+                      >
+                        {t('common.cancel', 'Cancel')}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

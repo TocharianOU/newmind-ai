@@ -10,4 +10,4 @@ docker run --rm \
   -v ${PWD}/release:/app/release \
   dive-builder-win:latest
 
-echo "Build complete! Check the release folder for output." 
+echo "Build complete! Check the release folder for output."

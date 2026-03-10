@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { DOCS_URL } from '../config/api';
 import './Layout.css';
 
@@ -9,6 +10,7 @@ const Layout = ({ children }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { t } = useLanguage();
+  const { billingEnabled } = useFeatureFlags();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const isActive = (path) => location.pathname === path;
@@ -41,15 +43,17 @@ const Layout = ({ children }) => {
             {t('navigation.dashboard', 'Dashboard')}
           </Link>
 
-          <Link
-            to="/billing"
-            className={`nav-item ${isActive('/billing') ? 'active' : ''}`}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            {t('navigation.billing', 'Billing')}
-          </Link>
+          {billingEnabled && (
+            <Link
+              to="/billing"
+              className={`nav-item ${isActive('/billing') ? 'active' : ''}`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {t('navigation.billing', 'Billing')}
+            </Link>
+          )}
 
           <Link
             to="/settings"
@@ -62,8 +66,8 @@ const Layout = ({ children }) => {
             {t('navigation.settings', 'Settings')}
           </Link>
 
-          {/* Admin Stats - Only visible to enterprise@test.com */}
-          {user?.email === 'enterprise@test.com' && (
+          {/* Admin Stats - Only visible to ADMIN role users */}
+          {user?.role === 'ADMIN' && (
             <Link
               to="/admin/stats"
               className={`nav-item ${isActive('/admin/stats') ? 'active' : ''}`}
@@ -122,10 +126,7 @@ const Layout = ({ children }) => {
             <div className="user-menu">
               <button
                 className="user-button"
-                onClick={() => {
-                  console.log('User button clicked, current state:', userMenuOpen);
-                  setUserMenuOpen(!userMenuOpen);
-                }}
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
               >
                 <div className="user-avatar">
                   {user?.picture ? (
@@ -157,10 +158,7 @@ const Layout = ({ children }) => {
                     {t('navigation.settings', 'Settings')}
                   </Link>
                   <div className="dropdown-divider"></div>
-                  <button className="dropdown-item" onClick={() => {
-                    console.log('Logout button clicked');
-                    logout();
-                  }}>
+                  <button className="dropdown-item" onClick={logout}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                       <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>

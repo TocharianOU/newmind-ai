@@ -30,19 +30,17 @@ function Root() {
     console.log('[Root] Waiting for host to start...')
     
     // Set a timeout to avoid infinite waiting
-    const timeoutPromise = new Promise(resolve => setTimeout(() => {
-        console.log('[Root] Host check timeout, proceeding anyway...')
-        resolve(0)
-    }, 5000))
+    let intervalId: ReturnType<typeof setInterval> | null = null
 
-    const checkPromise = new Promise(resolve => {
+    const checkPromise = new Promise<void>(resolve => {
       let attempts = 0
-      const i = setInterval(() => {
+      intervalId = setInterval(() => {
         attempts++
         apiFetch("/api/tools/").then(() => {
           console.log('[Root] Host is ready!')
-          resolve(0)
-          clearInterval(i)
+          clearInterval(intervalId!)
+          intervalId = null
+          resolve()
         }).catch(err => {
           if (attempts % 20 === 0) {
             console.log(`[Root] Still waiting for host... (${attempts} attempts)`, err.message)
@@ -51,7 +49,17 @@ function Root() {
       }, 50)
     })
 
+    const timeoutPromise = new Promise<void>(resolve => setTimeout(() => {
+      console.log('[Root] Host check timeout, proceeding anyway...')
+      resolve()
+    }, 5000))
+
     await Promise.race([checkPromise, timeoutPromise])
+
+    // If timeout won, clean up the polling interval
+    if (intervalId !== null) {
+      clearInterval(intervalId)
+    }
   }, [])
 
   useEffect(() => {
@@ -100,7 +108,7 @@ function Root() {
 
   const onUpdate = (log: string) => {
     if (log) {
-      window.postMessage({ payload: "removeLoading" }, "*")
+      window.postMessage({ payload: "removeLoading" }, window.location.origin || "*")
     }
   }
 

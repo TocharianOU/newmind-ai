@@ -1,6 +1,7 @@
 """Prompt for the host."""
 
 import json
+import xml.sax.saxutils as saxutils
 from collections.abc import Callable, Sequence
 
 from langchain_core.messages import BaseMessage, SystemMessage
@@ -30,8 +31,8 @@ def tools_definition(tools: Sequence[BaseTool]) -> str:
     return "\n".join(
         f"""
 <tool>
-  <name>{tool.name}</name>
-  <description>{tool.description}</description>
+  <name>{saxutils.escape(tool.name)}</name>
+  <description>{saxutils.escape(tool.description)}</description>
   <arguments>{json.dumps(tool.args)}</arguments>
 </tool>"""
         for tool in tools

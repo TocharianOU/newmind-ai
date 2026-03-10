@@ -102,12 +102,9 @@ async def get_entities(
         user_id = dive_user.get("user_id") or "default"
         
         logger.info(f"🔍 [Memory API] Getting entities for user '{user_id}', type: {entity_type}")
-        
-        # Set database session for this request
-        memory_store._db_session = db_session
-        
+
         # Load entities from database into memory store if not already loaded
-        await memory_store.load_from_database(user_id)
+        await memory_store.load_from_database(user_id, db_session=db_session)
         
         entities = await memory_store.get_entities(
             user_id=user_id,
@@ -177,12 +174,9 @@ async def search_entities(
         user_id = dive_user.get("user_id") or "default"
         
         logger.info(f"🔍 [Memory API] Searching entities for user '{user_id}', query: '{q}', type: {entity_type}")
-        
-        # Set database session for this request
-        memory_store._db_session = db_session
-        
+
         # Load entities from database into memory store if not already loaded
-        await memory_store.load_from_database(user_id)
+        await memory_store.load_from_database(user_id, db_session=db_session)
         
         # Get all entities of the specified type (or all types)
         all_entities = await memory_store.get_entities(
@@ -268,9 +262,6 @@ async def create_entity(
         memory_store = app.long_term_memory_store
         user_id = dive_user.get("user_id") or "default"
         
-        # Set database session for this request
-        memory_store._db_session = db_session
-
         # Check if entity already exists
         existing = await memory_store.get_entity(
             user_id=user_id,
@@ -292,7 +283,7 @@ async def create_entity(
             relevance=request.relevance,
         )
 
-        await memory_store.save_entity(user_id=user_id, entity=entity)
+        await memory_store.save_entity(user_id=user_id, entity=entity, db_session=db_session)
 
         return DataResult(
             success=True,
@@ -344,9 +335,6 @@ async def update_entity(
         memory_store = app.long_term_memory_store
         user_id = dive_user.get("user_id") or "default"
         
-        # Set database session for this request
-        memory_store._db_session = db_session
-
         # Build updates dict
         updates = {}
         if request.content is not None:
@@ -364,6 +352,7 @@ async def update_entity(
             entity_type=entity_type,
             entity_name=entity_name,
             updates=updates,
+            db_session=db_session,
         )
 
         if not entity:
@@ -421,14 +410,12 @@ async def delete_entity(
         user_id = dive_user.get("user_id") or "default"
         
         logger.info(f"🗑️ [Memory API] Deleting entity '{entity_name}' of type '{entity_type}' for user '{user_id}'")
-        
-        # Set database session for this request
-        memory_store._db_session = db_session
-        
+
         success = await memory_store.delete_entity(
             user_id=user_id,
             entity_type=entity_type,
             entity_name=entity_name,
+            db_session=db_session,
         )
 
         if not success:
@@ -475,11 +462,8 @@ async def delete_all_entities(
         user_id = dive_user.get("user_id") or "default"
         
         logger.info(f"🗑️ [Memory API] Deleting all entities for user '{user_id}'")
-        
-        # Set database session for this request
-        memory_store._db_session = db_session
-        
-        count = await memory_store.delete_all_entities(user_id=user_id)
+
+        count = await memory_store.delete_all_entities(user_id=user_id, db_session=db_session)
         
         logger.info(f"🗑️ [Memory API] Successfully deleted {count} entities")
 
@@ -522,12 +506,9 @@ async def get_memory_stats(
         user_id = dive_user.get("user_id") or "default"
         
         logger.info(f"🔍 [Memory API] Getting stats for user '{user_id}'")
-        
-        # Set database session for this request
-        memory_store._db_session = db_session
-        
+
         # Load entities from database into memory store if not already loaded
-        await memory_store.load_from_database(user_id)
+        await memory_store.load_from_database(user_id, db_session=db_session)
         
         stats = await memory_store.get_stats(user_id=user_id)
         

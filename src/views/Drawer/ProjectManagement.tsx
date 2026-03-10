@@ -153,13 +153,6 @@ const ProjectManagement: React.FC = () => {
                 {project.description && (
                   <p className="pm-card__desc">{project.description}</p>
                 )}
-                {project._count && (
-                  <div className="pm-card__stats">
-                    <span>{project._count.chatSessions || 0} {t("project.sessions")}</span>
-                    <span>{project._count.userMcpConfigs || 0} {t("project.integrations")}</span>
-                  </div>
-                )}
-
                 <div className="pm-card__footer">
                   <button className="pm-btn pm-btn--prompt" onClick={() => handleEditPrompt(project)}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

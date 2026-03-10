@@ -22,13 +22,13 @@ const AdminStats = () => {
 
   // Authorization check
   useEffect(() => {
-    if (user && user.email !== 'enterprise@test.com') {
+    if (user && user.role !== 'ADMIN') {
       navigate('/dashboard', { replace: true });
     }
   }, [user, navigate]);
 
   useEffect(() => {
-    if (user?.email === 'enterprise@test.com') {
+    if (user?.role === 'ADMIN') {
       fetchData();
       fetchUsers();
     }

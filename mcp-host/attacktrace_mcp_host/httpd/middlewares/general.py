@@ -1,3 +1,4 @@
+import os
 from collections.abc import Callable
 from typing import TypedDict
 
@@ -52,9 +53,16 @@ class AttackTraceUser(TypedDict):
 
 
 async def default_state(request: Request, call_next: Callable) -> Response:
-    """Prefill default state."""
+    """Prefill default state.
+
+    user_id is read from the ATTACKTRACE_USER_ID environment variable which is
+    injected by the Electron main process after decoding the OAP JWT token.
+    This value is stable for the lifetime of the mcp-host process; the host is
+    restarted by the Electron main process whenever the logged-in user changes.
+    """
+    user_id: str | None = os.environ.get("ATTACKTRACE_USER_ID") or None
     request.state.dive_user = AttackTraceUser(
-        user_id=None,
+        user_id=user_id,
         user_name=None,
         user_type=None,
         token_spent=0,

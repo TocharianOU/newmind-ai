@@ -1,6 +1,6 @@
 {
   "header": {
-    "title": "AttackTrace",
+    "title": "{{appName}}",
     "openSidebar": "Open sidebar",
     "closeSidebar": "Close sidebar",
     "settings": "Settings"
@@ -29,7 +29,7 @@
     "retry": "Retry",
     "noModelAlert": "No models available",
     "noModelBanner": "No models available, please select a model first",
-    "onLimit": "You have reached the {{plan}} plan usage limit, AttackTrace models cannot be used",
+    "onLimit": "You have reached the {{plan}} plan usage limit, {{appName}} models cannot be used",
     "modelSettings": "Model Settings",
     "copy": "Copy",
     "copied": "Copied",
@@ -48,7 +48,7 @@
     }
   },
   "welcome": {
-    "title": "Welcome to AttackTrace",
+    "title": "Welcome to {{appName}}",
     "subtitle": "Start your security investigation",
     "startChat": "Start Chat"
   },
@@ -79,7 +79,7 @@
     "system": "System Settings",
     "manageAndSettings": "Settings",
     "integrationMarket": "Integration Market",
-    "New mindhub": "OAP Platform",
+    "New mindhub": "{{platformName}}",
     "signOut": "Sign Out",
     "accountSettings": "Account Settings",
     "chat": {
@@ -328,7 +328,7 @@
     "tab": {
       "all": "All Tools",
       "oap": "Integration Tools",
-      "AttackTrace": "AttackTrace Tools",
+      "AttackTrace": "{{appName}} Tools",
       "custom": "Custom Tools"
     },
     "oapStoreLinkAlt": "View Details",
@@ -340,7 +340,7 @@
       "cancel": "Cancel Changes",
       "save": "Save"
     },
-    "oauthAlert": "Please confirm that you trust this connector: this connector has not been verified by AttackTrace. You are responsible for all operations you perform with AttackTrace.",
+    "oauthAlert": "Please confirm that you trust this connector: this connector has not been verified by {{appName}}. You are responsible for all operations you perform with {{appName}}.",
     "reload": {
       "headerBtn": "Reload",
       "headerBtnAlt": "Reload and Update MCP Tools"
@@ -367,7 +367,7 @@
       "headerBtnAlt": "Add / View Security Integrations",
       "marketplace": "Browse Integrations",
       "marketplaceAlt": "Browse available integrations from the cloud",
-      "edit_managed_notice": "This integration is managed by OAP Platform. Configure the required settings below.",
+      "edit_managed_notice": "This integration is managed by {{platformName}}. Configure the required settings below.",
       "simplified_config": "Simplified Configuration"
     },
     "custom": {
@@ -512,24 +512,24 @@
     "title": "System Settings",
     "language": "System Language",
     "languageDefault": "System Default",
-    "languageDescription": "Language used to display the system interface. The language used in the model can be modified in the model settings page, this refers to the language displayed on the AttackTrace interface",
+    "languageDescription": "Language used to display the system interface. The language used in the model can be modified in the model settings page, this refers to the language displayed on the {{appName}} interface",
     "theme": "Dark Mode",
     "themeDescription": "Switch between system default and dark mode",
     "defaultInstructions": "speak in English",
     "autoDownload": "Auto Download Update",
-    "autoDownloadDescription": "Automatically download the new version of AttackTrace when the user restarts or clicks the \"Upgrade\" button on the menu page, the new version will be enabled",
+    "autoDownloadDescription": "Automatically download the new version of {{appName}} when the user restarts or clicks the \"Upgrade\" button on the menu page, the new version will be enabled",
     "autoLaunch": "Auto Launch",
-    "autoLaunchDescription": "Automatically start AttackTrace when the system starts",
+    "autoLaunchDescription": "Automatically start {{appName}} when the system starts",
     "minimalToTray": "Minimize to tray",
     "minimalToTrayDescription": "When closing the window, the program will minimize to the system tray instead of exiting completely",
-    "loginTitle": "AttackTrace Login",
-    "loginDescription": "Login to OAP Platform for team collaboration, shared investigation cases, and centralized security tool integrations",
+    "loginTitle": "{{appName}} Login",
+    "loginDescription": "Login to {{platformName}} for team collaboration, shared investigation cases, and centralized security tool integrations",
     "personalInformationTitle": "Personal Information",
-    "defaultSystemPrompt": "AttackTrace Default System Prompt",
-    "defaultSystemPromptDescription": "AttackTrace Default System Prompt is used as the default system prompt for chat. It tells the LLM that AttackTrace chat supports KaTeX / Markdown / Mermaid, etc. This feature consumes certain tokens, which may make the response slower than the prompt without a system prompt. On the other hand, if it is disabled, the quality of the LLM's response may decrease",
-    "usageAnalytics": "Go to the Dashboard page in OAP Platform to view",
+    "defaultSystemPrompt": "{{appName}} Default System Prompt",
+    "defaultSystemPromptDescription": "{{appName}} Default System Prompt is used as the default system prompt for chat. It tells the LLM that {{appName}} chat supports KaTeX / Markdown / Mermaid, etc. This feature consumes certain tokens, which may make the response slower than the prompt without a system prompt. On the other hand, if it is disabled, the quality of the LLM's response may decrease",
+    "usageAnalytics": "Go to the Dashboard page in {{platformName}} to view",
     "usageAnalyticsTitle": "Usage Analytics",
-    "userEdit": "Go to the Account page in OAP Platform to make changes",
+    "userEdit": "Go to the Account page in {{platformName}} to make changes",
     "planSectionTitle": "Current plan usage",
     "subscriptionDate": "Subscription date",
     "remainingUsage": "Remaining usage",
@@ -578,7 +578,7 @@
     "title1": "Custom Models",
     "description1": "Use your own LLM API keys (Claude, OpenAI, etc.) or locally deployed models",
     "button1": "Configure Model",
-    "title2": "OAP Platform",
+    "title2": "{{platformName}}",
     "description2": "Team collaboration platform for managing user permissions, sharing investigation cases, and centralizing security tool integrations",
     "button2": "Register",
     "button3": "Login"
@@ -590,7 +590,8 @@
     "tip": "If an error occurs during download, please close this window first and restart the application to re-download."
   },
   "deeplink": {
-    "mcpInstallConfirm": "Add stdio MCP Service - You will add MCP via the following command, please confirm:"
+    "mcpInstallConfirm": "Add stdio MCP Service - You will add MCP via the following command, please confirm:",
+    "mcpInstallInvalid": "Invalid MCP install link. The deeplink payload could not be parsed."
   },
   "memory": {
     "title": "Memory",

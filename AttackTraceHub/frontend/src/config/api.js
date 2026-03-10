@@ -25,18 +25,69 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor to handle errors
+// Response interceptor — try to refresh token on 401 before redirecting to login
+let isRefreshing = false;
+let failedQueue = [];
+
+function processQueue(error, token = null) {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) reject(error);
+    else resolve(token);
+  });
+  failedQueue = [];
+}
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    // 只在非登录/注册页面处理401错误（避免登录失败时页面刷新）
+  async (error) => {
     const isAuthPage = window.location.pathname === '/login' || window.location.pathname === '/register';
-    
-    if (error.response?.status === 401 && !isAuthPage) {
-      // Unauthorized - clear token and redirect to login (仅在已登录状态)
-      localStorage.removeItem('authToken');
-      window.location.href = '/login';
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !isAuthPage && !originalRequest._retry) {
+      const refreshToken = localStorage.getItem('refreshToken');
+
+      if (!refreshToken) {
+        localStorage.removeItem('authToken');
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const response = await api.post('/api/auth/refresh', { refreshToken });
+        const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+
+        localStorage.setItem('authToken', accessToken);
+        if (newRefreshToken) {
+          localStorage.setItem('refreshToken', newRefreshToken);
+        }
+
+        api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        processQueue(null, accessToken);
+        return api(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('refreshToken');
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
+
     return Promise.reject(error);
   }
 );

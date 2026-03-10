@@ -5,7 +5,10 @@ from contextlib import AsyncExitStack, contextmanager
 from enum import StrEnum
 from logging import getLogger
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from attacktrace_mcp_host.httpd.middlewares.general import AttackTraceUser
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
@@ -18,7 +21,7 @@ from attacktrace_mcp_host.host.conf.llm import LLMConfigTypes
 from attacktrace_mcp_host.host.errors import ThreadQueryError
 from attacktrace_mcp_host.host.host import AttackTraceMcpHost
 from attacktrace_mcp_host.host.tools.misc import TestTool
-from attacktrace_mcp_host.httpd.dependencies import get_app
+from attacktrace_mcp_host.httpd.dependencies import get_app, get_attacktrace_user
 from attacktrace_mcp_host.httpd.routers.utils import EventStreamContextManager
 from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 
@@ -414,6 +417,7 @@ def get_verify_subjects(llm_config: LLMConfigTypes) -> list[VERIFY_SUBJECTS]:
 @model_verify.post("")
 async def do_verify_model(
     app: AttackTraceHostAPI = Depends(get_app),
+    _user: "AttackTraceUser" = Depends(get_attacktrace_user),
     settings: ModelVerifyRequest | None = None,
 ) -> ModelVerifyResult:
     """Verify if a model supports streaming capabilities.
@@ -439,6 +443,7 @@ async def do_verify_model(
 async def verify_model(
     request: Request,
     app: AttackTraceHostAPI = Depends(get_app),
+    _user: "AttackTraceUser" = Depends(get_attacktrace_user),
     settings: dict[str, list[LLMConfigTypes]] | None = None,
 ) -> StreamingResponse:
     """Verify if a model supports streaming capabilities.

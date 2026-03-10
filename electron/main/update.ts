@@ -78,6 +78,11 @@ function startDownload(
   callback: (error: Error | null, info: ProgressInfo | null) => void,
   complete: (event: UpdateDownloadedEvent) => void,
 ) {
+  // Remove any previous listeners before adding new ones to avoid accumulation
+  autoUpdater.removeAllListeners("download-progress")
+  autoUpdater.removeAllListeners("error")
+  autoUpdater.removeAllListeners("update-downloaded")
+
   autoUpdater.on("download-progress", (info: ProgressInfo) => callback(null, info))
   autoUpdater.on("error", (error: Error) => callback(error, null))
   autoUpdater.on("update-downloaded", complete)

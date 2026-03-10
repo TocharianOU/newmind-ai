@@ -4,7 +4,6 @@ import { serviceStatus } from "./service"
 import { oapStore as store } from "./store"
 import EventEmitter from "node:events"
 import { OAP_ROOT_URL } from "../../shared/oap"
-import WebSocket from "ws"
 import { safeStorage } from "electron"
 
 /**
@@ -57,16 +56,6 @@ function isTokenExpiringSoon(token: string, bufferSeconds: number = 3600): boole
   console.log(`[Security] Token expires in ${expiresIn} seconds (${Math.floor(expiresIn / 60)} minutes)`)
   
   return expiresIn < bufferSeconds
-}
-
-export type WebsocketMessageType =
-  "user.account.subscription.update" |
-  "user.account.coupon.update" |
-  "user.settings.mcps.updated"
-
-export type WebsocketMessage = {
-  type: WebsocketMessageType
-  data: any
 }
 
 /**
@@ -125,6 +114,15 @@ export const getToken = (): string | undefined => {
   }
 
   return migrateLegacyToken()
+}
+
+/**
+ * Extract the OAP user ID from the stored JWT token without a network call.
+ */
+export const getUserId = (): string | undefined => {
+  const token = getToken()
+  if (!token) return undefined
+  return decodeJWT(token)?.userId || undefined
 }
 
 /**
@@ -213,80 +211,18 @@ export const setRefreshToken = (refreshToken: string): void => {
 class OAPClient {
   public loggedIn: boolean
   private eventEmitter = new EventEmitter()
-  socket: WebSocket | null = null
-  onReceiveWebSocketMessageCB: (message: WebsocketMessage) => void = () => {}
   private tokenCheckInterval: NodeJS.Timeout | null = null
 
   constructor() {
     const token = getToken()
     this.loggedIn = !!token
     if (token) {
-      this.openWebSocket(token)
       this.startTokenRefreshTimer()
     }
   }
 
-  onReceiveWebSocketMessage(cb: (message: any) => void) {
-    this.onReceiveWebSocketMessageCB = cb
-  }
-
   registEvent(event: "login" | "logout", callback: () => void) {
     this.eventEmitter.on(event, callback)
-  }
-
-  openWebSocket(token: string) {
-    try {
-      if (this.socket) {
-        this.closeWebSocket()
-      }
-
-      // Security: Force wss:// for production, allow ws:// only for localhost development
-      const isLocalhost = OAP_ROOT_URL.includes('localhost') || OAP_ROOT_URL.includes('127.0.0.1')
-      const wsProtocol = OAP_ROOT_URL.startsWith('https://') || !isLocalhost ? 'wss://' : 'ws://'
-      
-      if (wsProtocol === 'ws://' && !isLocalhost) {
-        console.error("[Security] Refusing to use unencrypted WebSocket for non-localhost connection")
-        throw new Error("Insecure WebSocket connection not allowed")
-      }
-      
-      const wsUrl = `${wsProtocol}${OAP_ROOT_URL.split("://")[1]}/api/v1/socket`
-      console.log(`[WebSocket] Connecting to ${wsUrl}`)
-      
-      this.socket = new WebSocket(wsUrl, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      this.socket.on("message", (message) => {
-        this.onReceiveWebSocketMessageCB(JSON.parse(message.toString()) as WebsocketMessage)
-      })
-
-      this.socket.on("open", () => {
-        console.log("oap socket connected")
-      })
-
-      this.socket.on("close", () => {
-        console.log("oap socket closed")
-      })
-
-      this.socket.on("error", (error) => {
-        console.error("oap socket error", error)
-      })
-    } catch (error) {
-      console.error("openWebSocket", error)
-    }
-  }
-
-  closeWebSocket() {
-    try {
-      if (this.socket) {
-        this.socket.close()
-        this.socket = null
-      }
-    } catch (error) {
-      console.error("closeWebSocket", error)
-    }
   }
 
   login(token: string, refreshToken?: string) {
@@ -296,7 +232,6 @@ class OAPClient {
     }
     this.loggedIn = true
     this.eventEmitter.emit("login")
-    this.openWebSocket(token)
     this.startTokenRefreshTimer()
   }
 
@@ -319,8 +254,6 @@ class OAPClient {
       },
     })
       .then((res) => console.log("oap logout", res.status))
-
-    this.closeWebSocket()
   }
 
   fetch<T>(url: string, options: RequestInit = {}) {
@@ -465,11 +398,7 @@ class OAPClient {
           setRefreshToken(data.data.refreshToken)
         }
         
-        // Reconnect WebSocket with new token
-        this.closeWebSocket()
-        this.openWebSocket(data.data.accessToken)
-        
-        console.log('[Security] Access token refreshed and WebSocket reconnected')
+        console.log('[Security] Access token refreshed')
       } else {
         throw new Error('Invalid refresh response')
       }

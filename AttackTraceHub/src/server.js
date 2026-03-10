@@ -4,7 +4,6 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
-import { WebSocketServer } from 'ws';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -30,26 +29,25 @@ import auditRoutes from './routes/audit.js';
 import vtProxyRoutes from './routes/vt-proxy.js';
 import shodanProxyRoutes from './routes/shodan-proxy.js';
 import abuseipdbProxyRoutes from './routes/abuseipdb-proxy.js';
-// import syncRoutes from './routes/sync.js';
+import syncRoutes from './routes/sync.js';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler.js';
-import { rateLimiter } from './middleware/rateLimiter.js';
+import { rateLimiter, authLimiter, paymentLimiter, syncLimiter } from './middleware/rateLimiter.js';
 
 // Import utilities
 import logger from './utils/logger.js';
 import { startSubscriptionExpirationCheck } from './utils/subscriptionExpiration.js';
 import { initializeSSOProviders } from './sso/index.js';
+import { prisma } from './config/database.js';
 
 // Create Express app
 const app = express();
 const server = createServer(app);
 
-// WebSocket server for /api/v1/socket
-const wss = new WebSocketServer({ 
-  server,
-  path: '/api/v1/socket'
-});
+// Trust the first proxy so that req.ip reflects the real client IP
+// from X-Forwarded-For when deployed behind Nginx / load balancer.
+app.set('trust proxy', 1);
 
 // CORS configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) || [
@@ -68,7 +66,7 @@ if (process.env.HUB_FRONTEND_URL) {
 // Middleware
 // Configure helmet for compatibility with Tor browser and modern frontend frameworks
 // Build CSP connectSrc list with custom URLs from environment variables
-const cspConnectSrc = ["'self'", "http://localhost:23000", "https:", "http:", "ws:", "wss:"];
+const cspConnectSrc = ["'self'", "http://localhost:23000", "https:", "http:"];
 
 // Add custom LM Studio URL if configured
 if (process.env.CUSTOM_LMSTUDIO_URL) {
@@ -128,76 +126,42 @@ app.use('/api/', rateLimiter);
 // Serve static files from integrations directory (for logos)
 app.use('/integrations', express.static(path.join(__dirname, '../integrations')));
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok',
-    service: 'OAP-Platform',
-    timestamp: new Date().toISOString()
-  });
+// Health check — also verifies DB connectivity
+app.get('/api/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({
+      status: 'ok',
+      service: 'OAP-Platform',
+      timestamp: new Date().toISOString(),
+      db: 'ok',
+    });
+  } catch {
+    res.status(503).json({
+      status: 'error',
+      service: 'OAP-Platform',
+      timestamp: new Date().toISOString(),
+      db: 'unreachable',
+    });
+  }
 });
 
-// API Routes - Re-enabled for authentication
-app.use('/api/auth', authRoutes);        // Dive expects this path for login
-app.use('/api/auth/sso', ssoRoutes);     // SSO authentication routes
+// API Routes — SSO must be registered before /api/auth to avoid matching authRoutes first
+app.use('/api/auth/sso', authLimiter, ssoRoutes);     // SSO authentication routes
+app.use('/api/auth', authLimiter, authRoutes);         // stricter limit on auth
+app.use('/api/v1/user/sync', syncLimiter, syncRoutes); // sync before /api/v1/user to avoid catch-all
 app.use('/api/v1/user', userRoutes);
 app.use('/api/v1', modelRoutes);
 app.use('/api/v1', proxyRoutes);
 app.use('/api/v1', mcpRoutes);
 app.use('/api/v1', llmRoutes);
 app.use('/api/v1/system-prompt', systemPromptRoutes);
-app.use('/api/v1/payment', paymentRoutes);
+app.use('/api/v1/payment', paymentLimiter, paymentRoutes); // stricter limit on payments
 app.use('/api/v1/projects', projectRoutes);
 app.use('/api/v1/audit', auditRoutes);
-app.use('/api/vt-proxy/v3', vtProxyRoutes);        // VirusTotal Hub proxy (Hub-managed key mode)
-app.use('/api/shodan-proxy/v1', shodanProxyRoutes);       // Shodan Hub proxy (Hub-managed key mode)
-app.use('/api/abuseipdb-proxy/v2', abuseipdbProxyRoutes); // AbuseIPDB Hub proxy (Hub-managed key mode)
-// app.use('/api/v1/sync', syncRoutes);     // Cloud sync endpoints (still disabled)
-
-// WebSocket handling
-wss.on('connection', (ws, req) => {
-  logger.info('WebSocket client connected');
-  
-  ws.on('message', (message) => {
-    try {
-      const data = JSON.parse(message);
-      logger.info('WebSocket message received:', data);
-      
-      // Handle different message types
-      switch(data.type) {
-        case 'ping':
-          ws.send(JSON.stringify({ type: 'pong' }));
-          break;
-        case 'subscribe':
-          // Handle subscription logic
-          ws.send(JSON.stringify({ 
-            type: 'subscribed',
-            channel: data.channel 
-          }));
-          break;
-        default:
-          ws.send(JSON.stringify({ 
-            type: 'error',
-            message: 'Unknown message type' 
-          }));
-      }
-    } catch (error) {
-      logger.error('WebSocket message error:', error);
-      ws.send(JSON.stringify({ 
-        type: 'error',
-        message: 'Invalid message format' 
-      }));
-    }
-  });
-  
-  ws.on('close', () => {
-    logger.info('WebSocket client disconnected');
-  });
-  
-  ws.on('error', (error) => {
-    logger.error('WebSocket error:', error);
-  });
-});
+app.use('/api/vt-proxy/v3', vtProxyRoutes);
+app.use('/api/shodan-proxy/v1', shodanProxyRoutes);
+app.use('/api/abuseipdb-proxy/v2', abuseipdbProxyRoutes);
 
 // Error handling middleware
 app.use(errorHandler);
@@ -220,7 +184,27 @@ server.listen(PORT, () => {
   logger.info(`🚀 OAP Platform server running on port ${PORT}`);
   logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
   logger.info(`🌐 CORS origins: ${allowedOrigins.join(',')}`);
-  
-  // 启动订阅过期检查定时任务
   startSubscriptionExpirationCheck();
 });
+
+// Graceful shutdown — close DB connections before exiting
+async function shutdown(signal) {
+  logger.info(`[Shutdown] Received ${signal}, closing server…`);
+  server.close(async () => {
+    try {
+      await prisma.$disconnect();
+      logger.info('[Shutdown] Database connection closed. Bye.');
+    } catch (err) {
+      logger.error('[Shutdown] Error disconnecting from DB:', err);
+    }
+    process.exit(0);
+  });
+  // Force exit if graceful close takes too long
+  setTimeout(() => {
+    logger.error('[Shutdown] Timeout — forcing exit.');
+    process.exit(1);
+  }, 10_000);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));

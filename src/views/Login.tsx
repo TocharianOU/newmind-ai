@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import "@/styles/pages/_Login.scss"
+import { ENV_CONFIG } from "../config/env"
 import { openOapLoginPage, oapLoginWithToken, oapGetOAuthConfig, oapLoginWithOAuth } from "../ipc/oap"
 import Button from "../components/Button"
 import EmbeddedLogin from "../components/EmbeddedLogin"
@@ -26,7 +27,7 @@ const Login = () => {
     const fetchOAuthConfig = async () => {
       try {
         const response = await oapGetOAuthConfig()
-        if (response.success && response.data) {
+        if (response.status === "success" && response.data) {
           setOAuthConfig(response.data)
           console.log('OAuth config loaded:', response.data)
         }
@@ -80,7 +81,7 @@ const Login = () => {
     <>
       <div className="login-page-container">
         <div className="header">
-          <h1 className="main-title">AttackTrace</h1>
+          <h1 className="main-title">{ENV_CONFIG.APP_NAME}</h1>
           <p className="subtitle">
             {t("login.subtitle")}
           </p>

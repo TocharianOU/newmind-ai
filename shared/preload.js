@@ -86,6 +86,8 @@ const { appendLoading, removeLoading } = loading()
 domReady().then(appendLoading)
 
 window.onmessage = (ev) => {
+  // Only accept messages from the same origin to prevent spoofing
+  if (ev.origin && ev.origin !== window.location.origin) return
   ev.data.payload === "removeLoading" && removeLoading()
 }
 

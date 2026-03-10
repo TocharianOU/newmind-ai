@@ -1,10 +1,13 @@
 """AttackTrace MCP Host CLI."""
 
 import argparse
+from logging import getLogger
 from pathlib import Path
 
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import StrOutputParser
+
+logger = getLogger(__name__)
 
 from attacktrace_mcp_host.cli.cli_types import CLIArgs
 from attacktrace_mcp_host.host.conf import HostConfig
@@ -70,22 +73,20 @@ async def run() -> None:
 
     output_parser = StrOutputParser()
     async with AttackTraceMcpHost(config) as mcp_host:
-        print("Waiting for tools to initialize...")
+        logger.info("Waiting for tools to initialize...")
         await mcp_host.tools_initialized_event.wait()
-        print("Tools initialized")
+        logger.info("Tools initialized")
         chat = mcp_host.chat(chat_id=current_chat_id, system_prompt=system_prompt)
         current_chat_id = chat.chat_id
         async with chat:
             async for response in chat.query(query, stream_mode="messages"):
-                assert isinstance(response, tuple)
+                if not isinstance(response, tuple):
+                    raise TypeError(f"Expected tuple response, got {type(response)}")
                 msg = response[0]
                 if isinstance(msg, AIMessage):
                     content = output_parser.invoke(msg)
-                    print(content, end="")
+                    print(content, end="")  # intentional: stream AI response to stdout
                     continue
-                print(f"\n\n==== Start Of {type(msg)} ===")
-                print(msg)
-                print(f"==== End Of {type(msg)} ===\n")
+                logger.debug("Non-AI message | type=%s | content=%s", type(msg).__name__, msg)
 
-    print()
-    print(f"Chat ID: {current_chat_id}")
+    logger.info("Chat ID: %s", current_chat_id)

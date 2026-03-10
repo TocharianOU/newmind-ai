@@ -1,12 +1,13 @@
 import { BrowserWindow, dialog, nativeImage, clipboard, shell } from "electron"
 import fse from "fs-extra"
 import path from "node:path"
-import { configDir, scriptsDir } from "../constant"
+import { configDir, scriptsDir, appDir } from "../constant"
 import { CancelError, download } from "electron-dl"
 import { ModelGroupSetting } from "../../../types/model"
 import { refreshConfig } from "../deeplink"
 import { getInstallHostDependenciesLog, restartHost } from "../service"
 import { safeRegisterHandler } from "../utils/ipcRegistry"
+import { runSync, isSyncEnabled, setSyncEnabled, getLastSyncAt } from "../syncService"
 
 export function ipcUtilHandler(win: BrowserWindow) {
   safeRegisterHandler("util:fillPathToConfig", async (_, _config: string) => {
@@ -104,9 +105,21 @@ export function ipcUtilHandler(win: BrowserWindow) {
     }
 
     const localProtocol = "local-file:///"
-    const image = url.startsWith(localProtocol)
-      ? nativeImage.createFromPath(url.substring(localProtocol.length))
-      : await getImageFromRemote(url)
+    let image
+    if (url.startsWith(localProtocol)) {
+      const rawPath = url.substring(localProtocol.length)
+      const resolved = path.resolve(rawPath)
+      // Restrict to user's home .attacktrace dir and temp dir
+      const allowedRoots = [path.resolve(appDir), path.resolve(require("os").tmpdir())]
+      const allowed = allowedRoots.some(root => resolved === root || resolved.startsWith(root + path.sep))
+      if (!allowed) {
+        console.warn(`[IPC] util:copyimage blocked path: ${resolved}`)
+        return
+      }
+      image = nativeImage.createFromPath(resolved)
+    } else {
+      image = await getImageFromRemote(url)
+    }
 
     clipboard.writeImage(image)
   })
@@ -150,32 +163,57 @@ export function ipcUtilHandler(win: BrowserWindow) {
   })
 
   safeRegisterHandler("open-external-url", async (_, url: string) => {
-    console.log('🔗 Opening external URL:', url);
-    shell.openExternal(url);
+    // Only allow http/https to prevent file://, javascript:, and other dangerous schemes
+    if (typeof url === "string" && (url.startsWith("https://") || url.startsWith("http://"))) {
+      await shell.openExternal(url)
+    }
   })
 
   safeRegisterHandler("util:readLocalLogo", async (_, logoPath: string) => {
     try {
-      if (!fse.existsSync(logoPath)) {
-        console.warn(`Logo file not found: ${logoPath}`)
+      if (typeof logoPath !== "string") return null
+
+      // Resolve to an absolute path and verify it stays within allowed directories
+      const resolved = path.resolve(logoPath)
+      const allowedRoots = [configDir, scriptsDir, appDir]
+      const isAllowed = allowedRoots.some(root => resolved.startsWith(path.resolve(root) + path.sep) || resolved === path.resolve(root))
+      if (!isAllowed) {
+        console.warn(`[Security] readLocalLogo: path outside allowed dirs: ${resolved}`)
         return null
       }
 
-      const fileBuffer = await fse.readFile(logoPath)
-      const ext = path.extname(logoPath).toLowerCase()
-      
-      // Determine MIME type
+      if (!fse.existsSync(resolved)) {
+        return null
+      }
+
+      const fileBuffer = await fse.readFile(resolved)
+      const ext = path.extname(resolved).toLowerCase()
+
       let mimeType = 'image/svg+xml'
       if (ext === '.png') mimeType = 'image/png'
       else if (ext === '.jpg' || ext === '.jpeg') mimeType = 'image/jpeg'
-      
-      // Convert to base64 data URL
+
       const base64 = fileBuffer.toString('base64')
       return `data:${mimeType};base64,${base64}`
     } catch (error) {
-      console.error(`Error reading logo file ${logoPath}:`, error)
+      console.error(`Error reading logo file:`, error)
       return null
     }
+  })
+
+  // ── Sync handlers ──────────────────────────────────────────────────────
+  safeRegisterHandler("sync:getStatus", async () => ({
+    enabled: isSyncEnabled(),
+    lastSyncAt: getLastSyncAt(),
+  }))
+
+  safeRegisterHandler("sync:setEnabled", async (_, enabled: boolean) => {
+    setSyncEnabled(enabled)
+    return { success: true }
+  })
+
+  safeRegisterHandler("sync:run", async () => {
+    return runSync()
   })
 }
 

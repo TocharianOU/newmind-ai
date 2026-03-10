@@ -148,6 +148,7 @@ const System = () => {
             </div>
             <span className="system-list-description">{t("system.defaultSystemPromptDescription")}</span>
           </div>
+
         </div>
       </div>
     </div>

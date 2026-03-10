@@ -227,7 +227,7 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
         
         // Initialize config data from schema defaults
         const initialConfig: [string, unknown, boolean][] = []
-        const properties = tool.configSchema.properties || {}
+        const properties = (tool.configSchema?.properties as Record<string, any>) || {}
         Object.entries(properties).forEach(([key, prop]: [string, any]) => {
           initialConfig.push([key, prop.default || "", false])
         })
@@ -400,8 +400,8 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
       
       // Remove undefined values
       Object.keys(requestBody).forEach(key => {
-        if (requestBody[key] === undefined) {
-          delete requestBody[key]
+        if ((requestBody as Record<string, unknown>)[key] === undefined) {
+          delete (requestBody as Record<string, unknown>)[key]
         }
       })
       
@@ -975,7 +975,7 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
           ? undefined
           : undefined
       }
-      footerType={viewMode === "browse" || viewMode === "installing" ? "right" : undefined}
+      footerType={viewMode === "browse" || viewMode === "installing" ? "flex-end" : undefined}
     >
       <div className="tool-edit-popup-header">
         <Button className="header-close" size="round" border="none" onClick={onClose}>

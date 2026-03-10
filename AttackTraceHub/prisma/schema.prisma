@@ -8,9 +8,9 @@ datasource db {
 }
 
 model AuditLog {
-  id           String   @id
-  projectId    String
-  userId       String
+  id           String   @id @default(cuid())
+  projectId    String?
+  userId       String?
   action       String
   resourceType String
   resourceId   String?
@@ -18,8 +18,8 @@ model AuditLog {
   ipAddress    String?  @db.VarChar(50)
   userAgent    String?  @db.VarChar(500)
   createdAt    DateTime @default(now())
-  Project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Project      Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  User         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([action])
   @@index([projectId, createdAt])
@@ -112,6 +112,7 @@ model Message {
 
   @@index([chatSessionId, createdAt])
   @@index([userId, createdAt])
+  @@unique([userId, messageId])
 }
 
 model ModelDescription {
@@ -230,6 +231,19 @@ model UsageRecord {
   @@index([userId, modelName])
 }
 
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique @db.VarChar(500)
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
 model User {
   id                  String                @id
   email               String                @unique
@@ -237,6 +251,7 @@ model User {
   password            String?
   picture             String?               @db.VarChar(500)
   team                String?
+  role                UserRole              @default(USER)
   tokenBalance        Int                   @default(0)
   createdAt           DateTime              @default(now())
   updatedAt           DateTime
@@ -244,6 +259,7 @@ model User {
   AuthIdentity        AuthIdentity[]
   ChatSession         ChatSession[]
   Message             Message[]
+  PasswordReset       PasswordReset[]
   Project             Project[]
   RefreshToken        RefreshToken[]
   Subscription        Subscription?
@@ -274,6 +290,11 @@ enum MessageRole {
   assistant
   tool_call
   tool_result
+}
+
+enum UserRole {
+  USER
+  ADMIN
 }
 
 enum PaymentStatus {

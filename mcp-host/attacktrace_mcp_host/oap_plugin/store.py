@@ -1,4 +1,5 @@
 import mimetypes
+import os
 import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager, suppress
@@ -13,6 +14,31 @@ from attacktrace_mcp_host.host.store.base import StoreProtocol
 from attacktrace_mcp_host.oap_plugin.models import TokenNotSetError
 
 logger = getLogger(__name__)
+
+# Directories that string-path uploads are allowed to read from.
+# We limit to the user's own .attacktrace directory and the system temp dir.
+def _allowed_upload_roots() -> list[Path]:
+    home = Path.home()
+    return [
+        home / ".attacktrace",
+        Path(os.environ.get("TMPDIR", "/tmp")),
+    ]
+
+
+def _is_path_allowed(p: Path) -> bool:
+    """Return True only if the resolved path is inside an allowed upload root."""
+    try:
+        resolved = p.resolve()
+    except Exception:
+        return False
+    for root in _allowed_upload_roots():
+        try:
+            resolved_root = root.resolve()
+            if resolved == resolved_root or str(resolved).startswith(str(resolved_root) + os.sep):
+                return True
+        except Exception:
+            continue
+    return False
 
 
 class UploadFileResponse(BaseModel):
@@ -64,6 +90,10 @@ class OAPStore(StoreProtocol):
             path = Path(file)
             if not path.exists():
                 logger.warning("File does not exist: %s", path)
+                return None
+
+            if not _is_path_allowed(path):
+                logger.warning("[Security] save_file blocked path outside allowed roots: %s", path)
                 return None
 
             guess_content_type = mimetypes.guess_type(path)[0]

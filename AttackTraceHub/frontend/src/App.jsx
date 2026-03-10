@@ -2,10 +2,13 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { FeatureFlagsProvider, useFeatureFlags } from './contexts/FeatureFlagsContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import Billing from './pages/Billing';
@@ -59,6 +62,8 @@ const PublicRoute = ({ children }) => {
 };
 
 function AppRoutes() {
+  const { billingEnabled } = useFeatureFlags();
+
   return (
     <Routes>
       {/* Home/Landing Page */}
@@ -81,6 +86,8 @@ function AppRoutes() {
           </PublicRoute>
         }
       />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password"  element={<ResetPassword />} />
 
       {/* Protected Routes */}
       <Route
@@ -106,11 +113,15 @@ function AppRoutes() {
       <Route
         path="/billing"
         element={
-          <ProtectedRoute>
-            <Layout>
-              <Billing />
-            </Layout>
-          </ProtectedRoute>
+          billingEnabled ? (
+            <ProtectedRoute>
+              <Layout>
+                <Billing />
+              </Layout>
+            </ProtectedRoute>
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
         }
       />
       <Route
@@ -143,9 +154,11 @@ function App() {
     <BrowserRouter>
       <LanguageProvider>
         <ThemeProvider>
-          <AuthProvider>
-            <AppRoutes />
-          </AuthProvider>
+          <FeatureFlagsProvider>
+            <AuthProvider>
+              <AppRoutes />
+            </AuthProvider>
+          </FeatureFlagsProvider>
         </ThemeProvider>
       </LanguageProvider>
     </BrowserRouter>

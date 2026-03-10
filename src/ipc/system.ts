@@ -33,3 +33,23 @@ export async function setIPCMinimalToTray(setting: boolean) {
 
   return invoke("system_set_minimize_to_tray", { enable: setting })
 }
+
+export async function getSyncStatus(): Promise<{ enabled: boolean; lastSyncAt: string }> {
+  if (isElectron) {
+    return window.ipcRenderer.syncGetStatus()
+  }
+  return { enabled: false, lastSyncAt: "" }
+}
+
+export async function setSyncEnabled(enabled: boolean): Promise<void> {
+  if (isElectron) {
+    await window.ipcRenderer.syncSetEnabled(enabled)
+  }
+}
+
+export async function runSync(): Promise<{ success: boolean; pushed: number; pulled: number; error?: string }> {
+  if (isElectron) {
+    return window.ipcRenderer.syncRun()
+  }
+  return { success: false, pushed: 0, pulled: 0, error: "Not supported" }
+}

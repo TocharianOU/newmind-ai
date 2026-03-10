@@ -12,6 +12,7 @@ from attacktrace_mcp_host.httpd.routers.config import config
 from attacktrace_mcp_host.httpd.routers.memory import router as memory_router
 from attacktrace_mcp_host.httpd.routers.model_verify import model_verify
 from attacktrace_mcp_host.httpd.routers.openai import openai
+from attacktrace_mcp_host.httpd.routers.sync import sync
 from attacktrace_mcp_host.httpd.routers.tools import tools
 from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
 
@@ -44,7 +45,11 @@ def create_app(
     app.add_exception_handler(Exception, error_handler)
 
     service_setting = service_config_manager.current_setting
-    cors_origin = service_setting.cors_origin if service_setting and service_setting.cors_origin else "*"
+    cors_origin = (
+        service_setting.cors_origin
+        if service_setting and service_setting.cors_origin
+        else "http://localhost"
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[cors_origin],
@@ -66,8 +71,6 @@ def create_app(
     app.include_router(config, prefix="/api/config")
     app.include_router(model_verify, prefix="/model_verify")
     app.include_router(memory_router)  # Memory management routes
-
-    # remote endpoints
-    app.include_router(chat, prefix="/api/v1/mcp")
+    app.include_router(sync, prefix="/api/sync")
 
     return app

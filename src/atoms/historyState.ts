@@ -19,6 +19,13 @@ export const historiesAtom = atom<ChatHistory>({
   normal: []
 })
 
+export const clearHistoriesAtom = atom(
+  null,
+  (_get, set) => {
+    set(historiesAtom, { starred: [], normal: [] })
+  }
+)
+
 export const loadHistoriesAtom = atom(
   null,
   async (get, set) => {

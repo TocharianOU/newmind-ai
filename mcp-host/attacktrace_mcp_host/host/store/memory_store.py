@@ -78,12 +78,14 @@ class LongTermMemoryStore:
         self,
         user_id: str,
         entity: Entity,
+        db_session: AsyncSession | None = None,
     ) -> None:
         """Save an entity to long-term memory and database.
 
         Args:
             user_id: User ID.
             entity: Entity to save.
+            db_session: Optional per-request session. Falls back to self._db_session.
         """
         namespace = self._get_namespace(user_id, entity.entity_type)
         entity.updated_at = datetime.now(UTC)
@@ -94,11 +96,11 @@ class LongTermMemoryStore:
             key=entity.name,
             value=entity.model_dump(mode="json"),
         )
-        
-        # Also save to database if available
-        if self._db_session:
-            await self._save_to_database(user_id, entity)
-        
+
+        session = db_session or self._db_session
+        if session:
+            await self._save_to_database(user_id, entity, session)
+
         logger.debug(
             f"Saved entity: {entity.name} (type: {entity.entity_type}) for user {user_id}"
         )
@@ -219,6 +221,7 @@ class LongTermMemoryStore:
         entity_type: EntityType,
         entity_name: str,
         updates: dict[str, Any],
+        db_session: AsyncSession | None = None,
     ) -> Entity | None:
         """Update an existing entity.
 
@@ -227,6 +230,7 @@ class LongTermMemoryStore:
             entity_type: Entity type.
             entity_name: Entity name.
             updates: Dictionary of fields to update.
+            db_session: Optional per-request session. Falls back to self._db_session.
 
         Returns:
             Updated entity if found, None otherwise.
@@ -235,13 +239,12 @@ class LongTermMemoryStore:
         if not entity:
             return None
 
-        # Update fields
         for key, value in updates.items():
             if hasattr(entity, key):
                 setattr(entity, key, value)
 
         entity.updated_at = datetime.now(UTC)
-        await self.save_entity(user_id, entity)
+        await self.save_entity(user_id, entity, db_session=db_session)
         return entity
 
     async def delete_entity(
@@ -249,6 +252,7 @@ class LongTermMemoryStore:
         user_id: str,
         entity_type: EntityType,
         entity_name: str,
+        db_session: AsyncSession | None = None,
     ) -> bool:
         """Delete an entity from long-term memory.
 
@@ -256,6 +260,7 @@ class LongTermMemoryStore:
             user_id: User ID.
             entity_type: Entity type.
             entity_name: Entity name.
+            db_session: Optional per-request session. Falls back to self._db_session.
 
         Returns:
             True if deleted, False if not found.
@@ -268,34 +273,40 @@ class LongTermMemoryStore:
                 f"Deleted entity: {entity_name} (type: {entity_type}) for user {user_id} from in-memory store"
             )
 
-            # Also delete from database if available
-            if self._db_session:
-                await self._delete_from_database(user_id, entity_type, entity_name)
+            session = db_session or self._db_session
+            if session:
+                await self._delete_from_database(user_id, entity_type, entity_name, session)
 
             return True
         except Exception as e:
             logger.error(f"Failed to delete entity {entity_name}: {e}")
             return False
 
-    async def delete_all_entities(self, user_id: str) -> int:
+    async def delete_all_entities(
+        self,
+        user_id: str,
+        db_session: AsyncSession | None = None,
+    ) -> int:
         """Delete all entities for a user.
 
         Args:
             user_id: User ID.
+            db_session: Optional per-request session. Falls back to self._db_session.
 
         Returns:
             Number of entities deleted.
         """
+        session = db_session or self._db_session
         count = 0
         for entity_type in EntityType:
             entities = await self.get_entities(user_id, entity_type)
             for entity in entities:
-                if await self.delete_entity(user_id, entity_type, entity.name):
+                if await self.delete_entity(user_id, entity_type, entity.name, db_session=session):
                     count += 1
 
         # Bulk delete from database as well (faster than per-entity)
-        if self._db_session:
-            await self._delete_all_from_database(user_id)
+        if session:
+            await self._delete_all_from_database(user_id, session)
 
         logger.info(f"Deleted {count} entities for user {user_id}")
         return count
@@ -321,37 +332,35 @@ class LongTermMemoryStore:
         stats["total"] = total
         return stats
     
-    async def _save_to_database(self, user_id: str, entity: Entity) -> None:
+    async def _save_to_database(
+        self, user_id: str, entity: Entity, db_session: AsyncSession
+    ) -> None:
         """Save entity to database.
-        
+
         Args:
             user_id: User ID.
             entity: Entity to save.
+            db_session: Database session to use.
         """
-        if not self._db_session:
-            return
-            
         try:
             from attacktrace_mcp_host.httpd.database.orm_models import LongTermMemory
-            
+
             # Check if entity already exists
             stmt = select(LongTermMemory).where(
                 LongTermMemory.user_id == user_id,
                 LongTermMemory.entity_name == entity.name,
                 LongTermMemory.entity_type == entity.entity_type.value,
             )
-            result = await self._db_session.execute(stmt)
+            result = await db_session.execute(stmt)
             existing = result.scalar_one_or_none()
-            
+
             if existing:
-                # Update existing
                 existing.content = entity.content
                 existing.entity_metadata = entity.metadata
                 existing.relevance = entity.relevance
                 existing.source_chat_id = entity.source_chat_id
                 existing.updated_at = entity.updated_at
             else:
-                # Create new
                 memory = LongTermMemory(
                     user_id=user_id,
                     entity_type=entity.entity_type.value,
@@ -363,27 +372,29 @@ class LongTermMemoryStore:
                     created_at=entity.created_at,
                     updated_at=entity.updated_at,
                 )
-                self._db_session.add(memory)
-            
-            await self._db_session.commit()
+                db_session.add(memory)
+
+            await db_session.commit()
             logger.debug(f"Saved entity {entity.name} to database")
         except Exception as e:
             logger.error(f"Failed to save entity {entity.name} to database: {e}")
-            if self._db_session:
-                await self._db_session.rollback()
-    
+            await db_session.rollback()
+
     async def _delete_from_database(
-        self, user_id: str, entity_type: EntityType, entity_name: str
+        self,
+        user_id: str,
+        entity_type: EntityType,
+        entity_name: str,
+        db_session: AsyncSession,
     ) -> None:
         """Delete a single entity from database.
-        
+
         Args:
             user_id: User ID.
             entity_type: Entity type.
             entity_name: Entity name.
+            db_session: Database session to use.
         """
-        if not self._db_session:
-            return
         try:
             from attacktrace_mcp_host.httpd.database.orm_models import LongTermMemory
 
@@ -392,8 +403,8 @@ class LongTermMemoryStore:
                 LongTermMemory.entity_type == entity_type.value,
                 LongTermMemory.entity_name == entity_name,
             )
-            await self._db_session.execute(stmt)
-            await self._db_session.commit()
+            await db_session.execute(stmt)
+            await db_session.commit()
             logger.debug(
                 f"Deleted entity {entity_name} (type: {entity_type}) for user {user_id} from database"
             )
@@ -401,42 +412,44 @@ class LongTermMemoryStore:
             logger.error(
                 f"Failed to delete entity {entity_name} (type: {entity_type}) from database: {e}"
             )
-            if self._db_session:
-                await self._db_session.rollback()
-    
-    async def _delete_all_from_database(self, user_id: str) -> None:
+            await db_session.rollback()
+
+    async def _delete_all_from_database(
+        self, user_id: str, db_session: AsyncSession
+    ) -> None:
         """Delete all entities for a user from database."""
-        if not self._db_session:
-            return
         try:
             from attacktrace_mcp_host.httpd.database.orm_models import LongTermMemory
 
             stmt = sqla_delete(LongTermMemory).where(LongTermMemory.user_id == user_id)
-            await self._db_session.execute(stmt)
-            await self._db_session.commit()
+            await db_session.execute(stmt)
+            await db_session.commit()
             logger.debug(f"Deleted all entities for user {user_id} from database")
         except Exception as e:
             logger.error(f"Failed to delete all entities for user {user_id} from database: {e}")
-            if self._db_session:
-                await self._db_session.rollback()
-    
-    async def load_from_database(self, user_id: str) -> int:
+            await db_session.rollback()
+
+    async def load_from_database(
+        self, user_id: str, db_session: AsyncSession | None = None
+    ) -> int:
         """Load all entities for a user from database into memory store.
-        
+
         Args:
             user_id: User ID.
-            
+            db_session: Optional per-request session. Falls back to self._db_session.
+
         Returns:
             Number of entities loaded.
         """
-        if not self._db_session:
+        session = db_session or self._db_session
+        if not session:
             return 0
-            
+
         try:
             from attacktrace_mcp_host.httpd.database.orm_models import LongTermMemory
-            
+
             stmt = select(LongTermMemory).where(LongTermMemory.user_id == user_id)
-            result = await self._db_session.execute(stmt)
+            result = await session.execute(stmt)
             memories = result.scalars().all()
             
             count = 0

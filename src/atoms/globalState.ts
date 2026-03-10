@@ -1,5 +1,5 @@
 import { atom } from "jotai"
-import { Tab } from "../views/Overlay/Setting"
+import { Tab } from "../views/Drawer/Settings"
 
 export const newVersionAtom = atom<string | null>(null)
 

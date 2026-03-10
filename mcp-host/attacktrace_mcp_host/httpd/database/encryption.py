@@ -17,9 +17,13 @@ import sys
 from logging import getLogger
 from typing import Optional
 
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 
 logger = getLogger(__name__)
+
+# Fernet tokens always start with this prefix (URL-safe base64 of version byte).
+# Used to distinguish encrypted values from legacy plaintext during decryption.
+_FERNET_TOKEN_PREFIX = "gAAAAA"
 
 # Service name for keychain storage
 KEYCHAIN_SERVICE = "com.attacktrace.database"
@@ -54,10 +58,19 @@ class DatabaseEncryption:
         if not key:
             # Generate new Fernet key (32 url-safe base64 bytes)
             key = Fernet.generate_key().decode('utf-8')
-            self._store_key_in_keychain(key)
-            logger.info(f"[Encryption] Generated new encryption key for project '{self.project_id}'")
+            stored = self._store_key_in_keychain(key)
+            if not stored:
+                # Keychain write failed — continuing with an in-memory-only key means
+                # all encrypted data will be unreadable after process restart.  Raise
+                # immediately so the caller can handle the failure (e.g. abort startup).
+                raise RuntimeError(
+                    f"[Encryption] Failed to persist encryption key for project "
+                    f"'{self.project_id}' in the system keychain. "
+                    "Aborting to prevent silent data loss on next restart."
+                )
+            logger.info("[Encryption] Generated and stored new encryption key for project '%s'", self.project_id)
         else:
-            logger.info(f"[Encryption] Retrieved encryption key for project '{self.project_id}'")
+            logger.info("[Encryption] Retrieved encryption key for project '%s'", self.project_id)
 
         self._cached_fernet = Fernet(key.encode('utf-8'))
         return self._cached_fernet
@@ -90,14 +103,31 @@ class DatabaseEncryption:
         if not ciphertext:
             return ciphertext
         
+        # Detect legacy unencrypted rows: if the value does not look like a
+        # Fernet token (does not start with the known prefix), treat it as
+        # plaintext from before encryption was introduced and return as-is.
+        if not ciphertext.startswith(_FERNET_TOKEN_PREFIX):
+            logger.debug("[Encryption] Value for project '%s' appears to be unencrypted (legacy row), returning as-is.", self.project_id)
+            return ciphertext
+
         try:
             fernet = self.get_fernet()
             decrypted_bytes = fernet.decrypt(ciphertext.encode('utf-8'))
             return decrypted_bytes.decode('utf-8')
+        except InvalidToken:
+            # The value looks like a Fernet token but could not be decrypted.
+            # This indicates either a wrong key (key rotation without re-encryption)
+            # or data tampering.  Return a sentinel so callers can handle it
+            # rather than silently returning the raw ciphertext as content.
+            logger.error(
+                "[Encryption] InvalidToken for project '%s': decryption failed. "
+                "The encryption key may have changed or the data may be corrupt.",
+                self.project_id,
+            )
+            return ""
         except Exception as e:
-            logger.error(f"[Encryption] Failed to decrypt value: {e}")
-            # Return original value if decryption fails (for backward compatibility)
-            return ciphertext
+            logger.error("[Encryption] Unexpected decryption error for project '%s': %s", self.project_id, e)
+            return ""
 
     def _get_key_from_keychain(self) -> Optional[str]:
         """Retrieve encryption key from system keychain.
@@ -255,21 +285,26 @@ class DatabaseEncryption:
             return False
 
 
-# Global encryption manager instance (initialized per project)
+# Global encryption manager instances (initialized per project).
+# dict.setdefault is atomic for CPython's GIL and safe in asyncio contexts.
 _encryption_managers: dict[str, DatabaseEncryption] = {}
 
 
 def get_encryption_manager(project_id: str = "default") -> DatabaseEncryption:
     """Get or create encryption manager for a project.
-    
+
     Args:
         project_id: Project identifier
-        
+
     Returns:
         DatabaseEncryption instance
     """
+    # setdefault is effectively atomic under CPython's GIL: if two coroutines
+    # race here, both construct a DatabaseEncryption but only one is stored.
+    # The loser's instance is discarded before it has ever called get_fernet(),
+    # so no double key-store operation occurs.
     if project_id not in _encryption_managers:
-        _encryption_managers[project_id] = DatabaseEncryption(project_id)
+        _encryption_managers.setdefault(project_id, DatabaseEncryption(project_id))
     return _encryption_managers[project_id]
 
 

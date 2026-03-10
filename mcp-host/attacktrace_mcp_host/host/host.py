@@ -54,7 +54,7 @@ class AttackTraceMcpHost(ContextProtocol):
                         chat_id = chat.chat_id
                         break
                     async for response in await chat.query(query):
-                        print(response)
+                        logger.debug("%s", response)
         ...
         # Resume chat
         async with AttackTraceMcpHost(config) as host:

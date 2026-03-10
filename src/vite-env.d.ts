@@ -57,7 +57,26 @@ declare global {
       restartHost: () => Promise<{ success: boolean; port?: number; error?: string }>
       onReceiveInstallHostDependenciesLog: (callback: (data: string) => void) => () => void
       getInstallHostDependenciesLog: () => Promise<string[]>
-      
+      readLocalLogo: (logoPath: string) => Promise<string | null>
+
+      // Sync
+      syncGetStatus: () => Promise<{ enabled: boolean; lastSyncAt: string }>
+      syncSetEnabled: (enabled: boolean) => Promise<{ success: boolean }>
+      syncRun: () => Promise<{ success: boolean; pushed: number; pulled: number; error?: string }>
+      onReceiveSyncCompleted: (callback: (result: { success: boolean; pushed: number; pulled: number }) => void) => () => void
+
+      // Project
+      getCurrentProject: () => Promise<string>
+      setCurrentProject: (projectId: string) => Promise<{ success: boolean; projectId: string }>
+      projectList: (hubUrl?: string) => Promise<Array<{ id: string; name: string; description?: string }>>
+      projectCreate: (data: { name: string; description?: string }, hubUrl?: string) => Promise<{ id: string; name: string }>
+      projectUpdate: (projectId: string, data: { name?: string; description?: string }, hubUrl?: string) => Promise<{ id: string; name: string }>
+      projectDelete: (projectId: string, hubUrl?: string) => Promise<{ success: boolean }>
+
+      // OAP OAuth
+      oapGetOAuthConfig: () => Promise<ApiResponse<{ oauthEnabled: boolean; brandText: string; providers: Array<{ name: string; displayName: string }> }>>
+      oapLoginWithOAuth: (provider: string) => Promise<{ success: boolean }>
+
       // Keychain
       keychainSetPassword: (service: string, account: string, password: string) => Promise<{ success: boolean; error?: string }>
       keychainGetPassword: (service: string, account: string) => Promise<{ success: boolean; password?: string; error?: string }>
@@ -68,6 +87,7 @@ declare global {
         error?: string 
       }>
       keychainIsAvailable: () => Promise<{ success: boolean; available: boolean }>
+      keychainOnDecryptFailed: (cb: (service: string, account: string) => void) => () => void
     }
 
     PLATFORM: "darwin" | "win32" | "linux"

@@ -6,6 +6,9 @@ import { invoke } from "@tauri-apps/api/core"
 import { listen } from "@tauri-apps/api/event"
 import { setOapHost } from "./oap"
 
+let electronHostPort = 0
+let electronPortListenerRegistered = false
+
 async function waitHostBus(): Promise<number> {
   const home = await path.homeDir()
   const appDir = await path.join(home, ".attacktrace")
@@ -55,16 +58,31 @@ async function waitHostBus(): Promise<number> {
   })
 }
 
+const GET_PORT_TIMEOUT_MS = 15_000
+
 async function getPort() {
   if (isElectron) {
     return new Promise<number>((resolve) => {
+      // Safety valve: if the host never reports a port within 15 s,
+      // resolve with 0 so the UI can proceed (fetch will fail gracefully).
+      const timeout = setTimeout(() => {
+        console.warn("[getPort] Timed out waiting for host port, proceeding with port 0")
+        clearInterval(i)
+        resolve(0)
+      }, GET_PORT_TIMEOUT_MS)
+
       window.ipcRenderer.onReceivePort((port) => {
+        clearTimeout(timeout)
+        clearInterval(i)
+        electronHostPort = +port
         resolve(port)
       })
 
       const i = setInterval(() => {
-      window.ipcRenderer.port().then(port => {
+        window.ipcRenderer.port().then(port => {
           if (+port) {
+            clearTimeout(timeout)
+            electronHostPort = +port
             resolve(port)
             clearInterval(i)
           }
@@ -96,6 +114,17 @@ export async function initFetch() {
 export const nativeFetch = window.fetch;
 
 async function initElectronFetch(port: number) {
+  electronHostPort = port
+
+  if (!electronPortListenerRegistered) {
+    electronPortListenerRegistered = true
+    window.ipcRenderer.onReceivePort((newPort) => {
+      electronHostPort = +newPort
+      setOapHost(`http://localhost:${electronHostPort}`)
+      console.log("[initFetch] Host port updated:", electronHostPort)
+    })
+  }
+
   const originalFetch = window.fetch
   const withDesktopHeader = (inputHeaders?: HeadersInit) => {
     const headers = new Headers(inputHeaders || {})
@@ -103,6 +132,7 @@ async function initElectronFetch(port: number) {
     return headers
   }
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const targetPort = electronHostPort || port
     // If the input is a full URL, use the original fetch.
     if (input.toString().startsWith('http')) {
       return originalFetch(input, {
@@ -110,7 +140,7 @@ async function initElectronFetch(port: number) {
         headers: withDesktopHeader(init?.headers),
       })
     }
-    return originalFetch(`http://localhost:${port}${input}`, {
+    return originalFetch(`http://localhost:${targetPort}${input}`, {
       ...init,
       headers: withDesktopHeader(init?.headers),
     })

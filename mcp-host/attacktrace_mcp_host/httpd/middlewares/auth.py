@@ -2,6 +2,7 @@
 Authentication middleware for MCP Host API.
 Validates X-Auth-Token header against environment variable.
 """
+import hmac
 import os
 from logging import getLogger
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -11,11 +12,9 @@ from starlette.types import ASGIApp
 
 logger = getLogger(__name__)
 
-# Public endpoints that don't require authentication
+# Only /health is publicly accessible. /docs, /openapi.json, /redoc are
+# intentionally excluded so API schema is not exposed without authentication.
 PUBLIC_ENDPOINTS = [
-    "/docs",
-    "/openapi.json",
-    "/redoc",
     "/health",
 ]
 
@@ -25,57 +24,63 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app: ASGIApp, auth_token: str | None = None):
         """Initialize auth middleware.
-        
+
         Args:
             app: ASGI application
             auth_token: Expected authentication token (from environment variable)
         """
         super().__init__(app)
         self.auth_token = auth_token or os.getenv("ATTACKTRACE_AUTH_TOKEN")
-        
+
         if not self.auth_token:
-            logger.warning("[Security] Auth token not configured, API will be unprotected!")
+            # In production the token is always injected by Electron. An absent
+            # token in a deployed process is a misconfiguration — log critically.
+            logger.critical(
+                "[Security] ATTACKTRACE_AUTH_TOKEN is not set. "
+                "All API requests will be REJECTED to prevent data exposure."
+            )
         else:
-            logger.info(f"[Security] Auth middleware enabled with token: {self.auth_token[:8]}...")
+            # Never log any portion of the token.
+            logger.info("[Security] Auth middleware enabled.")
 
     async def dispatch(self, request: Request, call_next) -> Response:
         """Validate authentication token before processing request."""
-        
-        # Skip authentication for CORS preflight requests
-        # Browsers send OPTIONS + Access-Control-Request-Method before custom-header requests.
-        if request.method == "OPTIONS" or request.headers.get("access-control-request-method"):
+
+        # Allow CORS preflight (OPTIONS only). Do NOT bypass for arbitrary
+        # requests that include the Access-Control-Request-Method header —
+        # that would allow any request to skip authentication.
+        if request.method == "OPTIONS":
             return await call_next(request)
-        
-        # Skip authentication for public endpoints
-        if any(request.url.path.startswith(endpoint) for endpoint in PUBLIC_ENDPOINTS):
+
+        # Allow the /health endpoint without a token so process monitors work.
+        if any(request.url.path.startswith(ep) for ep in PUBLIC_ENDPOINTS):
             return await call_next(request)
-        
-        # If no auth token configured, allow all requests (dev mode)
+
+        # Reject all requests when no token is configured (fail-closed).
         if not self.auth_token:
-            return await call_next(request)
-        
-        # Validate X-Auth-Token header
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "error": "Service Unavailable",
+                    "message": "Authentication is not configured on this server."
+                }
+            )
+
+        # Validate X-Auth-Token header using constant-time comparison.
         provided_token = request.headers.get("X-Auth-Token")
-        
+
         if not provided_token:
-            logger.warning(f"[Security] Missing auth token for {request.method} {request.url.path}")
+            logger.warning("[Security] Missing X-Auth-Token for %s %s", request.method, request.url.path)
             return JSONResponse(
                 status_code=401,
-                content={
-                    "error": "Unauthorized",
-                    "message": "Missing X-Auth-Token header"
-                }
+                content={"error": "Unauthorized", "message": "Missing X-Auth-Token header"}
             )
-        
-        if provided_token != self.auth_token:
-            logger.warning(f"[Security] Invalid auth token for {request.method} {request.url.path}")
+
+        if not hmac.compare_digest(provided_token, self.auth_token):
+            logger.warning("[Security] Invalid X-Auth-Token for %s %s", request.method, request.url.path)
             return JSONResponse(
                 status_code=403,
-                content={
-                    "error": "Forbidden",
-                    "message": "Invalid authentication token"
-                }
+                content={"error": "Forbidden", "message": "Invalid authentication token"}
             )
-        
-        # Token is valid, proceed with request
+
         return await call_next(request)

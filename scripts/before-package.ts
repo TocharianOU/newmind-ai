@@ -20,10 +20,16 @@ if (!PLATFORM) {
 }
 
 function promiseSpawn(command: string, args: any[], cwd: string, stdio: StdioOptions = "inherit") {
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     const child = spawn(command, args, { cwd, stdio })
-    child.on("close", resolve)
-    child.on("error", e => {
+    child.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(`Command "${command} ${args.join(" ")}" exited with code ${code}`))
+      } else {
+        resolve()
+      }
+    })
+    child.on("error", (e) => {
       console.error(e)
       reject(e)
     })
@@ -69,9 +75,11 @@ function installToPlatformPython(platform: string) {
   })
 }
 
-if (!PLATFORM.startsWith("darwin")) {
-  await installToPlatformPython(PLATFORM)
-} else {
+if (PLATFORM === "darwin") {
+  // Universal build — install both architectures
   await installToPlatformPython("darwin-x64")
   await installToPlatformPython("darwin-arm64")
+} else {
+  // Architecture-specific build (darwin-arm64 / darwin-x64 / win-x64 / linux-x64)
+  await installToPlatformPython(PLATFORM)
 }

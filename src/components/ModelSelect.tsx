@@ -1,5 +1,6 @@
 import "@/styles/components/_ModelSelect.scss"
 import { useTranslation } from "react-i18next"
+import { ENV_CONFIG } from "../config/env"
 import Select from "./Select"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { isProviderIconNoFilter, PROVIDER_ICONS } from "../atoms/interfaceState"
@@ -33,7 +34,7 @@ const ModelSelect = ({ showSettingsButton = true }: ModelSelectProps) => {
   const getModelNamePrefix = (group: GroupTerm) => {
     switch (group.modelProvider) {
       case "oap":
-        return "OAP"
+        return ENV_CONFIG.PLATFORM_NAME.split(" ")[0]
       case "bedrock":
         return `***${group.extra?.credentials?.accessKeyId?.slice(-4)}`
       case "lmstudio":

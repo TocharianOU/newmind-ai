@@ -100,13 +100,101 @@ export const DEF_ATTACKTRACE_HTTPD_CONFIG = {
   }
 }
 
+// ===== Project Mode Support =====
+
 /**
- * Generate attacktrace_httpd config for a specific project
- * @param projectId Project ID, defaults to 'default'
- * @returns Config object with project-specific database path
+ * Get user-scoped base directory.
+ * When a userId is supplied every project lives under:
+ *   ~/.attacktrace/users/{userId}/projects/{projectId}/
+ * so that different OAP accounts never share database files or configs.
  */
-export function getProjectHttpdConfig(projectId: string = 'default') {
-  const projectDbPath = getProjectDbPath(projectId)
+export function getUserDir(userId: string): string {
+  return path.join(appDir, "users", userId)
+}
+
+/** Allow alphanumeric, hyphens, underscores, and dots. Max 128 chars. */
+const SAFE_ID_RE = /^[a-zA-Z0-9._-]{1,128}$/
+
+/**
+ * Validate that a projectId or userId contains only safe characters.
+ * Throws if the value is unsafe (prevents path traversal).
+ */
+export function assertSafeId(value: string, label = "id"): void {
+  if (!value || !SAFE_ID_RE.test(value)) {
+    throw new Error(`Invalid ${label}: "${value}" — only alphanumeric, -, _, . (max 128 chars) allowed`)
+  }
+}
+
+/**
+ * Get project directory path.
+ * @param projectId Project ID (defaults to 'default')
+ * @param userId   OAP user ID – when provided the path is user-scoped;
+ *                 when omitted the legacy machine-level path is used.
+ */
+export function getProjectDir(projectId: string = 'default', userId?: string): string {
+  if (userId) {
+    return path.join(getUserDir(userId), "projects", projectId)
+  }
+  // Legacy / offline fallback: machine-level (no user isolation)
+  return path.join(appDir, "projects", projectId)
+}
+
+/**
+ * Get project's MCP config file path.
+ */
+export function getProjectConfigPath(projectId: string = 'default', userId?: string): string {
+  return path.join(getProjectDir(projectId, userId), "mcp_config.json")
+}
+
+/**
+ * Get project's database file path.
+ * Pass userId to get the user-scoped path; omit for the legacy fallback.
+ */
+export function getProjectDbPath(projectId: string = 'default', userId?: string): string {
+  return path.join(getProjectDir(projectId, userId), "db.sqlite")
+}
+
+/**
+ * Get the legacy (non-user-scoped) database path for a project.
+ * Used only during first-login migration.
+ */
+export function getLegacyProjectDbPath(projectId: string = 'default'): string {
+  return path.join(appDir, "projects", projectId, "db.sqlite")
+}
+
+/**
+ * Get project's cache directory path.
+ */
+export function getProjectCacheDir(projectId: string = 'default', userId?: string): string {
+  return path.join(getProjectDir(projectId, userId), "cache")
+}
+
+/**
+ * Get project's reports directory path.
+ */
+export function getProjectReportsDir(projectId: string = 'default', userId?: string): string {
+  return path.join(getProjectDir(projectId, userId), "reports")
+}
+
+/**
+ * Get the current-project tracking file path.
+ * Per-user so that different accounts can have different active projects.
+ */
+export function getCurrentProjectFilePath(userId?: string): string {
+  if (userId) {
+    return path.join(getUserDir(userId), "current_project.json")
+  }
+  // Legacy / offline fallback
+  return path.join(appDir, "current_project.json")
+}
+
+/**
+ * Generate attacktrace_httpd config for a specific project.
+ * @param projectId Project ID (defaults to 'default')
+ * @param userId    OAP user ID for user-scoped DB path
+ */
+export function getProjectHttpdConfig(projectId: string = 'default', userId?: string) {
+  const projectDbPath = getProjectDbPath(projectId, userId)
   return {
     "db": {
       "uri": `sqlite:///${projectDbPath}`,
@@ -124,58 +212,3 @@ export function getProjectHttpdConfig(projectId: string = 'default') {
 }
 
 export const cwd = app.isPackaged ? path.join(__dirname, "../..") : process.cwd()
-
-// ===== Project Mode Support =====
-
-/**
- * Get project directory path
- * @param projectId Project ID, defaults to 'default'
- * @returns Project directory path
- */
-export function getProjectDir(projectId: string = 'default'): string {
-  return path.join(appDir, "projects", projectId)
-}
-
-/**
- * Get project's config file path
- * @param projectId Project ID
- * @returns MCP config file path
- */
-export function getProjectConfigPath(projectId: string = 'default'): string {
-  return path.join(getProjectDir(projectId), "mcp_config.json")
-}
-
-/**
- * Get project's database file path
- * @param projectId Project ID
- * @returns Database file path
- */
-export function getProjectDbPath(projectId: string = 'default'): string {
-  return path.join(getProjectDir(projectId), "db.sqlite")
-}
-
-/**
- * Get project's cache directory path
- * @param projectId Project ID
- * @returns Cache directory path
- */
-export function getProjectCacheDir(projectId: string = 'default'): string {
-  return path.join(getProjectDir(projectId), "cache")
-}
-
-/**
- * Get project's reports directory path
- * @param projectId Project ID
- * @returns Reports directory path
- */
-export function getProjectReportsDir(projectId: string = 'default'): string {
-  return path.join(getProjectDir(projectId), "reports")
-}
-
-/**
- * Get current project file path
- * @returns Current project config file path
- */
-export function getCurrentProjectFilePath(): string {
-  return path.join(appDir, "current_project.json")
-}

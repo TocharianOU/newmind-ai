@@ -23,6 +23,7 @@ export interface OAPMCPServer {
   banner?: string | null
   sha256?: string | null
   sha512?: string | null
+  document?: string | null
 }
 
 export interface OAPModelDescription {
@@ -52,6 +53,7 @@ export type ApiSuccess<T> = {
 export type ApiError = {
   status: "error"
   error: string
+  message?: string
   data: null
 }
 
@@ -79,6 +81,7 @@ export type OAPUser = {
   picture: string
   team: string
   subscription: OAPSubscription
+  hubUrl?: string
 }
 
 export type OAPSubscription = {

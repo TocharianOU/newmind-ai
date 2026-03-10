@@ -74,6 +74,7 @@ async def list_chat(
 async def create_chat(  # noqa: PLR0913
     request: Request,
     app: AttackTraceHostAPI = Depends(get_app),
+    dive_user: "AttackTraceUser" = Depends(get_attacktrace_user),
     chat_id: Annotated[str | None, Form(alias="chatId")] = None,
     message: Annotated[str | None, Form()] = None,
     files: Annotated[list[UploadFile] | None, File()] = None,
@@ -152,6 +153,7 @@ ERROR_MSG_ID = "0"
 async def edit_chat(  # noqa: PLR0913
     request: Request,
     app: AttackTraceHostAPI = Depends(get_app),
+    dive_user: "AttackTraceUser" = Depends(get_attacktrace_user),
     chat_id: Annotated[str | None, Form(alias="chatId")] = None,
     message_id: Annotated[str | None, Form(alias="messageId")] = None,
     content: Annotated[str | None, Form()] = None,
@@ -203,6 +205,7 @@ async def edit_chat(  # noqa: PLR0913
 async def retry_chat(
     request: Request,
     app: AttackTraceHostAPI = Depends(get_app),
+    dive_user: "AttackTraceUser" = Depends(get_attacktrace_user),
     chat_id: Annotated[str | None, Body(alias="chatId")] = None,
     message_id: Annotated[str | None, Body(alias="messageId")] = None,
 ) -> StreamingResponse:
@@ -287,6 +290,7 @@ async def delete_chat(
 async def abort_chat(
     chat_id: str,
     app: AttackTraceHostAPI = Depends(get_app),
+    _user: "AttackTraceUser" = Depends(get_attacktrace_user),
 ) -> ResultResponse:
     """Abort an ongoing chat operation.
 
