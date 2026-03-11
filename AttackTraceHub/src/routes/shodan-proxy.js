@@ -1,7 +1,7 @@
 import express from 'express';
 import fetch from 'node-fetch';
 import { authenticateToken } from '../middleware/auth.js';
-import { prisma } from '../config/database.js';
+import { checkToolQuota, recordToolUsage } from '../middleware/toolQuota.js';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
@@ -21,7 +21,7 @@ const SHODAN_API_BASE = 'https://api.shodan.io';
 //   3. Forwards the full request (method, path, query string, body) to the real Shodan API.
 //   4. Streams the Shodan response back to the caller.
 //   5. Records usage for billing / analytics.
-router.all('/*', authenticateToken, async (req, res) => {
+router.all('/*', authenticateToken, checkToolQuota('shodan'), async (req, res) => {
   const shodanApiKey = process.env.SHODAN_HUB_API_KEY;
   if (!shodanApiKey) {
     logger.error('[Shodan-Proxy] SHODAN_HUB_API_KEY is not configured');
@@ -63,7 +63,7 @@ router.all('/*', authenticateToken, async (req, res) => {
   logger.info(`[Shodan-Proxy] Shodan responded ${shodanResponse.status} for ${req.method} ${shodanPath}`);
 
   // Async usage recording — fire and forget, never blocks response
-  recordShodanUsage(req.user.id, req.method, shodanPath, shodanResponse.status).catch(() => {});
+  recordToolUsage(req, shodanPath).catch(() => {});
 
   // Forward status and key response headers
   res.status(shodanResponse.status);
@@ -75,21 +75,5 @@ router.all('/*', authenticateToken, async (req, res) => {
   // Stream the body back directly
   shodanResponse.body.pipe(res);
 });
-
-async function recordShodanUsage(userId, method, path, statusCode) {
-  try {
-    await prisma.usageRecord.create({
-      data: {
-        userId,
-        modelName: 'shodan-hub',
-        inputTokens: 1,
-        outputTokens: 0,
-        cost: 0.0001,
-      }
-    });
-  } catch (err) {
-    logger.debug(`[Shodan-Proxy] Usage record skipped: ${err.message}`);
-  }
-}
 
 export default router;

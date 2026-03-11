@@ -5,9 +5,11 @@ import { existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { authenticateToken, requirePlan } from '../middleware/auth.js';
-import { createResponse, MODEL_MAPPING, MODEL_PROVIDERS, checkModelAccess } from '../config/constants.js';
+import { createResponse, MODEL_MAPPING, MODEL_PROVIDERS, MODEL_CONFIG, checkModelAccess } from '../config/constants.js';
 import { prisma } from '../config/database.js';
 import { deductTokens } from '../utils/tokenBalance.js';
+import featureFlags from '../config/featureFlags.js';
+import { getLicenseStatus } from '../license/validator.js';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
@@ -153,7 +155,7 @@ async function recordUsage(userId, model, inputTokens, outputTokens) {
     await prisma.usageRecord.create({
       data: {
         userId,
-        modelName: model,  // Changed from 'model' to 'modelName'
+        modelName: model,
         inputTokens,
         outputTokens,
         cost
@@ -162,16 +164,80 @@ async function recordUsage(userId, model, inputTokens, outputTokens) {
     
     logger.info(`📊 Usage recorded: ${model}, input: ${inputTokens}, output: ${outputTokens}`);
     
-    // 扣减 Token 余额（如果有）
-    try {
-      await deductTokens(userId, totalTokens);
-    } catch (error) {
-      // Token 余额不足不影响使用（仍然可以使用订阅的每日额度）
-      logger.debug(`Token deduction skipped for user ${userId}: ${error.message}`);
+    if (featureFlags.BILLING_ENABLED) {
+      // SaaS: deduct from per-user purchased token balance
+      try {
+        await deductTokens(userId, totalTokens);
+      } catch (error) {
+        logger.debug(`Token deduction skipped for user ${userId}: ${error.message}`);
+      }
     }
+    // Enterprise: usage is tracked via usageRecord table; quota enforced at request time
   } catch (error) {
     logger.error('❌ Error recording usage:', error);
   }
+}
+
+/**
+ * Lookup a custom model by modelId from the DB.
+ * Returns the CustomModel record or null.
+ */
+async function findCustomModel(modelId) {
+  try {
+    return await prisma.customModel.findUnique({
+      where: { modelId, active: true },
+    });
+  } catch {
+    return null; // Table might not exist yet (pre-migration)
+  }
+}
+
+/**
+ * Mode-aware access check.
+ * - SaaS: delegates to checkModelAccess (plan + daily token limits), also allows custom models for admins
+ * - Enterprise: allows all valid models (static + custom); if maxTokens > 0, checks global pool
+ */
+async function checkAccessForMode(model, userPlan, userId, userRole) {
+  const isStaticModel = MODEL_CONFIG && MODEL_CONFIG[model];
+  const customModel = isStaticModel ? null : await findCustomModel(model);
+
+  if (!featureFlags.LICENSE_ENABLED) {
+    // SaaS path — custom models available to PRO plan users and admins
+    if (!isStaticModel) {
+      if (!customModel) return { allowed: false, error: `Unsupported model: ${model}` };
+      const planAllows = userPlan === 'PRO' || userRole === 'ADMIN';
+      if (!planAllows) return { allowed: false, error: 'Custom models require PRO plan or above' };
+      return { allowed: true, customModel };
+    }
+    return checkModelAccess(model, userPlan, userId);
+  }
+
+  // Enterprise path — validate model exists (static or custom)
+  if (!isStaticModel && !customModel) {
+    return { allowed: false, error: `Unsupported model: ${model}` };
+  }
+
+  // Check global token quota (skip if maxTokens = -1)
+  const { status, license } = await getLicenseStatus();
+  if (status !== 'ACTIVE') {
+    return { allowed: false, error: `License ${status} — contact your administrator` };
+  }
+
+  const maxTokens = Number(license.maxTokens);
+  if (maxTokens > 0) {
+    const totalUsed = await prisma.usageRecord.aggregate({
+      _sum: { inputTokens: true, outputTokens: true },
+    });
+    const used = (totalUsed._sum.inputTokens || 0) + (totalUsed._sum.outputTokens || 0);
+    if (used >= maxTokens) {
+      return {
+        allowed: false,
+        error: `License token quota exhausted (${used}/${maxTokens}). Contact your administrator.`,
+      };
+    }
+  }
+
+  return { allowed: true, customModel };
 }
 
 // POST /api/v1/messages - Anthropic native endpoint (transparent proxy)
@@ -183,11 +249,11 @@ router.post('/messages', authenticateToken, async (req, res) => {
     const { model } = req.body;
     const userPlan = req.user.planName || 'BASE';
     
-    // Unified permission check (including token limits)
-    const accessCheck = await checkModelAccess(model, userPlan, req.user.id);
+    // Unified permission check (mode-aware: plan limits in SaaS, license quota in enterprise)
+    const accessCheck = await checkAccessForMode(model, userPlan, req.user.id, req.user.role);
     if (!accessCheck.allowed) {
       const statusCode = accessCheck.error.includes('Unsupported') ? 400 : 
-                        accessCheck.error.includes('limit exceeded') ? 429 : 403;
+                        accessCheck.error.includes('limit exceeded') || accessCheck.error.includes('exhausted') ? 429 : 403;
       return res.status(statusCode).json(
         createResponse(null, accessCheck.error)
       );
@@ -344,16 +410,84 @@ router.post('/chat/completions', authenticateToken, async (req, res) => {
     
     logger.info(`🤖 [Proxy] OpenAI compatible endpoint called for model: ${model}`);
     
-    // Unified permission check (including token limits)
-    const accessCheck = await checkModelAccess(model, userPlan, req.user.id);
+    // Unified permission check (mode-aware)
+    const accessCheck = await checkAccessForMode(model, userPlan, req.user.id, req.user.role);
     if (!accessCheck.allowed) {
       const statusCode = accessCheck.error.includes('Unsupported') ? 400 : 
-                        accessCheck.error.includes('limit exceeded') ? 429 : 403;
+                        accessCheck.error.includes('limit exceeded') || accessCheck.error.includes('exhausted') ? 429 : 403;
       return res.status(statusCode).json(
         createResponse(null, accessCheck.error)
       );
     }
     
+    // Custom model path — proxy to external endpoint directly
+    if (accessCheck.customModel) {
+      const cm = accessCheck.customModel;
+      logger.info(`🔌 [CustomModel] Proxying ${model} -> ${cm.baseURL}`);
+
+      const systemPromptOverride = await getSystemPromptOverride();
+      const requestBody = { ...req.body, model: cm.modelId };
+      if (systemPromptOverride && requestBody.messages) {
+        requestBody.messages = insertSystemPromptIntoOpenAIMessages(requestBody.messages, systemPromptOverride);
+      }
+
+      const targetURL = `${cm.baseURL}/chat/completions`;
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(cm.apiKey && { Authorization: `Bearer ${cm.apiKey}` }),
+      };
+
+      const response = await fetch(targetURL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        logger.error(`❌ [CustomModel] ${model} error ${response.status}: ${errText}`);
+        return res.status(response.status).json({ error: { message: errText, type: 'custom_model_error' } });
+      }
+
+      if (req.body.stream === true) {
+        res.writeHead(200, {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+          'Access-Control-Allow-Origin': '*',
+        });
+        let inputTokens = 0, outputTokens = 0, buffer = '';
+        response.body.on('data', (chunk) => {
+          res.write(chunk);
+          buffer += chunk.toString();
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+              try {
+                const d = JSON.parse(line.slice(6));
+                if (d.usage) { inputTokens = d.usage.prompt_tokens || 0; outputTokens = d.usage.completion_tokens || 0; }
+              } catch { /* ignore */ }
+            }
+          }
+        });
+        response.body.on('end', () => {
+          res.end();
+          if (inputTokens > 0 || outputTokens > 0) {
+            setImmediate(() => recordUsage(req.user.id, model, inputTokens, outputTokens));
+          }
+        });
+        response.body.on('error', () => res.end());
+      } else {
+        const data = await response.json();
+        if (data.usage) {
+          setImmediate(() => recordUsage(req.user.id, model, data.usage.prompt_tokens || 0, data.usage.completion_tokens || 0));
+        }
+        res.json(data);
+      }
+      return;
+    }
+
     const provider = MODEL_PROVIDERS[model];
     const realModelName = MODEL_MAPPING[model];
     

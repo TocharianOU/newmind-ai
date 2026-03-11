@@ -267,12 +267,14 @@ model User {
   TokenPurchase       TokenPurchase[]
   UsageRecord         UsageRecord[]
   UserPreferences     UserPreferences?
+  ToolUsageRecord     ToolUsageRecord[]
+  ToolQuota           ToolQuota[]
 
   @@index([email])
 }
 
 model UserPreferences {
-  id                 String   @id
+  id                 String   @id @default(uuid())
   userId             String   @unique
   theme              String   @default("light")
   language           String   @default("en")
@@ -303,4 +305,99 @@ enum PaymentStatus {
   FAILED
   REFUNDED
   CANCELLED
+}
+
+// ---------------------------------------------------------------------------
+// Enterprise License
+// ---------------------------------------------------------------------------
+
+model License {
+  id           String    @id @default(uuid())
+  customerId   String    @unique
+  customerName String
+  maxSeats     Int       @default(50)
+  maxTokens    BigInt    @default(-1)    // -1 = unlimited
+  features     String[]  @default([])   // e.g. ["sso","audit_export","advanced_mcp"]
+  issuedAt     DateTime
+  expiresAt    DateTime
+  signature    String    @db.Text       // ed25519 base64 signature over payload
+  active       Boolean   @default(true)
+  activatedBy  String?                  // userId who activated this license
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([active])
+  @@index([expiresAt])
+}
+
+enum LicenseStatus {
+  ACTIVE
+  EXPIRED
+  INVALID
+  NOT_ACTIVATED
+}
+
+// ---------------------------------------------------------------------------
+// Custom Model Providers (Enterprise: dynamic external model endpoints)
+// ---------------------------------------------------------------------------
+
+model CustomModel {
+  id          String   @id @default(uuid())
+  name        String                         // Display name shown in model list
+  modelId     String   @unique               // API call identifier, e.g. "gpt-4o", "deepseek-chat"
+  provider    String   @default("openai_compatible") // "openai" | "anthropic" | "openai_compatible"
+  baseURL     String                         // Base URL, e.g. "https://api.openai.com/v1"
+  apiKey      String   @db.Text @default("") // API key (plaintext; use env for rotation)
+  active      Boolean  @default(true)
+  notes       String?                        // Admin notes
+  createdBy   String?                        // userId of admin who created
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active])
+}
+
+// ---------------------------------------------------------------------------
+// Tool Usage & Quota (A/B/C tier system)
+// ---------------------------------------------------------------------------
+
+enum ToolTier {
+  A
+  B
+  C
+}
+
+enum KeyMode {
+  hub
+  byok
+}
+
+model ToolUsageRecord {
+  id        String   @id @default(uuid())
+  userId    String
+  toolName  String
+  tier      ToolTier
+  keyMode   KeyMode  @default(hub)
+  endpoint  String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([tier, createdAt])
+}
+
+model ToolQuota {
+  id             String   @id @default(uuid())
+  userId         String
+  tier           ToolTier
+  monthlyLimit   Int      @default(0)
+  usedThisMonth  Int      @default(0)
+  periodStart    DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tier])
+  @@index([userId])
 }

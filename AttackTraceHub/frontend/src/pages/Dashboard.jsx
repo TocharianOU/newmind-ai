@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import api from '../config/api';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './Dashboard.css';
@@ -9,8 +10,10 @@ import './Dashboard.css';
 const Dashboard = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { billingEnabled, licenseEnabled, deploymentMode } = useFeatureFlags();
   const [stats, setStats] = useState(null);
   const [usage, setUsage] = useState(null);
+  const [toolQuota, setToolQuota] = useState(null);
   const [range, setRange] = useState('30d');
   const [loading, setLoading] = useState(true);
 
@@ -21,9 +24,10 @@ const Dashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsResponse, usageResponse] = await Promise.all([
+      const [statsResponse, usageResponse, quotaResponse] = await Promise.all([
         api.get(`/api/v1/user/stats?range=${range}`),
-        api.get('/api/v1/user/usage')
+        api.get('/api/v1/user/usage'),
+        api.get('/api/v1/user/tool-quota').catch(() => null)
       ]);
 
       if (statsResponse.data.status === 'success') {
@@ -32,6 +36,10 @@ const Dashboard = () => {
 
       if (usageResponse.data.status === 'success') {
         setUsage(usageResponse.data.data);
+      }
+
+      if (quotaResponse?.data?.status === 'success') {
+        setToolQuota(quotaResponse.data.data);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -123,20 +131,40 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-icon token-balance">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M13 10V3L4 14h7v7l9-11h-7z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+        {/* Token balance (SaaS) or License seats (Enterprise) */}
+        {deploymentMode === 'enterprise' ? (
+          <div className="stat-card">
+            <div className="stat-icon token-balance">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="stat-content">
+              <h3>{usage?.enterpriseQuota?.currentSeats ?? '—'} / {usage?.enterpriseQuota?.maxSeats ?? '—'}</h3>
+              <p>{t('dashboard.seats', 'Seats Used')}</p>
+              <Link to="/license" className="refill-link">
+                {t('dashboard.manageLicense', 'Manage License')} →
+              </Link>
+            </div>
           </div>
-          <div className="stat-content">
-            <h3>{formatNumber(user?.tokenBalance || 0)}</h3>
-            <p>{t('dashboard.availableTokens', 'Available Tokens')}</p>
-            <Link to="/billing" className="refill-link">
-              {t('dashboard.refill', 'Refill')} →
-            </Link>
+        ) : (
+          <div className="stat-card">
+            <div className="stat-icon token-balance">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M13 10V3L4 14h7v7l9-11h-7z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="stat-content">
+              <h3>{formatNumber(user?.tokenBalance || 0)}</h3>
+              <p>{t('dashboard.availableTokens', 'Available Tokens')}</p>
+              {billingEnabled && (
+                <Link to="/billing" className="refill-link">
+                  {t('dashboard.refill', 'Refill')} →
+                </Link>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="stat-card">
           <div className="stat-icon plan-info">
@@ -145,8 +173,13 @@ const Dashboard = () => {
             </svg>
           </div>
           <div className="stat-content">
-            <h3>{user?.subscription?.PlanName || 'BASE'}</h3>
+            <h3>{deploymentMode === 'enterprise' ? 'Enterprise' : (user?.subscription?.PlanName || 'BASE')}</h3>
             <p>{t('dashboard.currentPlan', 'Current Plan')}</p>
+            {deploymentMode === 'enterprise' && usage?.enterpriseQuota?.expiresAt && (
+              <span className="plan-expiry">
+                {t('dashboard.expires', 'Expires')}: {new Date(usage.enterpriseQuota.expiresAt).toLocaleDateString()}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -154,21 +187,81 @@ const Dashboard = () => {
       {/* Usage Progress */}
       {usage && (
         <div className="usage-card">
-          <h2>{t('dashboard.monthlyUsage', 'Monthly Usage')}</h2>
+          <h2>
+            {deploymentMode === 'enterprise'
+              ? t('dashboard.globalTokenUsage', 'Global Token Usage')
+              : t('dashboard.monthlyUsage', 'Monthly Usage')}
+          </h2>
           <div className="usage-progress">
             <div className="usage-bar">
-              <div 
+              <div
                 className="usage-bar-fill"
                 style={{
-                  width: `${Math.min((usage.total / usage.limit) * 100, 100)}%`
+                  width: deploymentMode === 'enterprise' && usage.enterpriseQuota?.maxTokens > 0
+                    ? `${Math.min((usage.enterpriseQuota.globalUsedTokens / usage.enterpriseQuota.maxTokens) * 100, 100)}%`
+                    : `${Math.min((usage.total / usage.limit) * 100, 100)}%`
                 }}
               ></div>
             </div>
             <div className="usage-text">
-              <span>{formatNumber(usage.total)} {t('dashboard.tokensUsed', 'tokens used')}</span>
-              <span>{formatNumber(usage.limit)} {t('dashboard.limit', 'limit')}</span>
+              {deploymentMode === 'enterprise' && usage.enterpriseQuota ? (
+                <>
+                  <span>{formatNumber(usage.enterpriseQuota.globalUsedTokens)} {t('dashboard.tokensUsed', 'tokens used')}</span>
+                  <span>
+                    {usage.enterpriseQuota.maxTokens > 0
+                      ? `${formatNumber(usage.enterpriseQuota.maxTokens)} ${t('dashboard.limit', 'limit')}`
+                      : t('dashboard.unlimited', 'Unlimited')}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span>{formatNumber(usage.total)} {t('dashboard.tokensUsed', 'tokens used')}</span>
+                  <span>{formatNumber(usage.limit)} {t('dashboard.limit', 'limit')}</span>
+                </>
+              )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Tool Tier Quota (SaaS only) */}
+      {!licenseEnabled && toolQuota && (
+        <div className="usage-card">
+          <h2>{t('dashboard.toolQuota', 'Tool Usage Quota (This Month)')}</h2>
+          <div className="tool-quota-grid">
+            {[
+              { tier: 'A', color: '#e53e3e' },
+              { tier: 'B', color: '#dd6b20' },
+              { tier: 'C', color: '#38a169' },
+            ].map(({ tier, color }) => {
+              const q = toolQuota.tiers?.[tier] || { used: 0, limit: 0, tools: [] };
+              const pct = q.limit > 0 ? Math.min((q.used / q.limit) * 100, 100) : 0;
+              const toolNames = (q.tools || []).join(', ');
+              return (
+                <div key={tier} className="tool-quota-item">
+                  <div className="tool-quota-header">
+                    <span className="tool-tier-badge" style={{ background: color }}>
+                      {t('dashboard.tier', 'Tier')} {tier}
+                    </span>
+                    <span className="tool-quota-label">{toolNames || '—'}</span>
+                    <span className="tool-quota-count">{q.used} / {q.limit}</span>
+                  </div>
+                  <div className="usage-bar">
+                    <div
+                      className="usage-bar-fill"
+                      style={{ width: `${pct}%`, background: pct >= 100 ? '#e53e3e' : color }}
+                    ></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {toolQuota.plan !== 'PRO' && (
+            <p className="tool-quota-upgrade">
+              {t('dashboard.toolQuotaUpgrade', 'Upgrade to PRO for higher tool quotas and custom models.')}{' '}
+              <a href="/billing">{t('dashboard.upgradeNow', 'Upgrade now')} →</a>
+            </p>
+          )}
         </div>
       )}
 

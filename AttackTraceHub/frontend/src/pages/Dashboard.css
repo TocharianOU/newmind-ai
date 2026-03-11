@@ -492,3 +492,63 @@
     font-size: 12px;
   }
 }
+
+/* Tool Quota Section */
+.tool-quota-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.tool-quota-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tool-quota-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.tool-tier-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 99px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 52px;
+  text-align: center;
+}
+
+.tool-quota-label {
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.tool-quota-count {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.tool-quota-upgrade {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.tool-quota-upgrade a {
+  color: var(--accent-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tool-quota-upgrade a:hover {
+  text-decoration: underline;
+}

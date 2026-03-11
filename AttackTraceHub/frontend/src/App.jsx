@@ -14,6 +14,8 @@ import Settings from './pages/Settings';
 import Billing from './pages/Billing';
 import PaymentSuccess from './pages/PaymentSuccess';
 import AdminStats from './pages/AdminStats';
+import AdminModels from './pages/AdminModels';
+import License from './pages/License';
 import './App.css';
 
 // Protected Route Component
@@ -62,7 +64,7 @@ const PublicRoute = ({ children }) => {
 };
 
 function AppRoutes() {
-  const { billingEnabled } = useFeatureFlags();
+  const { billingEnabled, licenseEnabled } = useFeatureFlags();
 
   return (
     <Routes>
@@ -140,6 +142,34 @@ function AppRoutes() {
               <AdminStats />
             </Layout>
           </ProtectedRoute>
+        }
+      />
+
+      {/* Admin: Custom Model Providers */}
+      <Route
+        path="/admin/models"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <AdminModels />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* License management — enterprise only */}
+      <Route
+        path="/license"
+        element={
+          licenseEnabled ? (
+            <ProtectedRoute>
+              <Layout>
+                <License />
+              </Layout>
+            </ProtectedRoute>
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
         }
       />
 

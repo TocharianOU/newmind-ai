@@ -62,6 +62,10 @@ export const AUDIT_ACTIONS = {
   // Payment
   PAYMENT_CHECKOUT_CREATED:      'PAYMENT_CHECKOUT_CREATED',
   SUBSCRIPTION_CHECKOUT_CREATED: 'SUBSCRIPTION_CHECKOUT_CREATED',
+
+  // License (enterprise)
+  LICENSE_ACTIVATED:   'LICENSE_ACTIVATED',
+  LICENSE_DEACTIVATED: 'LICENSE_DEACTIVATED',
 }
 
 export const RESOURCE_TYPES = {
@@ -72,6 +76,7 @@ export const RESOURCE_TYPES = {
   ADMIN:         'ADMIN',
   PAYMENT:       'PAYMENT',
   USER:          'USER',
+  LICENSE:       'LICENSE',
 }
 
 // ── Core helper ─────────────────────────────────────────────────────────────

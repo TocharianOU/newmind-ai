@@ -9,6 +9,7 @@ import { createResponse } from '../config/constants.js';
 import logger from '../utils/logger.js';
 import HARDCODED_CONFIG from '../config/hardcoded.js';
 import featureFlags from '../config/featureFlags.js';
+import { checkSeatAvailable } from '../license/validator.js';
 import ssoRegistry from '../sso/index.js';
 import { writeAudit, AUDIT_ACTIONS, RESOURCE_TYPES } from '../utils/auditLog.js';
 import { validateBody } from '../middleware/validate.js';
@@ -36,14 +37,16 @@ router.get('/config', (req, res) => {
 
 // GET /api/auth/flags — public endpoint exposing feature flags relevant to the frontend
 router.get('/flags', (req, res) => {
-  // Return which SSO providers are actually configured and enabled
   const enabledSSOProviders = ssoRegistry.getEnabled().map(({ name }) => name);
 
   res.json(createResponse({
+    deploymentMode:            featureFlags.DEPLOYMENT_MODE,
     billingEnabled:            featureFlags.BILLING_ENABLED,
     ssoEnabled:                featureFlags.SSO_ENABLED,
     auditExportEnabled:        featureFlags.AUDIT_EXPORT_ENABLED,
     enterpriseFeaturesEnabled: featureFlags.ENTERPRISE_FEATURES_ENABLED,
+    licenseEnabled:            featureFlags.LICENSE_ENABLED,
+    inviteCodeEnabled:         featureFlags.INVITE_CODE_ENABLED,
     enabledSSOProviders,
   }));
 });
@@ -73,6 +76,14 @@ router.post('/register', validateBody(RegisterSchema), async (req, res) => {
         return res.status(400).json(
           createResponse(null, 'Invalid or missing invite code')
         );
+      }
+    }
+
+    // Enterprise: enforce license seat limit before creating user
+    if (featureFlags.LICENSE_ENABLED) {
+      const { allowed, reason } = await checkSeatAvailable();
+      if (!allowed) {
+        return res.status(403).json(createResponse(null, `Registration blocked: ${reason}`));
       }
     }
 

@@ -1,0 +1,6 @@
+# Never commit the private key
+private.pem
+*.key
+
+# The public key (public.pem) IS safe to commit
+!public.pem

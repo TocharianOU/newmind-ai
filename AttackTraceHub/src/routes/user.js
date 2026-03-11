@@ -1,9 +1,11 @@
 import express from 'express';
 import { prisma } from '../config/database.js';
-import { createResponse } from '../config/constants.js';
+import { createResponse, TOOL_TIER_QUOTA, TOOL_TIER_MAP } from '../config/constants.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/requireAdmin.js';
 import { writeAudit, AUDIT_ACTIONS, RESOURCE_TYPES } from '../utils/auditLog.js';
+import featureFlags from '../config/featureFlags.js';
+import { getLicenseStatus } from '../license/validator.js';
 import logger from '../utils/logger.js';
 import { validateBody } from '../middleware/validate.js';
 import { UpdateSettingsSchema, UpdatePreferencesSchema } from '../schemas/user.schemas.js';
@@ -40,8 +42,22 @@ router.get('/me', authenticateToken, async (req, res) => {
         Start: user.Subscription?.startDate?.toISOString() || new Date().toISOString(),
         End: user.Subscription?.endDate?.toISOString() || null,
         NextBillingDate: user.Subscription?.nextBillingDate?.toISOString() || null
-      }
+      },
+      deploymentMode: featureFlags.DEPLOYMENT_MODE,
     };
+
+    // Enterprise: enrich with license plan info
+    if (featureFlags.LICENSE_ENABLED) {
+      const { status, license } = await getLicenseStatus();
+      userData.enterpriseLicense = {
+        status,
+        customerName: license?.customerName || null,
+        maxSeats: license?.maxSeats || 0,
+        maxTokens: license ? Number(license.maxTokens) : 0,
+        expiresAt: license?.expiresAt || null,
+        features: license?.features || [],
+      };
+    }
 
     res.json(createResponse(userData));
   } catch (error) {
@@ -69,42 +85,50 @@ router.get('/usage', authenticateToken, async (req, res) => {
     const usageRecords = await prisma.usageRecord.findMany({
       where: {
         userId: req.user.id,
-        createdAt: {
-          gte: startOfMonth
-        }
+        createdAt: { gte: startOfMonth }
       }
     });
 
-    // Calculate total tokens
-    const totalTokens = usageRecords.reduce((acc, record) => {
-      return acc + record.inputTokens + record.outputTokens;
-    }, 0);
+    const totalTokens = usageRecords.reduce((acc, r) => acc + r.inputTokens + r.outputTokens, 0);
 
-    // Get plan limits from constants - convert daily to monthly
-    const { PLAN_LIMITS } = await import('../config/constants.js');
-    const dailyLimit = PLAN_LIMITS[planName]?.dailyTokens || PLAN_LIMITS.BASE.dailyTokens;
-    const monthlyLimit = dailyLimit * 30; // Convert daily to monthly
+    let limit;
+    let enterpriseQuota = null;
 
-    // Separate model and MCP usage (temporary - should track separately)
-    // For now, assume all usage is model usage since proxy only handles model calls
-    const modelUsage = totalTokens;
-    const mcpUsage = 0; // TODO: Track MCP usage separately
+    if (featureFlags.LICENSE_ENABLED) {
+      // Enterprise: limit comes from license maxTokens (global pool)
+      const { status, license } = await getLicenseStatus();
+      const maxTokens = license ? Number(license.maxTokens) : 0;
+      limit = maxTokens > 0 ? maxTokens : Number.MAX_SAFE_INTEGER;
 
-    // Format response to match Dive's OAPUsage interface
+      // Global usage across all users
+      const globalAggregate = await prisma.usageRecord.aggregate({
+        _sum: { inputTokens: true, outputTokens: true },
+      });
+      const globalUsed = (globalAggregate._sum.inputTokens || 0) + (globalAggregate._sum.outputTokens || 0);
+
+      const userCount = await prisma.user.count();
+      enterpriseQuota = {
+        status,
+        maxSeats: license?.maxSeats || 0,
+        currentSeats: userCount,
+        maxTokens,
+        globalUsedTokens: globalUsed,
+        expiresAt: license?.expiresAt || null,
+      };
+    } else {
+      // SaaS: daily limit from subscription plan
+      const { PLAN_LIMITS } = await import('../config/constants.js');
+      const dailyLimit = PLAN_LIMITS[planName]?.dailyTokens || PLAN_LIMITS.BASE.dailyTokens;
+      limit = dailyLimit * 30;
+    }
+
     const usageData = {
-      limit: monthlyLimit,
-      mcp: mcpUsage,
-      model: modelUsage,
+      limit,
+      mcp: 0,
+      model: totalTokens,
       total: totalTokens,
-      coupon: {
-        // TODO: Implement token package tracking
-        // Token packages are pre-purchased credits that don't expire
-        // Should track separately from monthly subscription limits
-        model: 0,
-        mcp: 0,
-        total: 0,
-        limit: 0
-      }
+      coupon: { model: 0, mcp: 0, total: 0, limit: 0 },
+      ...(enterpriseQuota ? { enterpriseQuota } : {}),
     };
 
     res.json(createResponse(usageData));
@@ -741,6 +765,52 @@ router.delete('/account', authenticateToken, async (req, res) => {
   } catch (error) {
     logger.error('Error deleting account:', error);
     res.status(500).json(createResponse(null, 'Failed to delete account'));
+  }
+});
+
+// GET /api/v1/user/tool-quota - Current user's tool tier quota and usage
+router.get('/tool-quota', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userPlan = req.user.planName || 'BASE';
+    const tierQuota = TOOL_TIER_QUOTA[userPlan] || TOOL_TIER_QUOTA.BASE;
+
+    const periodStart = new Date();
+    periodStart.setUTCDate(1);
+    periodStart.setUTCHours(0, 0, 0, 0);
+
+    const quotaRows = await prisma.toolQuota.findMany({
+      where: { userId }
+    }).catch(() => []);
+
+    const quotaMap = {};
+    for (const row of quotaRows) {
+      const isCurrentPeriod = row.periodStart <= new Date() && new Date() >= periodStart;
+      quotaMap[row.tier] = {
+        used: isCurrentPeriod ? row.usedThisMonth : 0,
+        limit: tierQuota[row.tier] ?? row.monthlyLimit
+      };
+    }
+
+    // Build tier → tools mapping from TOOL_TIER_MAP
+    const tierTools = {};
+    for (const [toolName, tier] of Object.entries(TOOL_TIER_MAP)) {
+      if (!tierTools[tier]) tierTools[tier] = [];
+      tierTools[tier].push(toolName);
+    }
+
+    const result = {};
+    for (const tier of ['A', 'B', 'C']) {
+      result[tier] = {
+        ...(quotaMap[tier] ?? { used: 0, limit: tierQuota[tier] ?? 0 }),
+        tools: tierTools[tier] ?? []
+      };
+    }
+
+    res.json(createResponse({ tiers: result, plan: userPlan }));
+  } catch (error) {
+    logger.error('Error fetching tool quota:', error);
+    res.status(500).json(createResponse(null, 'Failed to fetch tool quota'));
   }
 });
 

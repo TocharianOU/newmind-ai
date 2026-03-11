@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import api from '../config/api';
 import './Settings.css';
 
 const Settings = () => {
   const { user, checkAuth, logout } = useAuth();
+  const { billingEnabled, deploymentMode } = useFeatureFlags();
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -364,21 +366,33 @@ const Settings = () => {
                 <div className="info-row">
                   <span className="info-label">{t('settings.planLabel', 'Plan')}</span>
                   <span className="info-value plan-badge">
-                    {user?.subscription?.PlanName || 'BASE'}
+                    {deploymentMode === 'enterprise' ? 'Enterprise' : (user?.subscription?.PlanName || 'BASE')}
                   </span>
                 </div>
                 <div className="info-row">
                   <span className="info-label">{t('settings.accountStatus', 'Account Status')}</span>
                   <span className="info-value status-active">{t('settings.accountStatusActive', 'Active')}</span>
                 </div>
-                <div className="info-row">
-                  <span className="info-label">{t('settings.memberSince', 'Member Since')}</span>
-                  <span className="info-value">
-                    {user?.subscription?.StartDate 
-                      ? new Date(user.subscription.StartDate).toLocaleDateString()
-                      : t('common.notAvailable', 'N/A')}
-                  </span>
-                </div>
+                {deploymentMode !== 'enterprise' && (
+                  <div className="info-row">
+                    <span className="info-label">{t('settings.memberSince', 'Member Since')}</span>
+                    <span className="info-value">
+                      {user?.subscription?.StartDate
+                        ? new Date(user.subscription.StartDate).toLocaleDateString()
+                        : t('common.notAvailable', 'N/A')}
+                    </span>
+                  </div>
+                )}
+                {deploymentMode === 'enterprise' && user?.enterpriseLicense && (
+                  <div className="info-row">
+                    <span className="info-label">{t('settings.licenseExpiry', 'License Expiry')}</span>
+                    <span className="info-value">
+                      {user.enterpriseLicense.expiresAt
+                        ? new Date(user.enterpriseLicense.expiresAt).toLocaleDateString()
+                        : t('common.notAvailable', 'N/A')}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Data Export */}

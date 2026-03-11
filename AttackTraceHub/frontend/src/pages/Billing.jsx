@@ -10,7 +10,6 @@ import './Billing.css';
 const PLAN_HIERARCHY = {
   'BASE': 0,
   'PRO': 1,
-  'ENTERPRISE': 2
 };
 
 const Billing = () => {
@@ -259,7 +258,10 @@ const Billing = () => {
             
             <ul className="subscription-features">
               <li>✓ {t('billing.proFeature1', '50M daily tokens')}</li>
-              <li>✓ {t('billing.proFeature2', '20 MCP servers')}</li>
+              <li>✓ {t('billing.proFeature2A', 'Tier A tools: 200 calls/mo (VirusTotal)')}</li>
+              <li>✓ {t('billing.proFeature2B', 'Tier B tools: 500 calls/mo (Shodan)')}</li>
+              <li>✓ {t('billing.proFeature2C', 'Tier C tools: 2,000 calls/mo (AbuseIPDB)')}</li>
+              <li>✓ {t('billing.proFeatureModels', 'Custom model providers')}</li>
               <li>✓ {t('billing.proFeature3', 'Priority support')}</li>
             </ul>
             
@@ -292,38 +294,27 @@ const Billing = () => {
           </div>
 
           <div className="subscription-card enterprise">
-            <div className="enterprise-badge">{t('billing.premium', 'Premium')}</div>
-            <h3>ENTERPRISE</h3>
+            <div className="enterprise-badge">{t('billing.privateDeploy', 'Private Deploy')}</div>
+            <h3>{t('billing.enterpriseTitle', 'Enterprise')}</h3>
             <div className="subscription-price">
-              <span className="currency">$</span>
-              <span className="amount">100</span>
-              <span className="period">/month</span>
+              <span className="amount" style={{ fontSize: '1.4rem', fontWeight: 700 }}>{t('billing.contactUs', 'Contact Us')}</span>
             </div>
-            
+
             <ul className="subscription-features">
-              <li>✓ {t('billing.enterpriseFeature1', 'Unlimited daily tokens')}</li>
-              <li>✓ {t('billing.enterpriseFeature2', 'Unlimited MCP servers')}</li>
-              <li>✓ {t('billing.enterpriseFeature3', 'All models including Claude Opus')}</li>
-              <li>✓ {t('billing.enterpriseFeature4', '24/7 priority support')}</li>
+              <li>✓ {t('billing.enterpriseFeature1', 'Self-hosted private deployment')}</li>
+              <li>✓ {t('billing.enterpriseFeature2', 'Unlimited seats & tokens')}</li>
+              <li>✓ {t('billing.enterpriseFeature3', 'Custom model providers')}</li>
+              <li>✓ {t('billing.enterpriseFeature4', 'Dedicated support & SLA')}</li>
             </ul>
-            
+
             <div className="subscription-actions">
-              <button
+              <a
                 className="subscribe-button"
-                onClick={() => handleSubscriptionUpgrade('enterprise', 'monthly')}
+                href="mailto:enterprise@yourdomain.com"
+                style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}
               >
-                {user?.subscription?.PlanName === 'ENTERPRISE' 
-                  ? t('billing.extend', 'Extend')
-                  : t('billing.monthly', 'Monthly')}
-              </button>
-              <button
-                className="subscribe-button secondary"
-                onClick={() => handleSubscriptionUpgrade('enterprise', 'yearly')}
-              >
-                {user?.subscription?.PlanName === 'ENTERPRISE'
-                  ? t('billing.extendYearly', 'Extend (Yearly)')
-                  : `${t('billing.yearly', 'Yearly')} ($1000)`}
-              </button>
+                {t('billing.contactSales', 'Contact Sales')}
+              </a>
             </div>
           </div>
         </div>

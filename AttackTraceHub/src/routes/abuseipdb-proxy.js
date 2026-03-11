@@ -1,7 +1,7 @@
 import express from 'express';
 import fetch from 'node-fetch';
 import { authenticateToken } from '../middleware/auth.js';
-import { prisma } from '../config/database.js';
+import { checkToolQuota, recordToolUsage } from '../middleware/toolQuota.js';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
@@ -21,7 +21,7 @@ const ABUSEIPDB_API_BASE = 'https://api.abuseipdb.com/api/v2';
 //   3. Forwards the full request (method, path, query string, body) to the real AbuseIPDB API.
 //   4. Streams the AbuseIPDB response back to the caller.
 //   5. Records usage for billing / analytics.
-router.all('/*', authenticateToken, async (req, res) => {
+router.all('/*', authenticateToken, checkToolQuota('abuseipdb'), async (req, res) => {
   const abuseipdbApiKey = process.env.ABUSEIPDB_HUB_API_KEY;
   if (!abuseipdbApiKey) {
     logger.error('[AbuseIPDB-Proxy] ABUSEIPDB_HUB_API_KEY is not configured');
@@ -63,7 +63,7 @@ router.all('/*', authenticateToken, async (req, res) => {
   logger.info(`[AbuseIPDB-Proxy] AbuseIPDB responded ${apiResponse.status} for ${req.method} ${apiPath}`);
 
   // Async usage recording — fire and forget, never blocks response
-  recordAbuseIPDBUsage(req.user.id, req.method, apiPath, apiResponse.status).catch(() => {});
+  recordToolUsage(req, apiPath).catch(() => {});
 
   // Forward status and key response headers
   res.status(apiResponse.status);
@@ -75,21 +75,5 @@ router.all('/*', authenticateToken, async (req, res) => {
   // Stream the body back directly
   apiResponse.body.pipe(res);
 });
-
-async function recordAbuseIPDBUsage(userId, method, path, statusCode) {
-  try {
-    await prisma.usageRecord.create({
-      data: {
-        userId,
-        modelName: 'abuseipdb-hub',
-        inputTokens: 1,
-        outputTokens: 0,
-        cost: 0.0001,
-      }
-    });
-  } catch (err) {
-    logger.debug(`[AbuseIPDB-Proxy] Usage record skipped: ${err.message}`);
-  }
-}
 
 export default router;

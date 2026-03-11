@@ -46,23 +46,11 @@ export const SUBSCRIPTION_PLANS = {
       models: ['newmind-medium', 'newmind-small']
     }
   },
-  enterprise: {
-    id: 'enterprise',
-    name: 'ENTERPRISE',
-    monthlyPrice: 100.00,
-    yearlyPrice: 1000.00,
-    features: {
-      dailyTokens: 99999999,
-      mcpServers: 999,
-      models: ['newmind-medium', 'newmind-strong', 'newmind-small']
-    }
-  }
 };
 
 // Plan hierarchy (higher number = higher tier)
 export const PLAN_HIERARCHY = {
   'BASE': 0,
   'PRO': 1,
-  'ENTERPRISE': 2
 };
 

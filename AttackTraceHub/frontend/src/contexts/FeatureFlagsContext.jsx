@@ -2,10 +2,13 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../config/api';
 
 const defaults = {
+  deploymentMode:            'saas',
   billingEnabled:            true,
   ssoEnabled:                true,
   auditExportEnabled:        true,
   enterpriseFeaturesEnabled: false,
+  licenseEnabled:            false,
+  inviteCodeEnabled:         false,
   enabledSSOProviders:       [],
 };
 

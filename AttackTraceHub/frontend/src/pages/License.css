@@ -1,0 +1,160 @@
+.license-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.license-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 0;
+  gap: 12px;
+  color: var(--color-text-secondary, #666);
+}
+
+.license-header {
+  margin-bottom: 24px;
+}
+
+.license-header h1 {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.license-subtitle {
+  font-size: 14px;
+  color: var(--color-text-secondary, #666);
+  margin: 0;
+}
+
+/* Status card */
+.license-status-card {
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.license-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.license-status-label {
+  color: var(--color-text-secondary, #666);
+  font-weight: 500;
+}
+
+.license-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge-active   { background: #d1fae5; color: #065f46; }
+.badge-expired  { background: #fee2e2; color: #991b1b; }
+.badge-inactive { background: #f3f4f6; color: #374151; }
+.badge-invalid  { background: #fef3c7; color: #92400e; }
+
+.license-reason {
+  font-size: 13px;
+  color: var(--color-text-secondary, #888);
+  margin: 4px 0 0;
+}
+
+.text-danger { color: #dc2626; }
+
+/* Admin section */
+.license-admin-section h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.license-hint {
+  font-size: 13px;
+  color: var(--color-text-secondary, #666);
+  margin: 0 0 16px;
+}
+
+.license-message {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.license-message-error   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+.license-message-success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+
+.license-textarea {
+  width: 100%;
+  font-family: 'Menlo', 'Consolas', monospace;
+  font-size: 13px;
+  padding: 12px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px;
+  resize: vertical;
+  background: var(--color-bg, #f9fafb);
+  color: var(--color-text, #111);
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.license-textarea:focus {
+  border-color: var(--color-primary, #6366f1);
+}
+
+.license-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.license-btn {
+  padding: 9px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.license-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.license-btn-primary {
+  background: var(--color-primary, #6366f1);
+  color: #fff;
+}
+.license-btn-primary:hover:not(:disabled) { opacity: 0.88; }
+
+.license-btn-danger {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+.license-btn-danger:hover:not(:disabled) { background: #fecaca; }
+
+.license-non-admin {
+  font-size: 14px;
+  color: var(--color-text-secondary, #666);
+  background: var(--color-surface, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-top: 8px;
+}

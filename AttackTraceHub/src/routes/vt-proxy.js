@@ -1,7 +1,7 @@
 import express from 'express';
 import fetch from 'node-fetch';
 import { authenticateToken } from '../middleware/auth.js';
-import { prisma } from '../config/database.js';
+import { checkToolQuota, recordToolUsage } from '../middleware/toolQuota.js';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
@@ -20,7 +20,7 @@ const VT_API_BASE = 'https://www.virustotal.com/api/v3';
 //   3. Forwards the full request (method, path, query string, body) to the real VT API.
 //   4. Streams the VT response back to the caller.
 //   5. Records usage for billing / analytics.
-router.all('/*', authenticateToken, async (req, res) => {
+router.all('/*', authenticateToken, checkToolQuota('virustotal'), async (req, res) => {
   const vtApiKey = process.env.VIRUSTOTAL_HUB_API_KEY;
   if (!vtApiKey) {
     logger.error('[VT-Proxy] VIRUSTOTAL_HUB_API_KEY is not configured');
@@ -65,7 +65,7 @@ router.all('/*', authenticateToken, async (req, res) => {
   logger.info(`[VT-Proxy] VT responded ${vtResponse.status} for ${req.method} ${vtPath}`);
 
   // Async usage recording — fire and forget, never blocks response
-  recordVtUsage(req.user.id, req.method, vtPath, vtResponse.status).catch(() => {});
+  recordToolUsage(req, vtPath).catch(() => {});
 
   // Forward status and key response headers
   res.status(vtResponse.status);
@@ -78,22 +78,5 @@ router.all('/*', authenticateToken, async (req, res) => {
   // Stream the body back directly
   vtResponse.body.pipe(res);
 });
-
-async function recordVtUsage(userId, method, path, statusCode) {
-  try {
-    await prisma.usageRecord.create({
-      data: {
-        userId,
-        modelName: 'virustotal-hub',
-        inputTokens: 1,
-        outputTokens: 0,
-        cost: 0.0001,
-      }
-    });
-  } catch (err) {
-    // Non-critical — a missing usageRecord schema field should not break the proxy
-    logger.debug(`[VT-Proxy] Usage record skipped: ${err.message}`);
-  }
-}
 
 export default router;

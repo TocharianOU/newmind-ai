@@ -26,7 +26,7 @@ export const MODEL_CONFIG = {
             supports_tools: true,
             supports_streaming: true
         },
-        plans: ['PRO', 'ENTERPRISE', 'BASE']
+        plans: ['PRO', 'BASE']
     },
     'newmind-strong': {
         id: 'newmind-strong',
@@ -40,7 +40,7 @@ export const MODEL_CONFIG = {
             supports_tools: true,
             supports_streaming: true
         },
-        plans: ['ENTERPRISE']  // Only ENTERPRISE
+        plans: ['PRO']  // PRO and above (enterprise deployment gets all models)
     },
     'newmind-small': {
         id: 'newmind-small',
@@ -54,26 +54,37 @@ export const MODEL_CONFIG = {
             supports_tools: true,
             supports_streaming: true
         },
-        plans: ['PRO', 'ENTERPRISE', 'BASE']
+        plans: ['PRO', 'BASE']
     }
+};
+
+// Tool tier mapping: tool name -> tier
+export const TOOL_TIER_MAP = {
+  virustotal: 'A',
+  shodan: 'B',
+  abuseipdb: 'C'
+};
+
+// Monthly default quota per tier per plan
+// X tier (Jira, Confluence, AWS, custom integrations) uses BYOK so no platform quota
+export const TOOL_TIER_QUOTA = {
+  BASE: { A: 20,  B: 50,  C: 200 },
+  PRO:  { A: 200, B: 500, C: 2000 }
 };
 
 // Plan limits
 export const PLAN_LIMITS = {
   BASE: {
-    models: ['newmind-medium','newmind-strong','newmind-small'],
+    models: ['newmind-medium','newmind-small'],
     dailyTokens: 10000000,
-    mcpServers: 999
+    customModels: false,
+    tierQuota: TOOL_TIER_QUOTA.BASE
   },
   PRO: {
-    models: [ 'newmind-medium','newmind-strong','newmind-small'],
-    dailyTokens: 50000000,
-    mcpServers: 999
-  },
-  ENTERPRISE: {
     models: ['newmind-medium','newmind-strong','newmind-small'],
-    dailyTokens: 99999999, // Unlimited
-    mcpServers: 999  // Unlimited
+    dailyTokens: 50000000,
+    customModels: true,
+    tierQuota: TOOL_TIER_QUOTA.PRO
   }
 };
 
