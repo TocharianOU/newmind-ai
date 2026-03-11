@@ -301,7 +301,7 @@ class ModelVerifyService:
         self, host: AttackTraceMcpHost
     ) -> tuple[bool, str | None, ConnectionVerifyState]:
         """Check if the model is connected."""
-        logger.debug("Checking connection, llm: %s", host.config.llm)
+        logger.debug("Checking connection")
         try:
             chat = host.chat(volatile=True)
             async with AsyncExitStack() as stack:
@@ -325,7 +325,7 @@ class ModelVerifyService:
         self, host: AttackTraceMcpHost
     ) -> tuple[bool, str | None, ToolVerifyState | None]:
         """Check if the model supports tools."""
-        logger.debug("Checking tools, llm: %s", host.config.llm)
+        logger.debug("Checking tools")
         try:
             state = ToolVerifyState.TOOL_NOT_USED
 
@@ -363,7 +363,7 @@ class ModelVerifyService:
         self, host: AttackTraceMcpHost
     ) -> tuple[bool, str | None, ToolVerifyState | None]:
         """Check if the model supports tools in prompt."""
-        logger.debug("Checking tools in prompt, llm: %s", host.config.llm)
+        logger.debug("Checking tools in prompt")
         try:
             state = ToolVerifyState.TOOL_NOT_USED
 

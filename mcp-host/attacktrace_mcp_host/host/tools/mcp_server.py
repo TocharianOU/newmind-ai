@@ -224,11 +224,7 @@ class McpServer(ContextProtocol):
         async with asyncio.timeout(self.config.initial_timeout):
             # When using stdio, the initialize call may block indefinitely
             self._initialize_result = await session.initialize()
-            logger.debug(
-                "Client %s initialize result: %s",
-                self.name,
-                self._initialize_result,
-            )
+            logger.debug("Client %s initialized", self.name)
         tool_results = await session.list_tools()
         self._last_active = time.time()
         mcp_tools = [McpTool.from_tool(tool, self) for tool in tool_results.tools]
@@ -1046,7 +1042,7 @@ class McpTool(BaseTool):
             else:
                 kwargs = kwargs["kwargs"]
         logger.debug(
-            "Executing tool %s.%s with args: %s", self.toolkit_name, self.name, kwargs
+            "Executing tool %s.%s (args_keys: %s)", self.toolkit_name, self.name, list(kwargs.keys())
         )
         async with self.mcp_server.session(chat_id) as session:
             stream_writer_task = asyncio.create_task(

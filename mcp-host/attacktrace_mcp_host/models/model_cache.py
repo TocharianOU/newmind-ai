@@ -77,13 +77,12 @@ class ModelInfoCache:
         Get model info from cache or fetch from hub.
         Implements smart refresh strategy.
         """
-        logger.info(f"💾 [CACHE] get_or_fetch called for {model_name}")
-        logger.info(f"🔑 [CACHE] API key: {api_key[:20] if api_key else 'None'}...")
+        logger.debug(f"[CACHE] get_or_fetch: {model_name}")
         
         # Check L1 cache
         with self.cache_lock:
             cached = self.l1_cache.get(model_name)
-            logger.info(f"📁 [CACHE] Cache status for {model_name}: {'HIT' if cached else 'MISS'}")
+            logger.debug(f"[CACHE] {model_name}: {'HIT' if cached else 'MISS'}")
             
             if cached:
                 # Return cached data if valid
@@ -100,11 +99,10 @@ class ModelInfoCache:
                     'metadata': cached.metadata,
                     'native_format': cached.native_format
                 }
-                logger.info(f"✅ [CACHE] Returning cached data for {model_name}: {result}")
                 return result
         
         # No valid cache, fetch synchronously
-        logger.info(f"📡 [CACHE] No valid cache, fetching from hub for {model_name}")
+        logger.debug(f"[CACHE] Fetching {model_name} from hub")
         return self._fetch_and_cache(model_name, hub_base_url, api_key)
     
     def _fetch_and_cache(self, model_name: str, hub_base_url: str, api_key: str) -> Optional[Dict[str, Any]]:
@@ -112,10 +110,10 @@ class ModelInfoCache:
         try:
             # Only fetch if we have a valid API key
             if not api_key or api_key == "":
-                logger.warning(f"❌ [CACHE] Skipping fetch for {model_name}: no API key")
+                logger.warning(f"[CACHE] Skipping {model_name}: no API key")
                 return None
             
-            logger.info(f"🌐 [CACHE] Fetching from hub: {hub_base_url}/api/v1/models")
+            logger.debug(f"[CACHE] Fetching from hub")
                 
             clean_base_url = hub_base_url.rstrip('/api/v1').rstrip('/v1').rstrip('/')
             response = requests.get(
@@ -144,7 +142,7 @@ class ModelInfoCache:
                         with self.cache_lock:
                             self.l1_cache[model_name] = model_info
                         
-                        logger.info(f"✅ [CACHE] Successfully cached model info for {model_name}: provider={model_info.provider}, native_format={model_info.native_format}")
+                        logger.debug(f"[CACHE] Cached {model_name}: provider={model_info.provider}")
                         
                         return {
                             'id': model_info.id,
@@ -155,10 +153,10 @@ class ModelInfoCache:
                         }
             
             elif response.status_code == 401:
-                logger.warning(f"🚫 [CACHE] Auth failed for {model_name}: invalid or expired token")
+                logger.warning(f"[CACHE] Auth failed for {model_name}")
                 return None
                 
-            logger.warning(f"🔍 [CACHE] Model {model_name} not found in hub response")
+            logger.warning(f"[CACHE] Model {model_name} not found in hub")
             return None
             
         except requests.exceptions.RequestException as e:

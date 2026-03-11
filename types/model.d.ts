@@ -12,8 +12,7 @@ export type BaseProvider =
   "grok" |
   "nvdia" |
   "perplexity" |
-  "azure_openai" |
-  "newmind"
+  "azure_openai"
 
 export type ModelVerifyStatus = "ignore" | "success" | "successInPrompt" | "unSupportTool" | "unSupportModel" | "unVerified" | "error" | "verifying" | "abort"
 

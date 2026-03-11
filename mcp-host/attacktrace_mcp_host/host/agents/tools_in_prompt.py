@@ -42,13 +42,11 @@ def extract_tool_calls(response: AIMessage) -> AIMessage:
                         args=args,
                         id=tool_call_id,
                     )
-                    logger.debug("found tool call: %s", tool_call)
+                    logger.debug("found tool call: %s", tool_call["name"])
                     response.content = response.content.replace(match, "")
                     response.tool_calls.append(tool_call)
                 except json.JSONDecodeError:
-                    logger.warning(
-                        "Failed to parse tool call arguments: %s", args_match.group(1)
-                    )
+                    logger.warning("Failed to parse tool call arguments (len=%d)", len(args_match.group(1)))
                 continue
             # Try JSON format
             json_match = re.search(r"\{[^<]*\}", match, re.DOTALL)
@@ -61,7 +59,7 @@ def extract_tool_calls(response: AIMessage) -> AIMessage:
                         args=tool_call.get("arguments", ""),
                         id=tool_call_id,
                     )
-                    logger.debug("found tool call: %s", tool_call)
+                    logger.debug("found tool call: %s", tool_call["name"])
                     response.content = response.content.replace(match, "")
                     response.tool_calls.append(tool_call)
                     continue
@@ -70,8 +68,8 @@ def extract_tool_calls(response: AIMessage) -> AIMessage:
 
     else:
         logger.debug(
-            "Response content is not a string, cannot extract tool calls: %s",
-            response.content,
+            "Response content is not a string, cannot extract tool calls (type=%s)",
+            type(response.content).__name__,
         )
 
     return response

@@ -22,14 +22,12 @@ export const updateOAPUsageAtom = atom(null, async (get, set) => {
 })
 
 export const isOAPUsageLimitAtom = atom((get) => {
-  const OAPLevel = get(OAPLevelAtom)
   const oapUsage = get(oapUsageAtom)
-  return oapUsage
-        && OAPLevel !== "BASE"
-        && oapUsage?.total >= oapUsage?.limit
-        && ((oapUsage?.coupon?.limit ?? 0) === 0
-          || (oapUsage?.coupon?.limit > 0 && oapUsage?.coupon?.total >= oapUsage?.coupon?.limit)
-        )
+  if (!oapUsage) return false
+  const overMainQuota = oapUsage.total >= oapUsage.limit
+  const couponExhausted = (oapUsage.coupon?.limit ?? 0) === 0
+    || (oapUsage.coupon.limit > 0 && oapUsage.coupon.total >= oapUsage.coupon.limit)
+  return overMainQuota && couponExhausted
 })
 
 export const OAPLevelAtom = atom((get) => {

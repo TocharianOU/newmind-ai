@@ -15,6 +15,7 @@ import Billing from './pages/Billing';
 import PaymentSuccess from './pages/PaymentSuccess';
 import AdminStats from './pages/AdminStats';
 import AdminModels from './pages/AdminModels';
+import AdminToolStats from './pages/AdminToolStats';
 import License from './pages/License';
 import './App.css';
 
@@ -152,6 +153,18 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <AdminModels />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin: Tool Usage Stats */}
+      <Route
+        path="/admin/tool-stats"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <AdminToolStats />
             </Layout>
           </ProtectedRoute>
         }

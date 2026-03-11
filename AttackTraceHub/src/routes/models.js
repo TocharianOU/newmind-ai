@@ -19,6 +19,14 @@ router.get('/models', authenticateToken, async (req, res) => {
     // Static models from constants
     for (const [modelId, config] of Object.entries(MODEL_CONFIG)) {
       if (config.plans.includes(userPlan)) {
+        const publicMetadata = {
+          managed: Boolean(config.metadata?.managed),
+          native_format: Boolean(config.metadata?.native_format),
+          native_client: config.metadata?.native_client || undefined,
+          supports_tools: Boolean(config.metadata?.supports_tools),
+          supports_streaming: Boolean(config.metadata?.supports_streaming),
+        };
+
         models.push({
           id: config.id,
           object: config.object,
@@ -29,7 +37,7 @@ router.get('/models', authenticateToken, async (req, res) => {
           permission: [],
           root: config.id,
           parent: null,
-          metadata: config.metadata
+          metadata: publicMetadata
         });
       }
     }

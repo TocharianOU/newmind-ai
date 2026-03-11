@@ -4,6 +4,9 @@ import { useLanguage } from '../contexts/LanguageContext';
 import api from '../config/api';
 import './Billing.css';
 
+const TIER_COLORS = { A: '#e53e3e', B: '#dd6b20', C: '#38a169' };
+const TIER_LABELS = { A: 'Tier A', B: 'Tier B', C: 'Tier C' };
+
 // 直接使用后端返回的 Checkout 会话 URL，避免依赖 Stripe.js CDN
 
 // Plan hierarchy (must match backend)
@@ -16,6 +19,7 @@ const Billing = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [packages, setPackages] = useState([]);
+  const [toolQuotaPackages, setToolQuotaPackages] = useState([]);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingPurchase, setLoadingPurchase] = useState(null);
@@ -30,9 +34,10 @@ const Billing = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [packagesRes, historyRes] = await Promise.all([
+      const [packagesRes, historyRes, toolPkgRes] = await Promise.all([
         api.get('/api/v1/payment/token-packages'),
-        api.get('/api/v1/payment/history')
+        api.get('/api/v1/payment/history'),
+        api.get('/api/v1/payment/tool-quota-packages').catch(() => null),
       ]);
 
       if (packagesRes.data.status === 'success') {
@@ -41,6 +46,10 @@ const Billing = () => {
 
       if (historyRes.data.status === 'success') {
         setHistory(historyRes.data.data);
+      }
+
+      if (toolPkgRes?.data?.status === 'success') {
+        setToolQuotaPackages(toolPkgRes.data.data);
       }
     } catch (error) {
       console.error('Error fetching billing data:', error);
@@ -67,6 +76,22 @@ const Billing = () => {
       }
     } catch (error) {
       setErrorMessage(t('billing.checkoutFailed', 'Failed to create checkout session. Please try again.'));
+      setLoadingPurchase(null);
+    }
+  };
+
+  const handleToolQuotaPurchase = async (packageId) => {
+    setLoadingPurchase(packageId);
+    try {
+      const response = await api.post('/api/v1/payment/create-tool-quota-checkout', { packageId });
+      if (response.data.status === 'success') {
+        const { url } = response.data.data;
+        if (url) { window.location.href = url; return; }
+        setErrorMessage(t('billing.checkoutUnavailable', 'Checkout URL not available.'));
+      }
+    } catch (error) {
+      setErrorMessage(t('billing.checkoutFailed', 'Failed to create checkout session. Please try again.'));
+    } finally {
       setLoadingPurchase(null);
     }
   };
@@ -242,25 +267,68 @@ const Billing = () => {
         </div>
       </section>
 
+      {/* Tool Quota Packages */}
+      {toolQuotaPackages.length > 0 && (
+        <section className="token-packages">
+          <h2>{t('billing.toolQuotaPackages', 'Tool Call Quota Packages')}</h2>
+          <p className="section-subtitle">
+            {t('billing.toolQuotaDesc', 'Purchase additional tool calls for high-cost integrations. Extra calls never expire.')}
+          </p>
+          <div className="packages-grid">
+            {toolQuotaPackages.map(pkg => (
+              <div key={pkg.id} className={`package-card ${pkg.popular ? 'popular' : ''}`}>
+                {pkg.popular && (
+                  <div className="popular-badge">{t('billing.mostPopular', 'Most Popular')}</div>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <span
+                    className="tool-tier-badge-sm"
+                    style={{ background: TIER_COLORS[pkg.tier] }}
+                  >
+                    {TIER_LABELS[pkg.tier]}
+                  </span>
+                  <h3 style={{ margin: 0 }}>{pkg.calls.toLocaleString()} {t('billing.calls', 'calls')}</h3>
+                </div>
+                <div className="package-price">
+                  <span className="currency">$</span>
+                  <span className="amount">{pkg.price.toFixed(2)}</span>
+                </div>
+                <p className="package-description">{pkg.description}</p>
+                <button
+                  className="buy-button"
+                  onClick={() => handleToolQuotaPurchase(pkg.id)}
+                  disabled={loadingPurchase === pkg.id}
+                >
+                  {loadingPurchase === pkg.id
+                    ? <span className="spinner-small"></span>
+                    : t('billing.buyNow', 'Buy Now')}
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Subscription Upgrade */}
       <section className="subscription-upgrade">
         <h2>{t('billing.upgradeSubscription', 'Upgrade Subscription')}</h2>
-        <p className="section-subtitle">{t('billing.subscriptionDesc', 'Get daily token allowance and premium features')}</p>
+        <p className="section-subtitle">{t('billing.subscriptionDesc', 'Get monthly token allowance and premium features')}</p>
         
         <div className="subscription-cards">
           <div className="subscription-card">
             <h3>PRO</h3>
             <div className="subscription-price">
               <span className="currency">$</span>
-              <span className="amount">20</span>
+              <span className="amount">49</span>
               <span className="period">/month</span>
             </div>
             
             <ul className="subscription-features">
-              <li>✓ {t('billing.proFeature1', '50M daily tokens')}</li>
-              <li>✓ {t('billing.proFeature2A', 'Tier A tools: 200 calls/mo (VirusTotal)')}</li>
-              <li>✓ {t('billing.proFeature2B', 'Tier B tools: 500 calls/mo (Shodan)')}</li>
-              <li>✓ {t('billing.proFeature2C', 'Tier C tools: 2,000 calls/mo (AbuseIPDB)')}</li>
+              <li>✓ {t('billing.proFeatureMedium', '5M gifted tokens/month (medium + strong)')}</li>
+              <li>✓ {t('billing.proFeatureStrong', 'strong-agent access (3× token multiplier)')}</li>
+              <li>✓ {t('billing.proFeature2A', 'Tier A tools: 2,000 calls/mo')}</li>
+              <li>✓ {t('billing.proFeature2B', 'Tier B tools: 3,000 calls/mo')}</li>
+              <li>✓ {t('billing.proFeature2C', 'Tier C tools: 5,000 calls/mo')}</li>
               <li>✓ {t('billing.proFeatureModels', 'Custom model providers')}</li>
               <li>✓ {t('billing.proFeature3', 'Priority support')}</li>
             </ul>
@@ -288,7 +356,7 @@ const Billing = () => {
                   ? t('billing.extendYearly', 'Extend (Yearly)')
                   : !canPurchasePlan('pro')
                   ? t('billing.unavailable', 'Unavailable')
-                  : `${t('billing.yearly', 'Yearly')} ($200)`}
+                  : `${t('billing.yearly', 'Yearly')} ($490)`}
               </button>
             </div>
           </div>
@@ -405,8 +473,8 @@ const Billing = () => {
                     <span className="label">{t('billing.cost', 'Cost')}:</span>
                     <span className="value">
                       ${pendingPurchase.period === 'monthly' 
-                        ? (pendingPurchase.planId === 'pro' ? '20.00' : '100.00')
-                        : (pendingPurchase.planId === 'pro' ? '200.00' : '1000.00')}
+                        ? (pendingPurchase.planId === 'pro' ? '49.00' : '100.00')
+                        : (pendingPurchase.planId === 'pro' ? '490.00' : '1000.00')}
                     </span>
                   </div>
                 </div>

@@ -157,9 +157,9 @@ async function main() {
   // Create model descriptions
   const models = [
     {
-      modelId: 'newmind-medium',
-      name: 'AttackTrace Medium (Claude Sonnet)',
-      provider: 'anthropic',
+      modelId: 'medium-agent',
+      name: 'OAP Medium Agent',
+      provider: 'oap',
       tokenCost: 0.015,
       description: 'Advanced reasoning and analysis',
       extra: JSON.stringify({
@@ -169,9 +169,9 @@ async function main() {
       updatedAt: now,
     },
     {
-      modelId: 'newmind-strong',
-      name: 'AttackTrace Strong (Claude Opus)',
-      provider: 'anthropic',
+      modelId: 'strong-agent',
+      name: 'OAP Strong Agent',
+      provider: 'oap',
       tokenCost: 0.075,
       description: 'Most capable model for complex tasks',
       extra: JSON.stringify({

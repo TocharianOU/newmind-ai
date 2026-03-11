@@ -9,6 +9,7 @@ import { requireAdmin } from '../middleware/requireAdmin.js';
 import { prisma } from '../config/database.js';
 import { createResponse } from '../config/constants.js';
 import logger from '../utils/logger.js';
+import { writeAudit, AUDIT_ACTIONS, RESOURCE_TYPES } from '../utils/auditLog.js';
 
 const router = express.Router();
 
@@ -53,6 +54,13 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
     });
 
     logger.info(`[CustomModels] Created model ${modelId} by ${req.user.email}`);
+    await writeAudit(req, {
+      userId: req.user.id,
+      action: AUDIT_ACTIONS.CUSTOM_MODEL_CREATED,
+      resourceType: RESOURCE_TYPES.CUSTOM_MODEL,
+      resourceId: model.id,
+      metadata: { modelId, name, provider },
+    });
     res.status(201).json(createResponse(model));
   } catch (err) {
     logger.error('[CustomModels] create error:', err);
@@ -93,6 +101,13 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
     });
 
     logger.info(`[CustomModels] Updated model ${updated.modelId} by ${req.user.email}`);
+    await writeAudit(req, {
+      userId: req.user.id,
+      action: AUDIT_ACTIONS.CUSTOM_MODEL_UPDATED,
+      resourceType: RESOURCE_TYPES.CUSTOM_MODEL,
+      resourceId: id,
+      metadata: { modelId: updated.modelId, name: updated.name, active: updated.active },
+    });
     res.json(createResponse(updated));
   } catch (err) {
     logger.error('[CustomModels] update error:', err);
@@ -111,6 +126,13 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
 
     await prisma.customModel.delete({ where: { id } });
     logger.info(`[CustomModels] Deleted model ${existing.modelId} by ${req.user.email}`);
+    await writeAudit(req, {
+      userId: req.user.id,
+      action: AUDIT_ACTIONS.CUSTOM_MODEL_DELETED,
+      resourceType: RESOURCE_TYPES.CUSTOM_MODEL,
+      resourceId: id,
+      metadata: { modelId: existing.modelId, name: existing.name },
+    });
     res.json(createResponse({ deleted: true }));
   } catch (err) {
     logger.error('[CustomModels] delete error:', err);

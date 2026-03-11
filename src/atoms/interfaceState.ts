@@ -22,7 +22,6 @@ export const PROVIDERS: ModelProvider[] = [
   "nvdia",
   "perplexity",
   "oap",
-  "newmind"
 ] as const
 
 export const PROVIDER_LABELS: Record<ModelProvider, string> = {
@@ -41,7 +40,6 @@ export const PROVIDER_LABELS: Record<ModelProvider, string> = {
   perplexity: "Perplexity",
   oap: "OAP",
   azure_openai: "Azure OpenAI",
-  newmind: "AttackTrace",
   default: "Default",
 }
 
@@ -61,7 +59,6 @@ export const PROVIDER_ICONS: Record<ModelProvider, string> = {
   perplexity: `${imgPrefix}model_perplexity.svg`,
   oap: `${imgPrefix}logo_oap.png`,
   azure_openai: `${imgPrefix}model_azure.svg`,
-  newmind: `${imgPrefix}logo_oap.png`,
   default: "",
 }
 
@@ -449,35 +446,12 @@ export const defaultInterface: Record<ModelProvider, InterfaceDefinition> = {
   grok: openaiCompatibleTemplate("https://api.x.ai/v1"),
   nvdia: openaiCompatibleTemplate("https://integrate.api.nvidia.com/v1"),
   perplexity: openaiCompatibleTemplate("https://api.perplexity.ai"),
-  newmind: openaiCompatibleTemplate(`${OAP_PROXY_URL}/api/newmind`, {
-    apiKey: {
-      // The API key is the user's OAP JWT token.
-      // This function retrieves the token when the provider is selected.
-      getValue: async () => {
-        try {
-          const token = await oapGetToken();
-          if (!token) {
-            console.warn("AttackTrace provider requires login, but no token was found.");
-            // We return a placeholder value here. The subsequent API call to fetch
-            // the model list will fail gracefully, and the UI will show an error,
-            // which is the correct behavior if the user is not logged in.
-            return "not_logged_in";
-          }
-          return token;
-        } catch (error) {
-          console.error("Failed to get OAP token for AttackTrace provider:", error);
-          return "not_logged_in";
-        }
-      }
-    }
-  }),
 }
 
 export const isProviderIconNoFilter = (model: ModelProvider, userTheme: string, systemTheme: string) => {
   const isLightMode = userTheme === "system" ? systemTheme === "light" : userTheme === "light"
   switch (model) {
     case "oap":
-    case "newmind":
     case "ollama":
     case "openai_compatible":
     case "bedrock":

@@ -330,9 +330,8 @@ class ChatProcessor:
     ) -> tuple[str, TokenUsage]:
         """Handle chat."""
         logger.debug(
-            "Handle chat, chat_id: %s, query_input: %s, regenerate_message_id: %s",
+            "Handle chat, chat_id: %s, regenerate_message_id: %s",
             chat_id,
-            query_input,
             regenerate_message_id,
         )
 
@@ -754,17 +753,13 @@ class ChatProcessor:
             if res_type == "messages":
                 message, _ = res_content
                 if isinstance(message, AIMessage):
-                    logger.log(TRACE, "got AI message: %s", message.model_dump_json())
+                    logger.log(TRACE, "got AI message id=%s len=%d", message.id, len(str(message.content)))
                     if message.content:
                         await self._stream_text_msg(message)
                 elif isinstance(message, ToolMessage):
-                    logger.log(TRACE, "got tool message: %s", message.model_dump_json())
+                    logger.log(TRACE, "got tool message id=%s", message.id)
                     if message.response_metadata.get(FAKE_TOOL_RESPONSE, False):
-                        logger.log(
-                            TRACE,
-                            "ignore fake tool response: %s",
-                            message.model_dump_json(),
-                        )
+                        logger.log(TRACE, "ignore fake tool response id=%s", message.id)
                         continue
                     await self._stream_tool_result_msg(message)
                 else:
@@ -786,8 +781,9 @@ class ChatProcessor:
                         if isinstance(msg, AIMessage) and msg.tool_calls:
                             logger.log(
                                 TRACE,
-                                "got tool call message: %s",
-                                msg.model_dump_json(),
+                                "got tool call message id=%s calls=%d",
+                                msg.id,
+                                len(msg.tool_calls),
                             )
                             await self._stream_tool_calls_msg(msg)
             elif res_type == "custom":

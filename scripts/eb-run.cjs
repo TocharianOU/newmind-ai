@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Wrapper for electron-builder that:
 // 1. Cleans mcp-host/.venv (removes external symlinks that break asar)
-// 2. Reads PRODUCT_NAME from .env and injects --config.productName
+// 2. Reads VITE_APP_NAME from .env and injects --config.productName
 // Usage: node scripts/eb-run.cjs [electron-builder args...]
 
 const { execSync } = require("child_process")
@@ -20,12 +20,12 @@ if (fs.existsSync(venvPath)) {
 
 // Build electron-builder command with all passed args
 const args = process.argv.slice(2)
-const productName = process.env.PRODUCT_NAME
+const productName = process.env.VITE_APP_NAME
 
 const cmd = ["electron-builder", ...args]
 if (productName) {
   cmd.push(`--config.productName=${productName}`)
-  console.log(`Using PRODUCT_NAME: ${productName}`)
+  console.log(`Using VITE_APP_NAME: ${productName}`)
 }
 
 execSync(cmd.join(" "), { stdio: "inherit" })

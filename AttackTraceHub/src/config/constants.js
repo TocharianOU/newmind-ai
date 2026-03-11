@@ -1,61 +1,48 @@
-// Model mapping: newmind -> real models
+// Per-agent runtime config. Each agent has its own upstream provider so
+// medium and strong can point to different services or model tiers.
 export const MODEL_MAPPING = {
-    'newmind-medium': 'claude-sonnet-4-5',
-    'newmind-strong': 'claude-opus-4-1',
-    'newmind-small': 'qwen/qwen3-coder-30b'
+    'medium-agent': process.env.MEDIUM_AGENT_MODEL_ID || '',
+    'strong-agent': process.env.STRONG_AGENT_MODEL_ID || '',
 };
 
-// Model provider configuration
+// Product-facing provider configuration only. Runtime transport is resolved in proxy.js.
 export const MODEL_PROVIDERS = {
-    'newmind-medium': { type: 'anthropic', endpoint: '/v1/messages' },
-    'newmind-strong': { type: 'anthropic', endpoint: '/v1/messages' },
-    'newmind-small': { type: 'lmstudio', endpoint: '/v1/chat/completions', url: process.env.CUSTOM_LMSTUDIO_URL || 'http://localhost:11234' }
+    'medium-agent': { type: 'managed', endpoint: '/messages' },
+    'strong-agent': { type: 'managed', endpoint: '/messages' },
 };
 
-// Complete model configuration
+// Complete model configuration — provider is always 'oap' (public brand).
 export const MODEL_CONFIG = {
-    'newmind-medium': {
-        id: 'newmind-medium',
+    'medium-agent': {
+        id: 'medium-agent',
         object: 'model',
-        owned_by: 'newmind',
-        provider: 'anthropic',  // For MCP Host
-        endpoint: '/v1/messages',  // For MCP Host
+        owned_by: 'oap',
+        provider: 'oap',
+        endpoint: '/messages',
         metadata: {
             native_format: true,
-            real_provider: 'anthropic',
+            managed: true,
+            native_client: process.env.MEDIUM_AGENT_CLIENT_TYPE || 'anthropic',
             supports_tools: true,
             supports_streaming: true
         },
         plans: ['PRO', 'BASE']
     },
-    'newmind-strong': {
-        id: 'newmind-strong',
+    'strong-agent': {
+        id: 'strong-agent',
         object: 'model',
-        owned_by: 'newmind',
-        provider: 'anthropic',
-        endpoint: '/v1/messages',
+        owned_by: 'oap',
+        provider: 'oap',
+        endpoint: '/messages',
         metadata: {
             native_format: true,
-            real_provider: 'anthropic',
+            managed: true,
+            native_client: process.env.STRONG_AGENT_CLIENT_TYPE || 'anthropic',
             supports_tools: true,
             supports_streaming: true
         },
-        plans: ['PRO']  // PRO and above (enterprise deployment gets all models)
+        plans: ['PRO']
     },
-    'newmind-small': {
-        id: 'newmind-small',
-        object: 'model',
-        owned_by: 'newmind',
-        provider: 'openai',  // For MCP Host
-        endpoint: '/v1/chat/completions',  // For MCP Host
-        metadata: {
-            native_format: true,
-            real_provider: 'openai',
-            supports_tools: true,
-            supports_streaming: true
-        },
-        plans: ['PRO', 'BASE']
-    }
 };
 
 // Tool tier mapping: tool name -> tier
@@ -68,81 +55,93 @@ export const TOOL_TIER_MAP = {
 // Monthly default quota per tier per plan
 // X tier (Jira, Confluence, AWS, custom integrations) uses BYOK so no platform quota
 export const TOOL_TIER_QUOTA = {
-  BASE: { A: 20,  B: 50,  C: 200 },
-  PRO:  { A: 200, B: 500, C: 2000 }
+  BASE: { A: 500,  B: 800,  C: 1500 },
+  PRO:  { A: 2000, B: 3000, C: 5000 }
 };
 
-// Plan limits
+// Plan limits — all token quotas are MONTHLY, not daily.
+// Supports env overrides for quick pricing changes without a code deploy.
 export const PLAN_LIMITS = {
   BASE: {
-    models: ['newmind-medium','newmind-small'],
-    dailyTokens: 10000000,
+    models: ['medium-agent'],
+    monthlyTokens: parseInt(process.env.BASE_MONTHLY_TOKENS || '2000000', 10),  // 2M / month
     customModels: false,
     tierQuota: TOOL_TIER_QUOTA.BASE
   },
   PRO: {
-    models: ['newmind-medium','newmind-strong','newmind-small'],
-    dailyTokens: 50000000,
+    models: ['medium-agent', 'strong-agent'],
+    monthlyTokens: parseInt(process.env.PRO_MONTHLY_TOKENS  || '5000000', 10),  // 5M / month
     customModels: true,
     tierQuota: TOOL_TIER_QUOTA.PRO
   }
 };
 
-// Token pricing (per 1K tokens)
+// Internal cost accounting (per 1K raw tokens) is private runtime config.
+// Keep these in env / admin config rather than source code to avoid exposing
+// upstream model economics in distributed builds.
 export const TOKEN_PRICING = {
-  'newmind-medium': {
-    input: 0.003,
-    output: 0.015
+  'medium-agent': {
+    input: parseFloat(process.env.MODEL_COST_MEDIUM_INPUT_PER_1K || '0'),
+    output: parseFloat(process.env.MODEL_COST_MEDIUM_OUTPUT_PER_1K || '0')
   },
-  'newmind-strong': {
-    input: 0.015,
-    output: 0.075
+  'strong-agent': {
+    input: parseFloat(process.env.MODEL_COST_STRONG_INPUT_PER_1K || '0'),
+    output: parseFloat(process.env.MODEL_COST_STRONG_OUTPUT_PER_1K || '0')
   },
-  'newmind-small': {
-    input: 0.001,  // Lower cost for local model
-    output: 0.002
-  }
 };
 
-// Check user's daily token usage
-export const checkTokenUsage = async (userId, userPlan) => {
+// Product-level token multiplier applied when deducting from user's token balance.
+// UsageRecord always stores real tokens for cost analytics.
+// tokenBalance is deducted by: real_tokens * multiplier
+// Supports env override for quick pricing adjustments without a code deploy.
+export const MODEL_MULTIPLIER = {
+  'medium-agent': parseFloat(process.env.MODEL_MULTIPLIER_MEDIUM || '1'),
+  'strong-agent': parseFloat(process.env.MODEL_MULTIPLIER_STRONG || '3'),
+};
+
+// Check user's monthly token usage (product tokens = real tokens * MODEL_MULTIPLIER).
+// UsageRecord stores raw tokens; we apply the multiplier here for quota checking
+// so that strong usage is counted at 3x against the shared monthly balance.
+export const checkTokenUsage = async (userId, userPlan, modelName = null) => {
   try {
-    // Import prisma dynamically to avoid circular dependencies
     const { prisma } = await import('./database.js');
-    
-    // Get plan limits
+
     const planLimits = PLAN_LIMITS[userPlan] || PLAN_LIMITS.BASE;
-    const dailyLimit = planLimits.dailyTokens;
-    
-    // Calculate usage for current day
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    
-    const usageRecords = await prisma.usageRecord.findMany({
-      where: {
-        userId: userId,
-        createdAt: {
-          gte: startOfDay
-        }
-      }
+    const monthlyLimit = planLimits.monthlyTokens;
+
+    // Start of current calendar month (UTC)
+    const now = new Date();
+    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
+    const allRecords = await prisma.usageRecord.findMany({
+      where: { userId, createdAt: { gte: startOfMonth } },
+      select: { modelName: true, inputTokens: true, outputTokens: true }
     });
-    
-    // Calculate total tokens used today
-    const totalTokensUsed = usageRecords.reduce((acc, record) => {
-      return acc + record.inputTokens + record.outputTokens;
+
+    // Sum product tokens (real tokens * multiplier for each model)
+    const totalProductTokensUsed = allRecords.reduce((acc, r) => {
+      const multiplier = MODEL_MULTIPLIER[r.modelName] ?? 1;
+      return acc + (r.inputTokens + r.outputTokens) * multiplier;
     }, 0);
-    
-    const remainingTokens = dailyLimit - totalTokensUsed;
-    
+
+    if (totalProductTokensUsed >= monthlyLimit) {
+      return {
+        allowed: false,
+        totalUsed: totalProductTokensUsed,
+        monthlyLimit,
+        remaining: 0,
+        error: `Monthly token limit exceeded (${totalProductTokensUsed}/${monthlyLimit}). Limit resets on the 1st of next month.`
+      };
+    }
+
     return {
-      allowed: remainingTokens > 0,
-      totalUsed: totalTokensUsed,
-      dailyLimit: dailyLimit,
-      remaining: remainingTokens,
-      error: remainingTokens <= 0 ? `Daily token limit exceeded. Used: ${totalTokensUsed}/${dailyLimit} tokens. Limit resets at midnight.` : null
+      allowed: true,
+      totalUsed: totalProductTokensUsed,
+      monthlyLimit,
+      remaining: monthlyLimit - totalProductTokensUsed,
+      error: null
     };
   } catch (error) {
-    // If there's an error checking usage, allow the request but log the error
     console.error('Error checking token usage:', error);
     return { allowed: true, error: null };
   }
@@ -166,16 +165,16 @@ export const checkModelAccess = async (model, userPlan, userId = null) => {
     };
   }
   
-  // Check token usage limits (if userId provided)
+  // Check token usage limits (if userId provided), scoped to this model for per-model caps
   if (userId) {
-    const tokenCheck = await checkTokenUsage(userId, userPlan);
+    const tokenCheck = await checkTokenUsage(userId, userPlan, model);
     if (!tokenCheck.allowed) {
       return {
         allowed: false,
         error: tokenCheck.error,
         tokenUsage: {
           used: tokenCheck.totalUsed,
-          limit: tokenCheck.dailyLimit,
+          limit: tokenCheck.monthlyLimit,
           remaining: tokenCheck.remaining
         }
       };

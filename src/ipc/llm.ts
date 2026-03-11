@@ -19,9 +19,6 @@ export function fetchElectronModels(provider: ModelProvider, apiKey: string, bas
     return window.ipcRenderer.mistralaiModelList(apiKey)
   case "azure_openai":
     return window.ipcRenderer.azureOpenaiModelList(apiKey, ...(extra as [string, string, string]))
-  case "newmind":
-    // AttackTrace uses OpenAI-compatible API format
-    return window.ipcRenderer.openaiCompatibleModelList(apiKey, baseURL)
   // openai compatible
   default:
     return window.ipcRenderer.openaiCompatibleModelList(apiKey, baseURL)
@@ -64,9 +61,6 @@ export async function fetchTauriModels(provider: ModelProvider, apiKey: string, 
     }
 
     return wrapper(invoke("llm_openai_azure_model_list", { apiKey, endpoint, deployment, apiVersion }))
-  case "newmind":
-    // AttackTrace uses OpenAI-compatible API format
-    return wrapper(invoke("llm_openai_compatible_model_list", { apiKey, baseUrl }))
   // openai compatible
   default:
     return wrapper(invoke("llm_openai_compatible_model_list", { apiKey, baseUrl }))

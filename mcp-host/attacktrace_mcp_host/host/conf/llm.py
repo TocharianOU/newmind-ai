@@ -279,7 +279,7 @@ class LLMOapConfig(LLMConfig):
     @model_validator(mode="after")
     def update_max_tokens(self) -> Self:
         """Update default headers for large tokens."""
-        # All OAP models default to 32000 tokens (safe for newmind models with 128k/256k context)
+        # All OAP models default to 32000 tokens (safe for managed models with 128k/256k context)
         if self.max_tokens is None:
             self.max_tokens = 32000
         # Enable extended output headers for large token configurations

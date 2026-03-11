@@ -19,6 +19,7 @@
 
 import { prisma } from '../config/database.js'
 import logger from './logger.js'
+import { appendAuditFile } from './auditFileWriter.js'
 
 // ── Action constants ────────────────────────────────────────────────────────
 
@@ -66,6 +67,22 @@ export const AUDIT_ACTIONS = {
   // License (enterprise)
   LICENSE_ACTIVATED:   'LICENSE_ACTIVATED',
   LICENSE_DEACTIVATED: 'LICENSE_DEACTIVATED',
+
+  // Model usage
+  MODEL_CALL: 'MODEL_CALL',
+
+  // Tool usage
+  TOOL_CALL:          'TOOL_CALL',
+  TOOL_QUOTA_EXCEEDED: 'TOOL_QUOTA_EXCEEDED',
+
+  // Token balance
+  TOKEN_ADDED:    'TOKEN_ADDED',
+  TOKEN_DEDUCTED: 'TOKEN_DEDUCTED',
+
+  // Custom model management
+  CUSTOM_MODEL_CREATED:  'CUSTOM_MODEL_CREATED',
+  CUSTOM_MODEL_UPDATED:  'CUSTOM_MODEL_UPDATED',
+  CUSTOM_MODEL_DELETED:  'CUSTOM_MODEL_DELETED',
 }
 
 export const RESOURCE_TYPES = {
@@ -77,6 +94,10 @@ export const RESOURCE_TYPES = {
   PAYMENT:       'PAYMENT',
   USER:          'USER',
   LICENSE:       'LICENSE',
+  MODEL:         'MODEL',
+  TOOL:          'TOOL',
+  TOKEN:         'TOKEN',
+  CUSTOM_MODEL:  'CUSTOM_MODEL',
 }
 
 // ── Core helper ─────────────────────────────────────────────────────────────
@@ -95,6 +116,8 @@ export const RESOURCE_TYPES = {
 export async function writeAudit(req, payload) {
   try {
     const { userId, action, resourceType, resourceId, projectId, metadata } = payload
+    const ipAddress = getClientIp(req)
+    const userAgent = (req?.headers?.['user-agent'] ?? '').slice(0, 500) || null
 
     await prisma.auditLog.create({
       data: {
@@ -104,9 +127,22 @@ export async function writeAudit(req, payload) {
         resourceId:   resourceId  ?? null,
         projectId:    projectId   ?? null,
         metadata:     metadata    ?? null,
-        ipAddress:    getClientIp(req),
-        userAgent:    (req?.headers?.['user-agent'] ?? '').slice(0, 500) || null,
+        ipAddress,
+        userAgent,
       },
+    })
+
+    // Append to local JSONL file for SIEM agent pickup (fire-and-forget).
+    appendAuditFile({
+      timestamp:    new Date().toISOString(),
+      userId:       userId       ?? null,
+      action,
+      resourceType,
+      resourceId:   resourceId  ?? null,
+      projectId:    projectId   ?? null,
+      metadata:     metadata    ?? null,
+      ipAddress,
+      userAgent,
     })
   } catch (err) {
     logger.error('[Audit] Failed to write audit log:', err)

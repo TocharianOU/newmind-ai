@@ -82,12 +82,7 @@ def load_model(
         model = model_module.ModelClass(*args, **kwargs)
     If the provider is neither "dive" nor "__load__", it will load model from langchain.
     """
-    logger.debug(
-        "Loading model %s with provider %s, kwargs: %s",
-        model_name,
-        provider,
-        kwargs,
-    )
+    logger.debug("Loading model %s with provider %s", model_name, provider)
     if provider == "dive":
         model_name_lower = model_name.replace("-", "_").replace(".", "_").lower()
         model_module = import_module(
@@ -105,101 +100,67 @@ def load_model(
         else:
             api_key_str = str(api_key) if api_key else ''
         
-        logger.info(f"🔄 [LOAD_MODEL] Loading OAP model {model_name} from Hub: {base_url}")
-        logger.info(f"🔑 [LOAD_MODEL] API Key: {api_key_str[:20] if api_key_str else 'None'}...")
+        logger.info(f"[LOAD_MODEL] Loading OAP model {model_name}")
         
-        # 尝试从全局配置中获取最新的token
-        # 暂时跳过这个功能以避免启动时的循环依赖问题
-        logger.debug(f"[LOAD_MODEL] Skipping global config access to avoid startup issues")
-        
-        # 从Hub获取模型的真实provider信息（使用缓存）
-        logger.info(f"📡 [LOAD_MODEL] Fetching model info for {model_name}...")
         model_info = get_model_info_from_hub(model_name, base_url, api_key_str)
-        logger.info(f"📊 [LOAD_MODEL] Model info result: {model_info}")
-        
-        logger.info(f"🔍 [LOAD_MODEL] Checking native format support...")
+
         if model_info and model_info.get('native_format'):
-            logger.info(f"✅ [LOAD_MODEL] Native format supported for {model_name}")
-            # 使用原生格式 - 这是我们的新架构
             real_provider = model_info.get('provider', 'openai')
             endpoint = model_info.get('endpoint', '/v1/messages')
-            
-            # 构建指向Hub透明代理的base_url
+            # native_client tells us which LangChain adapter to use; it may differ
+            # from the public provider name (e.g. 'oap') when the Hub uses a
+            # product-level alias.
+            native_client = model_info.get('metadata', {}).get('native_client') or real_provider
+            logger.info(f"[LOAD_MODEL] {model_name} -> client={native_client}")
+
             clean_base_url = base_url.rstrip('/api/v1').rstrip('/v1').rstrip('/')
-            
-            # 不同的provider客户端对base_url的处理不同
-            if real_provider == 'anthropic':
-                # Anthropic客户端会自动在base_url后添加/v1/messages
+
+            if native_client == 'anthropic':
                 hub_proxy_url = f"{clean_base_url}/api"
-                logger.info(f"Anthropic client will append /v1/messages to base_url")
-            elif real_provider == 'openai':
-                # OpenAI客户端会自动在base_url后添加特定的路径
-                # 如果endpoint是/v1/chat/completions，base_url应该是/api/v1
-                if endpoint == '/v1/chat/completions':
-                    hub_proxy_url = f"{clean_base_url}/api/v1"
-                else:
-                    hub_proxy_url = f"{clean_base_url}/api"
-                logger.info(f"OpenAI client will append appropriate path to base_url")
+            elif native_client == 'openai':
+                hub_proxy_url = f"{clean_base_url}/api/v1" if endpoint == '/v1/chat/completions' else f"{clean_base_url}/api"
             else:
-                # 其他provider可能需要完整的endpoint路径
                 hub_proxy_url = f"{clean_base_url}/api{endpoint}"
-                logger.info(f"Using full endpoint path for {real_provider}")
-            
-            logger.info(f"Using native provider: {real_provider} via Hub proxy: {hub_proxy_url}")
-            logger.info(f"Original model: {model_name}, Real provider: {real_provider}, Endpoint: {endpoint}")
-            
-            # 根据真实provider选择对应的langchain实现
-            if real_provider == 'anthropic':
-                # 使用Anthropic原生客户端，指向Hub的透明代理
+
+            if native_client == 'anthropic':
                 model_kwargs = clean_model_kwargs("anthropic", kwargs)
-                model_kwargs["api_key"] = api_key_str  # Hub认证token (使用字符串形式)
-                model_kwargs["base_url"] = hub_proxy_url  # 现在是 http://localhost:3000/api
-                
-                # 保持原始模型名用于Hub映射
-                logger.info(f"Creating Anthropic client for model: {model_name}")
+                model_kwargs["api_key"] = api_key_str
+                model_kwargs["base_url"] = hub_proxy_url
                 model = init_chat_model(
-                    model=model_name,  # 保持newmind-medium等原始名称
+                    model=model_name,
                     model_provider="anthropic",
                     **model_kwargs,
                 )
-            elif real_provider == 'openai':
-                # 使用OpenAI原生客户端，指向Hub的透明代理
+            elif native_client == 'openai':
                 model_kwargs = clean_model_kwargs("openai", kwargs)
                 model_kwargs["api_key"] = api_key_str
                 model_kwargs["base_url"] = hub_proxy_url
-                
-                logger.info(f"Creating OpenAI client for model: {model_name}")
                 model = init_chat_model(
                     model=model_name,
                     model_provider="openai",
                     **model_kwargs,
                 )
             else:
-                # 其他provider的通用处理
-                model_kwargs = clean_model_kwargs(real_provider, kwargs)
+                model_kwargs = clean_model_kwargs(native_client, kwargs)
                 model_kwargs["api_key"] = api_key_str
                 model_kwargs["base_url"] = hub_proxy_url
-                
-                logger.info(f"Creating {real_provider} client for model: {model_name}")
                 model = init_chat_model(
                     model=model_name,
-                    model_provider=real_provider,
+                    model_provider=native_client,
                     **model_kwargs,
                 )
         else:
-            # Fallback到OpenAI兼容模式（使用废弃的兼容性端点）
-            # 使用OpenAI兼容模式作为fallback
             if not model_info:
-                logger.warning(f"❌ [LOAD_MODEL] Model {model_name} info not available yet, using OpenAI compatibility mode as fallback")
+                logger.warning(f"[LOAD_MODEL] Model {model_name} info not available, falling back to OpenAI compatibility mode")
             else:
-                logger.warning(f"⚠️ [LOAD_MODEL] Model {model_name} does not support native format, using OpenAI compatibility mode")
+                logger.warning(f"[LOAD_MODEL] Model {model_name} does not support native format, falling back to OpenAI compatibility mode")
             clean_base_url = base_url.rstrip('/api/v1').rstrip('/v1').rstrip('/')
             fallback_url = f"{clean_base_url}/api/v1/chat/completions"
-            
+
             model_kwargs = clean_model_kwargs("openai", kwargs)
             model_kwargs["api_key"] = api_key_str
             model_kwargs["base_url"] = fallback_url
-            
+
             model = init_chat_model(
                 model=model_name,
                 model_provider="openai",

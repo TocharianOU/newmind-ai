@@ -31,7 +31,7 @@ def tool_call_order(messages: list[AnyMessage]) -> list[BaseMessage]:
     Providers like Anthropic requires each tool call to have their
     corresponding tool result.
     """
-    logger.log(TRACE, "Examine tool call order. msgs: %s", messages)
+    logger.log(TRACE, "Examine tool call order. msgs count: %d", len(messages))
 
     new_msgs: list[BaseMessage] = []
     remove_msgs: list[RemoveMessage] = []
@@ -42,8 +42,9 @@ def tool_call_order(messages: list[AnyMessage]) -> list[BaseMessage]:
         if _has_tool_call(prev_msg) and _not_tool_result(msg):
             assert isinstance(prev_msg, AIMessage), "Could only be AIMessage"
             logger.warning(
-                "Found tool call that doesn't have tool result as next message: %s",
-                prev_msg.model_dump_json(),
+                "Found tool call without tool result: msg_id=%s, tool_calls=%d",
+                prev_msg.id,
+                len(prev_msg.tool_calls),
             )
 
             # Add tool results for each tool call
@@ -74,7 +75,7 @@ def tool_call_order(messages: list[AnyMessage]) -> list[BaseMessage]:
         prev_msg = msg
 
     result = remove_msgs + new_msgs
-    logger.log(TRACE, "Tool call order result: %s", result)
+    logger.log(TRACE, "Tool call order result: %d messages", len(result))
     logger.debug(
         "tool call order result, fake tool result needed: %s"
         ", new_msgs: %s, remove_msgs: %s",

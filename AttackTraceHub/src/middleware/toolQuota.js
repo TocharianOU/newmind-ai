@@ -1,6 +1,7 @@
 import { prisma } from '../config/database.js';
 import { TOOL_TIER_MAP, TOOL_TIER_QUOTA, PLAN_LIMITS } from '../config/constants.js';
 import logger from '../utils/logger.js';
+import { writeAudit, AUDIT_ACTIONS, RESOURCE_TYPES } from '../utils/auditLog.js';
 
 /**
  * Get the current calendar month's period start (1st day 00:00 UTC)
@@ -104,14 +105,22 @@ export function checkToolQuota(toolName, keyModeResolver = () => 'hub') {
       return next();
     }
 
-    if (quota.usedThisMonth >= quota.monthlyLimit) {
+    const effectiveLimit = quota.monthlyLimit + (quota.extraCalls || 0);
+    if (quota.usedThisMonth >= effectiveLimit) {
+      writeAudit(req, {
+        userId,
+        action: AUDIT_ACTIONS.TOOL_QUOTA_EXCEEDED,
+        resourceType: RESOURCE_TYPES.TOOL,
+        resourceId: toolName,
+        metadata: { tier, used: quota.usedThisMonth, limit: effectiveLimit },
+      });
       return res.status(429).json({
         error: 'Tool quota exceeded',
         tier,
         toolName,
         used: quota.usedThisMonth,
-        limit: quota.monthlyLimit,
-        message: `您本月 ${tier} 梯队工具额度已用尽 (${quota.usedThisMonth}/${quota.monthlyLimit})。请升级套餐或购买额外包。`
+        limit: effectiveLimit,
+        message: `您本月 ${tier} 梯队工具额度已用尽 (${quota.usedThisMonth}/${effectiveLimit})。请升级套餐或购买额外包。`
       });
     }
 
@@ -154,6 +163,14 @@ export async function recordToolUsage(req, endpoint) {
           })]
         : [])
     ]);
+
+    writeAudit(req, {
+      userId,
+      action: AUDIT_ACTIONS.TOOL_CALL,
+      resourceType: RESOURCE_TYPES.TOOL,
+      resourceId: toolName,
+      metadata: { tier: tier || 'C', keyMode: keyMode || 'hub', endpoint: endpoint || null },
+    });
   } catch (err) {
     logger.debug(`[ToolQuota] Usage record failed for ${userId}/${toolName}: ${err.message}`);
   }

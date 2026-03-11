@@ -218,7 +218,7 @@ model TokenPurchase {
 }
 
 model UsageRecord {
-  id           String   @id
+  id           String   @id @default(cuid())
   userId       String
   modelName    String
   inputTokens  Int      @default(0)
@@ -269,6 +269,7 @@ model User {
   UserPreferences     UserPreferences?
   ToolUsageRecord     ToolUsageRecord[]
   ToolQuota           ToolQuota[]
+  ToolQuotaPurchase   ToolQuotaPurchase[]
 
   @@index([email])
 }
@@ -393,6 +394,7 @@ model ToolQuota {
   tier           ToolTier
   monthlyLimit   Int      @default(0)
   usedThisMonth  Int      @default(0)
+  extraCalls     Int      @default(0)
   periodStart    DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -400,4 +402,22 @@ model ToolQuota {
 
   @@unique([userId, tier])
   @@index([userId])
+}
+
+model ToolQuotaPurchase {
+  id               String   @id @default(uuid())
+  userId           String
+  tier             ToolTier
+  callsAmount      Int
+  price            Float
+  stripeSessionId  String?  @unique
+  stripePaymentId  String?
+  status           String   @default("PENDING")
+  completedAt      DateTime?
+  createdAt        DateTime @default(now())
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, tier])
+  @@index([stripeSessionId])
 }

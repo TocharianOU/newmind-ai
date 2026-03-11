@@ -512,7 +512,7 @@ async def get_memory_stats(
         
         stats = await memory_store.get_stats(user_id=user_id)
         
-        logger.info(f"🔍 [Memory API] Stats: {stats}")
+        logger.debug(f"[Memory API] Stats retrieved for user '{user_id}'")
 
         return DataResult(
             success=True,

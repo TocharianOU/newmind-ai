@@ -45,7 +45,8 @@ import logger from './utils/logger.js';
 import { startSubscriptionExpirationCheck } from './utils/subscriptionExpiration.js';
 import { initializeSSOProviders } from './sso/index.js';
 import { prisma } from './config/database.js';
-import { startLicenseCheck } from './license/scheduler.js';
+import { startLicenseCheck } from './license/scheduler.js'
+import { startAuditFileCleanup } from './utils/auditFileWriter.js';
 
 // ---------------------------------------------------------------------------
 // App setup
@@ -213,6 +214,9 @@ server.listen(PORT, () => {
   logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
   logger.info(`🚦 Deployment mode: ${featureFlags.DEPLOYMENT_MODE.toUpperCase()}`);
   logger.info(`🌐 CORS origins: ${allowedOrigins.join(', ')}`);
+
+  // Audit file writer: daily JSONL rotation + cleanup
+  startAuditFileCleanup();
 
   // SaaS: watch for subscription expiry
   if (featureFlags.BILLING_ENABLED) {

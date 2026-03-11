@@ -77,19 +77,29 @@ router.get('/usage', authenticateToken, async (req, res) => {
 
     const planName = user?.Subscription?.planName || 'BASE';
 
-    // Calculate usage for current month
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
+    // Start of current calendar month — UTC, consistent with checkTokenUsage
+    const now = new Date();
+    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
+    // Only count real model calls; apply MODEL_MULTIPLIER so the displayed
+    // product-token consumption matches what checkTokenUsage deducts from the monthly quota.
+    const REAL_MODELS = ['medium-agent', 'strong-agent'];
+    const { MODEL_MULTIPLIER } = await import('../config/constants.js');
 
     const usageRecords = await prisma.usageRecord.findMany({
       where: {
         userId: req.user.id,
-        createdAt: { gte: startOfMonth }
-      }
+        createdAt: { gte: startOfMonth },
+        modelName: { in: REAL_MODELS }
+      },
+      select: { modelName: true, inputTokens: true, outputTokens: true }
     });
 
-    const totalTokens = usageRecords.reduce((acc, r) => acc + r.inputTokens + r.outputTokens, 0);
+    // product tokens = raw tokens × multiplier (same formula as checkTokenUsage)
+    const totalTokens = usageRecords.reduce((acc, r) => {
+      const multiplier = MODEL_MULTIPLIER[r.modelName] ?? 1;
+      return acc + (r.inputTokens + r.outputTokens) * multiplier;
+    }, 0);
 
     let limit;
     let enterpriseQuota = null;
@@ -116,10 +126,9 @@ router.get('/usage', authenticateToken, async (req, res) => {
         expiresAt: license?.expiresAt || null,
       };
     } else {
-      // SaaS: daily limit from subscription plan
+      // SaaS: monthly token limit from subscription plan
       const { PLAN_LIMITS } = await import('../config/constants.js');
-      const dailyLimit = PLAN_LIMITS[planName]?.dailyTokens || PLAN_LIMITS.BASE.dailyTokens;
-      limit = dailyLimit * 30;
+      limit = PLAN_LIMITS[planName]?.monthlyTokens ?? PLAN_LIMITS.BASE.monthlyTokens;
     }
 
     const usageData = {
@@ -321,17 +330,15 @@ router.get('/stats', authenticateToken, async (req, res) => {
         startDate.setDate(now.getDate() - 30);
     }
 
-    // Get usage records
+    // Only count real model calls (filter out legacy tool proxy records)
+    const REAL_MODELS = ['medium-agent', 'strong-agent'];
     const usageRecords = await prisma.usageRecord.findMany({
       where: {
         userId: req.user.id,
-        createdAt: {
-          gte: startDate
-        }
+        createdAt: { gte: startDate },
+        modelName: { in: REAL_MODELS }
       },
-      orderBy: {
-        createdAt: 'asc'
-      }
+      orderBy: { createdAt: 'asc' }
     });
 
     // Calculate statistics
@@ -527,13 +534,13 @@ router.get('/admin/users/:userId/stats', authenticateToken, requireAdmin, async 
         startDate.setDate(now.getDate() - 30);
     }
 
-    // Get usage records for the specific user
+    // Only count real model calls (filter out legacy tool proxy records)
+    const REAL_MODELS = ['medium-agent', 'strong-agent'];
     const usageRecords = await prisma.usageRecord.findMany({
       where: {
         userId: userId,
-        createdAt: {
-          gte: startDate
-        }
+        createdAt: { gte: startDate },
+        modelName: { in: REAL_MODELS }
       },
       select: {
         modelName: true,
@@ -541,9 +548,7 @@ router.get('/admin/users/:userId/stats', authenticateToken, requireAdmin, async 
         outputTokens: true,
         createdAt: true
       },
-      orderBy: {
-        createdAt: 'asc'
-      }
+      orderBy: { createdAt: 'asc' }
     });
 
     // Calculate statistics
@@ -650,12 +655,12 @@ router.get('/admin/stats', authenticateToken, requireAdmin, async (req, res) => 
     // Get total users count
     const totalUsers = await prisma.user.count();
 
-    // Get all usage records for the specified range
+    // Only count real model calls (filter out legacy tool proxy records)
+    const REAL_MODELS = ['medium-agent', 'strong-agent'];
     const usageRecords = await prisma.usageRecord.findMany({
       where: {
-        createdAt: {
-          gte: startDate
-        }
+        createdAt: { gte: startDate },
+        modelName: { in: REAL_MODELS }
       },
       select: {
         modelName: true,
@@ -663,9 +668,7 @@ router.get('/admin/stats', authenticateToken, requireAdmin, async (req, res) => 
         outputTokens: true,
         createdAt: true
       },
-      orderBy: {
-        createdAt: 'asc'
-      }
+      orderBy: { createdAt: 'asc' }
     });
 
     // Calculate aggregate statistics
@@ -768,6 +771,73 @@ router.delete('/account', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/v1/user/admin/tool-stats - Platform-wide tool usage stats (admin only)
+router.get('/admin/tool-stats', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { range = '30d' } = req.query;
+    const days = range === '7d' ? 7 : range === '90d' ? 90 : 30;
+    const since = new Date(Date.now() - days * 86400000);
+
+    const [byTier, byTool, topUsers, totalPurchases] = await Promise.all([
+      // Total calls per tier in range
+      prisma.toolUsageRecord.groupBy({
+        by: ['tier'],
+        where: { createdAt: { gte: since } },
+        _count: { id: true },
+      }),
+      // Total calls per tool in range
+      prisma.toolUsageRecord.groupBy({
+        by: ['toolName', 'tier'],
+        where: { createdAt: { gte: since } },
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } },
+      }),
+      // Top 10 users by tool calls in range
+      prisma.toolUsageRecord.groupBy({
+        by: ['userId'],
+        where: { createdAt: { gte: since } },
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } },
+        take: 10,
+      }),
+      // Total revenue from tool quota purchases
+      prisma.toolQuotaPurchase.aggregate({
+        where: { status: 'COMPLETED', createdAt: { gte: since } },
+        _sum: { price: true, callsAmount: true },
+        _count: { id: true },
+      }),
+    ]);
+
+    // Enrich top users with emails
+    const userIds = topUsers.map(u => u.userId);
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, email: true, username: true },
+    });
+    const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+
+    res.json(createResponse({
+      range,
+      byTier: byTier.map(r => ({ tier: r.tier, calls: r._count.id })),
+      byTool: byTool.map(r => ({ tool: r.toolName, tier: r.tier, calls: r._count.id })),
+      topUsers: topUsers.map(r => ({
+        userId: r.userId,
+        email: userMap[r.userId]?.email,
+        username: userMap[r.userId]?.username,
+        calls: r._count.id,
+      })),
+      quotaPurchases: {
+        count: totalPurchases._count.id,
+        revenue: totalPurchases._sum.price || 0,
+        totalCallsBought: totalPurchases._sum.callsAmount || 0,
+      },
+    }));
+  } catch (error) {
+    logger.error('Error fetching admin tool stats:', error);
+    res.status(500).json(createResponse(null, 'Failed to fetch tool stats'));
+  }
+});
+
 // GET /api/v1/user/tool-quota - Current user's tool tier quota and usage
 router.get('/tool-quota', authenticateToken, async (req, res) => {
   try {
@@ -785,10 +855,14 @@ router.get('/tool-quota', authenticateToken, async (req, res) => {
 
     const quotaMap = {};
     for (const row of quotaRows) {
-      const isCurrentPeriod = row.periodStart <= new Date() && new Date() >= periodStart;
+      const isCurrentPeriod = row.periodStart >= periodStart;
+      const baseLimit = tierQuota[row.tier] ?? row.monthlyLimit;
+      const extra = row.extraCalls || 0;
       quotaMap[row.tier] = {
         used: isCurrentPeriod ? row.usedThisMonth : 0,
-        limit: tierQuota[row.tier] ?? row.monthlyLimit
+        limit: baseLimit + extra,
+        monthlyLimit: baseLimit,
+        extraCalls: extra,
       };
     }
 
@@ -801,8 +875,9 @@ router.get('/tool-quota', authenticateToken, async (req, res) => {
 
     const result = {};
     for (const tier of ['A', 'B', 'C']) {
+      const base = tierQuota[tier] ?? 0;
       result[tier] = {
-        ...(quotaMap[tier] ?? { used: 0, limit: tierQuota[tier] ?? 0 }),
+        ...(quotaMap[tier] ?? { used: 0, limit: base, monthlyLimit: base, extraCalls: 0 }),
         tools: tierTools[tier] ?? []
       };
     }

@@ -202,7 +202,7 @@ class Chat[STATE_TYPE: MessagesState](ContextProtocol):
                 init_state = self._agent_factory.create_initial_state(query=query_msgs)
             else:
                 init_state = None
-            logger.debug("init_state: %s", query_msgs)
+            logger.debug("init_state: %d messages", len(query_msgs) if query_msgs else 0)
             config = self._agent_factory.create_config(
                 user_id=self._user_id,
                 thread_id=self._chat_id,

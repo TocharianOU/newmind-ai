@@ -283,7 +283,7 @@ class FileMsgConverter:
                 additional_kwargs=result.additional_kwargs,
             )
 
-        logger.debug("file msg converter output: %s", result)
+        logger.debug("file msg converter output: type=%s", type(result).__name__)
 
         return result
 

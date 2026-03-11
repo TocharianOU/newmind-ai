@@ -4,16 +4,67 @@ import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { randomUUID } from 'crypto';
 import { authenticateToken, requirePlan } from '../middleware/auth.js';
-import { createResponse, MODEL_MAPPING, MODEL_PROVIDERS, MODEL_CONFIG, checkModelAccess } from '../config/constants.js';
+import { createResponse, MODEL_MAPPING, MODEL_PROVIDERS, MODEL_CONFIG, MODEL_MULTIPLIER, checkModelAccess } from '../config/constants.js';
 import { prisma } from '../config/database.js';
 import { deductTokens } from '../utils/tokenBalance.js';
 import featureFlags from '../config/featureFlags.js';
 import { getLicenseStatus } from '../license/validator.js';
 import logger from '../utils/logger.js';
+import { writeAudit, AUDIT_ACTIONS, RESOURCE_TYPES } from '../utils/auditLog.js';
 
 const router = express.Router();
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Returns the runtime config for a specific product model (medium-agent / strong-agent).
+// Each agent reads from its own env prefix (MEDIUM_AGENT_* or STRONG_AGENT_*).
+function getManagedRuntimeConfig(productModel) {
+  const prefix = productModel === 'strong-agent' ? 'STRONG_AGENT' : 'MEDIUM_AGENT';
+
+  const baseUrl     = process.env[`${prefix}_API_URL`];
+  const apiKey      = process.env[`${prefix}_API_KEY`];
+  const messagesPath  = process.env[`${prefix}_MESSAGES_PATH`]   || '/v1/messages';
+  const apiKeyHeader  = process.env[`${prefix}_API_KEY_HEADER`]  || 'Authorization';
+  // Use ?? so that an explicitly empty prefix stays empty (e.g. Anthropic x-api-key needs no Bearer prefix)
+  const apiKeyPrefix  = process.env[`${prefix}_API_KEY_PREFIX`]  ?? '';
+  const versionHeader = process.env[`${prefix}_API_VERSION_HEADER`] ?? '';
+  const versionValue  = process.env[`${prefix}_API_VERSION_VALUE`]  ?? '';
+
+  if (!baseUrl || !apiKey) return null;
+
+  return {
+    baseUrl: baseUrl.replace(/\/$/, ''),
+    apiKey,
+    apiKeyHeader,
+    apiKeyPrefix,
+    versionHeader,
+    versionValue,
+    messagesPath: messagesPath.startsWith('/') ? messagesPath : `/${messagesPath}`,
+  };
+}
+
+function buildManagedApiHeaders(runtimeConfig) {
+  const headers = {
+    'Content-Type': 'application/json',
+    [runtimeConfig.apiKeyHeader]: `${runtimeConfig.apiKeyPrefix}${runtimeConfig.apiKey}`.trim(),
+  };
+
+  if (runtimeConfig.versionHeader && runtimeConfig.versionValue) {
+    headers[runtimeConfig.versionHeader] = runtimeConfig.versionValue;
+  }
+
+  return headers;
+}
+
+function getManagedMessagesUrl(runtimeConfig) {
+  return `${runtimeConfig.baseUrl}${runtimeConfig.messagesPath}`;
+}
+
+function getManagedModelId(productModel) {
+  const runtimeModelId = MODEL_MAPPING[productModel];
+  return runtimeModelId && runtimeModelId.trim() ? runtimeModelId : null;
+}
 
 // 系统提示词处理辅助函数
 async function getSystemPromptOverride() {
@@ -45,8 +96,8 @@ async function getSystemPromptOverride() {
   return null;
 }
 
-function insertSystemPromptIntoAnthropicMessages(requestBody, systemPrompt) {
-  // Anthropic API需要将系统提示词作为顶级参数，而不是消息中的system角色
+function insertSystemPromptIntoNativeMessages(requestBody, systemPrompt) {
+  // Native messages API需要将系统提示词作为顶级参数，而不是消息中的system角色
   // 如果已经有系统参数，将其与覆盖提示词合并
   let finalSystemPrompt = systemPrompt;
   
@@ -54,7 +105,7 @@ function insertSystemPromptIntoAnthropicMessages(requestBody, systemPrompt) {
     finalSystemPrompt = systemPrompt + '\n\n' + requestBody.system;
     logger.info(`🔥 [PROMPT] Merged override with existing system prompt`);
   } else {
-    logger.info(`🔥 [PROMPT] Applied system prompt override to Anthropic request`);
+    logger.info(`🔥 [PROMPT] Applied system prompt override to native messages request`);
   }
   
   // 设置系统参数
@@ -146,14 +197,20 @@ async function ensureLMStudioModelLoaded(baseUrl, modelName, maxRetries = 3) {
   }
 }
 
-// Async function to record usage
-async function recordUsage(userId, model, inputTokens, outputTokens) {
+// Async function to record usage.
+// UsageRecord always stores real (raw) token counts for cost analytics.
+// tokenBalance deduction applies MODEL_MULTIPLIER so higher tiers can burn
+// more product tokens without exposing runtime model/vendor details.
+async function recordUsage(userId, model, inputTokens, outputTokens, req) {
   try {
-    const totalTokens = inputTokens + outputTokens;
-    const cost = (inputTokens * 0.003 + outputTokens * 0.015) / 1000; // Claude pricing
-    
+    const rawTokens = inputTokens + outputTokens;
+    const { TOKEN_PRICING } = await import('../config/constants.js');
+    const pricing = TOKEN_PRICING[model] || { input: 0, output: 0 };
+    const cost = (inputTokens * pricing.input + outputTokens * pricing.output) / 1000;
+
     await prisma.usageRecord.create({
       data: {
+        id: randomUUID(),
         userId,
         modelName: model,
         inputTokens,
@@ -161,20 +218,27 @@ async function recordUsage(userId, model, inputTokens, outputTokens) {
         cost
       }
     });
-    
-    logger.info(`📊 Usage recorded: ${model}, input: ${inputTokens}, output: ${outputTokens}`);
-    
+
+    // Audit: model call event
+    writeAudit(req, {
+      userId,
+      action: AUDIT_ACTIONS.MODEL_CALL,
+      resourceType: RESOURCE_TYPES.MODEL,
+      resourceId: model,
+      metadata: { inputTokens, outputTokens, rawTokens, cost },
+    });
+
     if (featureFlags.BILLING_ENABLED) {
-      // SaaS: deduct from per-user purchased token balance
       try {
-        await deductTokens(userId, totalTokens);
+        const multiplier = MODEL_MULTIPLIER[model] ?? 1;
+        const productTokens = Math.ceil(rawTokens * multiplier);
+        await deductTokens(userId, productTokens);
       } catch (error) {
         logger.debug(`Token deduction skipped for user ${userId}: ${error.message}`);
       }
     }
-    // Enterprise: usage is tracked via usageRecord table; quota enforced at request time
   } catch (error) {
-    logger.error('❌ Error recording usage:', error);
+    logger.error('Error recording usage:', error);
   }
 }
 
@@ -194,7 +258,7 @@ async function findCustomModel(modelId) {
 
 /**
  * Mode-aware access check.
- * - SaaS: delegates to checkModelAccess (plan + daily token limits), also allows custom models for admins
+ * - SaaS: delegates to checkModelAccess (plan + monthly token limits), also allows custom models for admins
  * - Enterprise: allows all valid models (static + custom); if maxTokens > 0, checks global pool
  */
 async function checkAccessForMode(model, userPlan, userId, userRole) {
@@ -240,10 +304,10 @@ async function checkAccessForMode(model, userPlan, userId, userRole) {
   return { allowed: true, customModel };
 }
 
-// POST /api/v1/messages - Anthropic native endpoint (transparent proxy)
+// POST /api/v1/messages - native managed endpoint (transparent proxy)
 router.post('/messages', authenticateToken, async (req, res) => {
   try {
-    logger.info(`🚀 [PROXY] Anthropic native endpoint called by ${req.user.email}`);
+    logger.info(`🚀 [PROXY] Native managed endpoint called by ${req.user.email}`);
     logger.info(`📝 [PROXY] Request body: ${JSON.stringify(req.body, null, 2)}`);
     
     const { model } = req.body;
@@ -259,9 +323,9 @@ router.post('/messages', authenticateToken, async (req, res) => {
       );
     }
     
-    // Check API Key
-    if (!process.env.ANTHROPIC_API_KEY) {
-      
+    const runtimeConfig = getManagedRuntimeConfig(model);
+    const runtimeModelId = getManagedModelId(model);
+    if (!runtimeConfig || !runtimeModelId) {
       return res.status(500).json(createResponse(null, 'Service temporarily unavailable'));
     }
     
@@ -269,44 +333,37 @@ router.post('/messages', authenticateToken, async (req, res) => {
     // 🔥 获取系统提示词覆盖
     const systemPromptOverride = await getSystemPromptOverride();
     
-    // Prepare proxy request - map to real Claude model
+    // Prepare proxy request - map product model to private runtime model id
     const proxyRequest = {
       ...req.body,
-      model: MODEL_MAPPING[model] // Map to real Claude model
+      model: runtimeModelId
     };
     
     // 🔥 如果有系统提示词覆盖，设置为顶级系统参数
     if (systemPromptOverride) {
-      insertSystemPromptIntoAnthropicMessages(proxyRequest, systemPromptOverride);
+      insertSystemPromptIntoNativeMessages(proxyRequest, systemPromptOverride);
     }
     
-    // Ensure required Anthropic parameters
+    // Ensure required native parameters
     if (!proxyRequest.max_tokens) {
       proxyRequest.max_tokens = 32000;
     }
-    
-    // Build Anthropic API headers
-    const anthropicHeaders = {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01'
-      
-    };
-    
-    logger.info(`📡 [Proxy] Sending request to Anthropic API...`);
-    
-    // Send to Anthropic API
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+
+    const managedHeaders = buildManagedApiHeaders(runtimeConfig);
+
+    logger.info(`📡 [Proxy] Sending request to managed runtime...`);
+
+    const response = await fetch(getManagedMessagesUrl(runtimeConfig), {
       method: 'POST',
-      headers: anthropicHeaders,
+      headers: managedHeaders,
       body: JSON.stringify(proxyRequest)
     });
-    
-    logger.info(`📨 [Proxy] Anthropic API responded with status: ${response.status}`);
+
+    logger.info(`📨 [Proxy] Managed runtime responded with status: ${response.status}`);
     
     if (!response.ok) {
       const errorText = await response.text();
-      logger.error(`❌ [Proxy] Anthropic API error: ${response.status} - ${errorText}`);
+      logger.error(`❌ [Proxy] Upstream runtime error: ${response.status} - ${errorText}`);
       return res.status(response.status).json({ 
         error: 'Upstream API error',
         details: errorText 
@@ -368,9 +425,8 @@ router.post('/messages', authenticateToken, async (req, res) => {
       response.body.on('end', () => {
         res.end();
         
-        // Record usage asynchronously
         if (inputTokens > 0 || outputTokens > 0) {
-          setImmediate(() => recordUsage(req.user.id, model, inputTokens, outputTokens));
+          setImmediate(() => recordUsage(req.user.id, model, inputTokens, outputTokens, req));
         }
       });
       
@@ -389,7 +445,7 @@ router.post('/messages', authenticateToken, async (req, res) => {
       if (data.usage) {
         const inputTokens = data.usage.input_tokens || 0;
         const outputTokens = data.usage.output_tokens || 0;
-        setImmediate(() => recordUsage(req.user.id, model, inputTokens, outputTokens));
+        setImmediate(() => recordUsage(req.user.id, model, inputTokens, outputTokens, req));
       }
       
       // Forward response
@@ -474,14 +530,14 @@ router.post('/chat/completions', authenticateToken, async (req, res) => {
         response.body.on('end', () => {
           res.end();
           if (inputTokens > 0 || outputTokens > 0) {
-            setImmediate(() => recordUsage(req.user.id, model, inputTokens, outputTokens));
+            setImmediate(() => recordUsage(req.user.id, model, inputTokens, outputTokens, req));
           }
         });
         response.body.on('error', () => res.end());
       } else {
         const data = await response.json();
         if (data.usage) {
-          setImmediate(() => recordUsage(req.user.id, model, data.usage.prompt_tokens || 0, data.usage.completion_tokens || 0));
+          setImmediate(() => recordUsage(req.user.id, model, data.usage.prompt_tokens || 0, data.usage.completion_tokens || 0, req));
         }
         res.json(data);
       }
@@ -576,21 +632,20 @@ router.post('/chat/completions', authenticateToken, async (req, res) => {
         res.json(data);
       }
       
-    } else if (provider.type === 'anthropic') {
-      // Handle Anthropic models directly (avoid double permission check)
-      logger.info(`🔄 [Proxy] Handling Anthropic model ${model} directly`);
-      
-      // Check API Key
-      if (!process.env.ANTHROPIC_API_KEY) {
+    } else if (provider.type === 'managed') {
+      logger.info(`🔄 [Proxy] Handling managed model ${model}`);
+
+      const runtimeConfig = getManagedRuntimeConfig(model);
+      if (!runtimeConfig || !realModelName) {
         return res.status(500).json(createResponse(null, 'Service temporarily unavailable'));
       }
       
       // 🔥 获取系统提示词覆盖
       const systemPromptOverride = await getSystemPromptOverride();
       
-      // Convert OpenAI format to Anthropic format and map to real model
-      const anthropicRequest = {
-        model: realModelName,  // Use real Claude model name
+      // Convert OpenAI-compatible input to native managed-runtime format.
+      const nativeRequest = {
+        model: realModelName,
         messages: req.body.messages,
         max_tokens: req.body.max_tokens || 32000,
         stream: req.body.stream || false
@@ -598,30 +653,24 @@ router.post('/chat/completions', authenticateToken, async (req, res) => {
       
       // 🔥 如果有系统提示词覆盖，设置为顶级系统参数
       if (systemPromptOverride) {
-        insertSystemPromptIntoAnthropicMessages(anthropicRequest, systemPromptOverride);
+        insertSystemPromptIntoNativeMessages(nativeRequest, systemPromptOverride);
       }
-      
-      // Build Anthropic API headers
-      const anthropicHeaders = {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      };
-      
-      logger.info(`📡 [Proxy] Sending request to Anthropic API...`);
-      
-      // Send to Anthropic API
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+
+      const managedHeaders = buildManagedApiHeaders(runtimeConfig);
+
+      logger.info(`📡 [Proxy] Sending request to managed runtime...`);
+
+      const response = await fetch(getManagedMessagesUrl(runtimeConfig), {
         method: 'POST',
-        headers: anthropicHeaders,
-        body: JSON.stringify(anthropicRequest)
+        headers: managedHeaders,
+        body: JSON.stringify(nativeRequest)
       });
-      
-      logger.info(`📨 [Proxy] Anthropic API responded with status: ${response.status}`);
+
+      logger.info(`📨 [Proxy] Managed runtime responded with status: ${response.status}`);
       
       if (!response.ok) {
         const errorText = await response.text();
-        logger.error(`❌ [Proxy] Anthropic API error: ${response.status} - ${errorText}`);
+        logger.error(`❌ [Proxy] Upstream runtime error: ${response.status} - ${errorText}`);
         return res.status(response.status).json({ 
           error: 'Upstream API error',
           details: errorText 
@@ -680,28 +729,23 @@ router.post('/chat/completions', authenticateToken, async (req, res) => {
         response.body.on('end', () => {
           res.end();
           
-          // Record usage asynchronously
           if (inputTokens > 0 || outputTokens > 0) {
-            setImmediate(() => recordUsage(req.user.id, model, inputTokens, outputTokens));
+            setImmediate(() => recordUsage(req.user.id, model, inputTokens, outputTokens, req));
           }
         });
         
         response.body.on('error', (error) => {
-          logger.error(`❌ [Proxy] Stream error:`, error);
+          logger.error(`[Proxy] Stream error:`, error);
           res.end();
         });
         
       } else {
-        logger.info(`📄 [Proxy] Handling non-streaming response`);
-        
-        // Non-streaming response
         const data = await response.json();
         
-        // Record token usage asynchronously
         if (data.usage) {
           const inputTokens = data.usage.input_tokens || 0;
           const outputTokens = data.usage.output_tokens || 0;
-          setImmediate(() => recordUsage(req.user.id, model, inputTokens, outputTokens));
+          setImmediate(() => recordUsage(req.user.id, model, inputTokens, outputTokens, req));
         }
         
         // Forward response

@@ -187,17 +187,37 @@ router.get('/admin/logs', authenticateToken, requireAdmin, validateQuery(AuditQu
     const {
       action,
       resourceType,
-      limit = 100,
+      resourceId,
+      userId,
+      email,
+      limit  = 100,
       offset = 0,
       startDate,
       endDate,
     } = req.query
-    const { userId } = req.query  // optional filter by user
 
     const where = {}
-    if (action)       where.action = action
-    if (resourceType) where.resourceType = resourceType
-    if (userId)       where.userId = userId
+
+    // Multi-value action filter: "MODEL_CALL,TOOL_CALL" → { in: [...] }
+    if (action) {
+      const values = action.split(',').map(s => s.trim()).filter(Boolean)
+      where.action = values.length === 1 ? values[0] : { in: values }
+    }
+
+    // Multi-value resourceType filter
+    if (resourceType) {
+      const values = resourceType.split(',').map(s => s.trim()).filter(Boolean)
+      where.resourceType = values.length === 1 ? values[0] : { in: values }
+    }
+
+    if (resourceId) where.resourceId = resourceId
+
+    // userId takes precedence over email; email does a case-insensitive partial match
+    if (userId) {
+      where.userId = userId
+    } else if (email) {
+      where.User = { email: { contains: email, mode: 'insensitive' } }
+    }
 
     const startParsed = parseDateParam(startDate)
     const endParsed   = parseDateParam(endDate)

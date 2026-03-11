@@ -1,5 +1,6 @@
 import { prisma } from '../config/database.js';
 import logger from './logger.js';
+import { writeAudit, AUDIT_ACTIONS, RESOURCE_TYPES } from './auditLog.js';
 
 /**
  * 增加用户 Token 余额
@@ -14,9 +15,16 @@ export async function addTokens(userId, amount, transactionId) {
       data: { tokenBalance: { increment: amount } }
     });
     
-    logger.info(`✅ Added ${amount} tokens to user ${userId} (transaction: ${transactionId})`);
+    logger.info(`Added ${amount} tokens to user ${userId} (transaction: ${transactionId})`);
+
+    writeAudit(null, {
+      userId,
+      action: AUDIT_ACTIONS.TOKEN_ADDED,
+      resourceType: RESOURCE_TYPES.TOKEN,
+      metadata: { amount, transactionId },
+    });
   } catch (error) {
-    logger.error(`❌ Failed to add tokens to user ${userId}:`, error);
+    logger.error(`Failed to add tokens to user ${userId}:`, error);
     throw error;
   }
 }
@@ -46,7 +54,12 @@ export async function deductTokens(userId, amount) {
       data: { tokenBalance: { decrement: amount } }
     });
     
-    logger.debug(`📉 Deducted ${amount} tokens from user ${userId}`);
+    writeAudit(null, {
+      userId,
+      action: AUDIT_ACTIONS.TOKEN_DEDUCTED,
+      resourceType: RESOURCE_TYPES.TOKEN,
+      metadata: { amount },
+    });
   } catch (error) {
     if (error.message === 'Insufficient token balance') {
       logger.warn(`⚠️ User ${userId} has insufficient tokens (needed: ${amount}, available: ${user?.tokenBalance || 0})`);

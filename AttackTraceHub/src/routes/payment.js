@@ -1,5 +1,5 @@
 import express from 'express';
-import { stripe, TOKEN_PACKAGES, SUBSCRIPTION_PLANS, PLAN_HIERARCHY } from '../config/stripe.js';
+import { stripe, TOKEN_PACKAGES, SUBSCRIPTION_PLANS, PLAN_HIERARCHY, TOOL_QUOTA_PACKAGES } from '../config/stripe.js';
 import { prisma } from '../config/database.js';
 import { createResponse } from '../config/constants.js';
 import { authenticateToken } from '../middleware/auth.js';
@@ -19,6 +19,75 @@ router.get('/token-packages', authenticateToken, async (req, res) => {
   } catch (error) {
     logger.error('Error fetching token packages:', error);
     res.status(500).json(createResponse(null, 'Failed to fetch token packages'));
+  }
+});
+
+// GET /api/v1/payment/tool-quota-packages - 获取工具额度补充包列表
+router.get('/tool-quota-packages', authenticateToken, async (req, res) => {
+  try {
+    const packages = Object.values(TOOL_QUOTA_PACKAGES);
+    res.json(createResponse(packages));
+  } catch (error) {
+    logger.error('Error fetching tool quota packages:', error);
+    res.status(500).json(createResponse(null, 'Failed to fetch tool quota packages'));
+  }
+});
+
+// POST /api/v1/payment/create-tool-quota-checkout - 购买工具额度补充包
+router.post('/create-tool-quota-checkout', authenticateToken, async (req, res) => {
+  try {
+    const { packageId } = req.body;
+    const user = req.user;
+
+    if (!TOOL_QUOTA_PACKAGES[packageId]) {
+      return res.status(400).json(createResponse(null, 'Invalid tool quota package ID'));
+    }
+
+    const pkg = TOOL_QUOTA_PACKAGES[packageId];
+
+    const session = await stripe.checkout.sessions.create({
+      customer_email: user.email,
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: pkg.name,
+            description: pkg.description,
+          },
+          unit_amount: Math.round(pkg.price * 100),
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: `${process.env.HUB_FRONTEND_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.HUB_FRONTEND_URL}/billing?cancelled=true`,
+      metadata: {
+        userId: user.id,
+        packageId: pkg.id,
+        tier: pkg.tier,
+        callsAmount: pkg.calls.toString(),
+        type: 'tool_quota_purchase',
+      },
+    });
+
+    await prisma.toolQuotaPurchase.create({
+      data: {
+        userId: user.id,
+        tier: pkg.tier,
+        callsAmount: pkg.calls,
+        price: pkg.price,
+        stripeSessionId: session.id,
+        stripePaymentId: `session_${session.id}`,
+        status: 'PENDING',
+      },
+    });
+
+    logger.info(`🛒 Tool quota checkout created for ${user.email}: ${pkg.name}`);
+    res.json(createResponse({ sessionId: session.id, url: session.url }));
+  } catch (error) {
+    logger.error('Error creating tool quota checkout:', error);
+    res.status(500).json(createResponse(null, 'Failed to create checkout session'));
   }
 });
 
@@ -141,7 +210,7 @@ router.post('/create-subscription-checkout', authenticateToken, validateBody(Cre
           currency: 'usd',
           product_data: {
             name: `${plan.name} Plan - ${period === 'monthly' ? '1 Month' : '1 Year'}`,
-            description: `${plan.features.dailyTokens.toLocaleString()} daily tokens, ${plan.features.mcpServers} MCP servers, valid for ${durationDays} days`
+            description: `${(plan.features.monthlyTokens || 0).toLocaleString()} monthly tokens, valid for ${durationDays} days`
           },
           unit_amount: Math.round(price * 100)
         },
@@ -257,7 +326,49 @@ async function handleCheckoutCompleted(session) {
     await addTokens(userId, parseInt(tokensAmount), purchase.id);
     
     logger.info(`✅ Token purchase completed: ${tokensAmount} tokens for user ${userId}`);
-    
+
+  } else if (type === 'tool_quota_purchase') {
+    // 工具额度补充包购买
+    const { tier, callsAmount } = session.metadata;
+
+    const purchase = await prisma.toolQuotaPurchase.findUnique({
+      where: { stripeSessionId: session.id }
+    });
+
+    if (!purchase) {
+      logger.error(`❌ ToolQuotaPurchase record not found for session ${session.id}`);
+      return;
+    }
+
+    if (purchase.status === 'COMPLETED') {
+      logger.warn(`⚠️ ToolQuotaPurchase ${purchase.id} already completed`);
+      return;
+    }
+
+    await prisma.toolQuotaPurchase.update({
+      where: { id: purchase.id },
+      data: {
+        status: 'COMPLETED',
+        stripePaymentId: session.payment_intent,
+        completedAt: new Date(),
+      },
+    });
+
+    // 把额外调用次数累加到 ToolQuota.extraCalls（upsert 保证行存在）
+    await prisma.toolQuota.upsert({
+      where: { userId_tier: { userId, tier } },
+      update: { extraCalls: { increment: parseInt(callsAmount) } },
+      create: {
+        userId,
+        tier,
+        monthlyLimit: 0,
+        usedThisMonth: 0,
+        extraCalls: parseInt(callsAmount),
+      },
+    });
+
+    logger.info(`✅ Tool quota purchase completed: ${callsAmount} ${tier}-tier calls for user ${userId}`);
+
   } else if (type === 'manual_subscription') {
     // 手动订阅购买（一次性支付）
     const subscription = await prisma.subscription.findUnique({
