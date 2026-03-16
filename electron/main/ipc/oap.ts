@@ -47,37 +47,55 @@ export function ipcOapHandler(_win: BrowserWindow) {
     return { success: true }
   })
 
-  // OAuth Configuration - Get available OAuth providers
+  // OAuth Configuration - Get available OAuth providers from /api/auth/flags
+  const PROVIDER_DISPLAY: Record<string, string> = {
+    google: "Google",
+    azure: "Azure AD",
+    aws: "AWS Cognito",
+    wechatwork: "企业微信",
+  }
+
   safeRegisterHandler("oap:getOAuthConfig", async () => {
     try {
-      const response = await fetch(`${OAP_ROOT_URL}/api/auth/config`)
+      const response = await fetch(`${OAP_ROOT_URL}/api/auth/flags`)
       const data = await response.json()
-      console.log("OAuth config fetched:", data.data)
-      return data
+      const flags = data?.data || {}
+      const providers = (flags.enabledSSOProviders || []).map((name: string) => ({
+        name,
+        displayName: PROVIDER_DISPLAY[name] || name,
+      }))
+      return {
+        status: "success",
+        data: {
+          oauthEnabled: flags.ssoEnabled && providers.length > 0,
+          brandText: "",
+          providers,
+        },
+      }
     } catch (error) {
       console.error("Failed to fetch OAuth config:", error)
       return {
-        success: false,
+        status: "error",
         data: {
           oauthEnabled: false,
           brandText: "",
-          providers: []
+          providers: [],
         },
-        error: "Failed to fetch OAuth configuration"
+        error: "Failed to fetch OAuth configuration",
       }
     }
   })
 
-  // OAuth Login - Start OAuth login flow
+  // OAuth Login - Start SSO login flow via /api/auth/sso/:provider/start
   safeRegisterHandler("oap:loginWithOAuth", async (_, provider: string) => {
     try {
-      const url = `${OAP_ROOT_URL}/api/auth/${provider}?client=attacktrace&platform=${process.platform}&hostname=${os.hostname()}`
-      console.log(`Starting OAuth login with ${provider}:`, url)
+      const url = `${OAP_ROOT_URL}/api/auth/sso/${provider}/start?appRedirect=attacktrace`
+      console.log(`Starting SSO login with ${provider}:`, url)
       await shell.openExternal(url)
       return { success: true }
     } catch (error) {
-      console.error(`Failed to start OAuth login with ${provider}:`, error)
-      return { success: false, error: "Failed to open OAuth login" }
+      console.error(`Failed to start SSO login with ${provider}:`, error)
+      return { success: false, error: "Failed to open SSO login" }
     }
   })
 }

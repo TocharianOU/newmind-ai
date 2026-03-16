@@ -1,29 +1,105 @@
 import { prisma } from '../config/database.js';
-import { TOOL_TIER_MAP, TOOL_TIER_QUOTA, PLAN_LIMITS } from '../config/constants.js';
+import { TOOL_TIER_QUOTA, PLAN_LIMITS } from '../config/constants.js';
 import logger from '../utils/logger.js';
 import { writeAudit, AUDIT_ACTIONS, RESOURCE_TYPES } from '../utils/auditLog.js';
+import { deductUsd } from '../utils/usdBalance.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { pathToFileURL } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ---------------------------------------------------------------------------
+// In-memory cache: toolName -> { toolTier, unitPriceUsd }
+// Populated on first use, refreshable via refreshToolPricing().
+// ---------------------------------------------------------------------------
+let _toolPricingCache = null;
+
+async function getToolPricing() {
+  if (_toolPricingCache) return _toolPricingCache;
+  return refreshToolPricing();
+}
+
+export async function refreshToolPricing() {
+  const servers = await prisma.mcpServer.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true, toolTier: true, unitPriceUsd: true },
+  });
+
+  const map = {};
+  for (const s of servers) {
+    const key = s.name.toLowerCase();
+    map[key] = { toolTier: s.toolTier || 'X', unitPriceUsd: s.unitPriceUsd ?? 0 };
+  }
+  _toolPricingCache = map;
+  return map;
+}
 
 /**
- * Get the current calendar month's period start (1st day 00:00 UTC)
+ * Sync toolTier + unitPriceUsd from integration config.js files into McpServer
+ * records that are missing these fields.  Called once at startup.
  */
+export async function syncToolPricingFromConfigs() {
+  try {
+    const integrationsDir = path.resolve(__dirname, '../../integrations');
+    if (!fs.existsSync(integrationsDir)) return;
+
+    const dirs = fs.readdirSync(integrationsDir).filter(d => !d.startsWith('_') && !d.startsWith('.'));
+
+    for (const dir of dirs) {
+      const cfgPath = path.join(integrationsDir, dir, 'config.js');
+      if (!fs.existsSync(cfgPath)) continue;
+
+      try {
+        const mod = await import(pathToFileURL(cfgPath).href);
+        const cfg = mod.default;
+        if (!cfg?.name || cfg.toolTier == null) continue;
+
+        const existing = await prisma.mcpServer.findFirst({ where: { name: cfg.name } });
+        if (!existing) continue;
+
+        const needsUpdate =
+          existing.toolTier !== cfg.toolTier ||
+          (existing.unitPriceUsd ?? 0) !== (cfg.unitPriceUsd ?? 0);
+
+        if (needsUpdate) {
+          await prisma.mcpServer.update({
+            where: { id: existing.id },
+            data: {
+              toolTier: cfg.toolTier,
+              unitPriceUsd: cfg.unitPriceUsd ?? 0,
+            },
+          });
+          logger.info(`[ToolPricing] Synced ${cfg.name}: tier=${cfg.toolTier}, price=$${cfg.unitPriceUsd ?? 0}`);
+        }
+      } catch (e) {
+        logger.debug(`[ToolPricing] Skip ${dir}: ${e.message}`);
+      }
+    }
+
+    _toolPricingCache = null;
+  } catch (err) {
+    logger.warn(`[ToolPricing] Config sync failed: ${err.message}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 function getCurrentPeriodStart() {
   const now = new Date();
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 }
 
-/**
- * Returns the effective monthly limit for a tier given the user's plan.
- * Enterprise deployments (no subscription) get PRO-equivalent quota.
- */
 function getMonthlyLimit(userPlan, tier) {
   const plan = userPlan || 'BASE';
   const quotaMap = TOOL_TIER_QUOTA[plan] || TOOL_TIER_QUOTA.BASE;
   return quotaMap[tier] ?? 0;
 }
 
-/**
- * Upsert a ToolQuota row, resetting usedThisMonth if a new billing period has started.
- */
 async function ensureQuotaRow(userId, tier, monthlyLimit) {
   const periodStart = getCurrentPeriodStart();
 
@@ -50,30 +126,29 @@ async function ensureQuotaRow(userId, tier, monthlyLimit) {
   return quota;
 }
 
+// ---------------------------------------------------------------------------
+// Middleware factory
+// ---------------------------------------------------------------------------
+
 /**
- * Express middleware factory.
- *
- * Usage:
- *   router.all('/*', authenticateToken, checkToolQuota('virustotal'), async (req, res) => { ... })
- *
- * @param {string} toolName - key in TOOL_TIER_MAP (e.g. 'virustotal')
- * @param {Function} [keyModeResolver] - optional fn(req) returning 'hub' or 'byok'.
- *   Defaults to always 'hub'. Proxy routes that support BYOK can pass their own resolver.
+ * @param {string} toolName - key that matches the integration name (lowercase)
+ * @param {Function} [keyModeResolver] - fn(req) returning 'hub' | 'byok'
  */
 export function checkToolQuota(toolName, keyModeResolver = () => 'hub') {
   return async (req, res, next) => {
     const keyMode = keyModeResolver(req);
 
-    // BYOK: user supplies their own key, no platform quota consumed
     if (keyMode === 'byok') {
-      req.toolMeta = { toolName, tier: TOOL_TIER_MAP[toolName], keyMode: 'byok' };
+      req.toolMeta = { toolName, tier: null, keyMode: 'byok', chargeUsd: 0 };
       return next();
     }
 
-    const tier = TOOL_TIER_MAP[toolName];
-    if (!tier) {
-      // Unknown tool — treat as X tier (free, no quota gate)
-      req.toolMeta = { toolName, tier: null, keyMode: 'hub' };
+    const pricing = await getToolPricing();
+    const info = pricing[toolName] || { toolTier: 'X', unitPriceUsd: 0 };
+    const tier = info.toolTier;
+
+    if (tier === 'X') {
+      req.toolMeta = { toolName, tier: 'X', keyMode: 'hub', chargeUsd: 0 };
       return next();
     }
 
@@ -82,7 +157,6 @@ export function checkToolQuota(toolName, keyModeResolver = () => 'hub') {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Resolve user plan
     let userPlan = 'BASE';
     try {
       const subscription = await prisma.subscription.findFirst({
@@ -90,6 +164,7 @@ export function checkToolQuota(toolName, keyModeResolver = () => 'hub') {
         orderBy: { createdAt: 'desc' }
       });
       if (subscription?.plan) userPlan = subscription.plan;
+      else if (subscription?.planName) userPlan = subscription.planName;
     } catch (err) {
       logger.warn(`[ToolQuota] Could not resolve plan for ${userId}: ${err.message}`);
     }
@@ -100,13 +175,21 @@ export function checkToolQuota(toolName, keyModeResolver = () => 'hub') {
       quota = await ensureQuotaRow(userId, tier, monthlyLimit);
     } catch (err) {
       logger.error(`[ToolQuota] DB error for ${userId}/${tier}: ${err.message}`);
-      // Fail open to avoid blocking legitimate users on DB hiccups
-      req.toolMeta = { toolName, tier, keyMode: 'hub', skipRecord: true };
+      req.toolMeta = { toolName, tier, keyMode: 'hub', skipRecord: true, chargeUsd: 0 };
       return next();
     }
 
     const effectiveLimit = quota.monthlyLimit + (quota.extraCalls || 0);
-    if (quota.usedThisMonth >= effectiveLimit) {
+
+    if (quota.usedThisMonth < effectiveLimit) {
+      req.toolMeta = { toolName, tier, keyMode: 'hub', quotaId: quota.id, chargeUsd: 0 };
+      return next();
+    }
+
+    // Free quota exhausted — fall through to USD balance if unitPriceUsd > 0
+    const unitPrice = info.unitPriceUsd;
+
+    if (unitPrice <= 0) {
       writeAudit(req, {
         userId,
         action: AUDIT_ACTIONS.TOOL_QUOTA_EXCEEDED,
@@ -116,25 +199,46 @@ export function checkToolQuota(toolName, keyModeResolver = () => 'hub') {
       });
       return res.status(429).json({
         error: 'Tool quota exceeded',
-        tier,
-        toolName,
+        tier, toolName,
         used: quota.usedThisMonth,
         limit: effectiveLimit,
-        message: `您本月 ${tier} 梯队工具额度已用尽 (${quota.usedThisMonth}/${effectiveLimit})。请升级套餐或购买额外包。`
+        message: `Monthly ${tier}-tier tool quota exhausted (${quota.usedThisMonth}/${effectiveLimit}). Please upgrade or top up your balance.`
       });
     }
 
-    req.toolMeta = { toolName, tier, keyMode: 'hub', quotaId: quota.id };
+    // Check USD balance
+    let user;
+    try {
+      user = await prisma.user.findUnique({ where: { id: userId }, select: { usdBalance: true } });
+    } catch (err) {
+      logger.error(`[ToolQuota] Balance check error for ${userId}: ${err.message}`);
+      req.toolMeta = { toolName, tier, keyMode: 'hub', skipRecord: true, chargeUsd: 0 };
+      return next();
+    }
+
+    const balance = user ? Number(user.usdBalance) : 0;
+    if (balance < unitPrice) {
+      return res.status(402).json({
+        error: 'Insufficient balance',
+        toolName,
+        unitPriceUsd: unitPrice,
+        currentBalance: balance,
+        message: `Free quota exhausted and insufficient USD balance ($${balance.toFixed(2)}). Each ${toolName} call costs $${unitPrice}. Please top up your balance.`
+      });
+    }
+
+    req.toolMeta = { toolName, tier, keyMode: 'hub', quotaId: quota.id, chargeUsd: unitPrice };
     next();
   };
 }
 
+// ---------------------------------------------------------------------------
+// Post-call usage recorder
+// ---------------------------------------------------------------------------
+
 /**
- * Records one tool call and increments the quota counter.
- * Call this AFTER the upstream request succeeds (fire-and-forget).
- *
- * @param {Request} req - Express request (must have req.user and req.toolMeta)
- * @param {string} [endpoint] - Optional endpoint path for logging
+ * Records one tool call, increments quota counter (if still in free tier),
+ * and deducts USD balance if chargeUsd > 0.
  */
 export async function recordToolUsage(req, endpoint) {
   const meta = req.toolMeta;
@@ -143,33 +247,41 @@ export async function recordToolUsage(req, endpoint) {
   const userId = req.user?.id;
   if (!userId) return;
 
-  const { toolName, tier, keyMode, quotaId } = meta;
+  const { toolName, tier, keyMode, quotaId, chargeUsd } = meta;
 
   try {
-    await prisma.$transaction([
+    const txOps = [
       prisma.toolUsageRecord.create({
         data: {
           userId,
           toolName,
           tier: tier || 'C',
           keyMode: keyMode || 'hub',
-          endpoint: endpoint || null
+          endpoint: endpoint || null,
+          chargedUsd: chargeUsd || 0,
         }
       }),
-      ...(keyMode === 'hub' && quotaId
-        ? [prisma.toolQuota.update({
-            where: { id: quotaId },
-            data: { usedThisMonth: { increment: 1 } }
-          })]
-        : [])
-    ]);
+    ];
+
+    if (keyMode === 'hub' && quotaId && chargeUsd <= 0) {
+      txOps.push(prisma.toolQuota.update({
+        where: { id: quotaId },
+        data: { usedThisMonth: { increment: 1 } }
+      }));
+    }
+
+    await prisma.$transaction(txOps);
+
+    if (chargeUsd > 0) {
+      await deductUsd(userId, chargeUsd, 'tool_charge', 'tool_usage_record', toolName, { toolName, endpoint });
+    }
 
     writeAudit(req, {
       userId,
       action: AUDIT_ACTIONS.TOOL_CALL,
       resourceType: RESOURCE_TYPES.TOOL,
       resourceId: toolName,
-      metadata: { tier: tier || 'C', keyMode: keyMode || 'hub', endpoint: endpoint || null },
+      metadata: { tier: tier || 'C', keyMode: keyMode || 'hub', endpoint: endpoint || null, chargedUsd: chargeUsd || 0 },
     });
   } catch (err) {
     logger.debug(`[ToolQuota] Usage record failed for ${userId}/${toolName}: ${err.message}`);

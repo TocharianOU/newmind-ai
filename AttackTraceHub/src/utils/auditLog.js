@@ -79,6 +79,10 @@ export const AUDIT_ACTIONS = {
   TOKEN_ADDED:    'TOKEN_ADDED',
   TOKEN_DEDUCTED: 'TOKEN_DEDUCTED',
 
+  // USD balance
+  USD_TOPUP:    'USD_TOPUP',
+  USD_CHARGED:  'USD_CHARGED',
+
   // Custom model management
   CUSTOM_MODEL_CREATED:  'CUSTOM_MODEL_CREATED',
   CUSTOM_MODEL_UPDATED:  'CUSTOM_MODEL_UPDATED',
@@ -97,6 +101,7 @@ export const RESOURCE_TYPES = {
   MODEL:         'MODEL',
   TOOL:          'TOOL',
   TOKEN:         'TOKEN',
+  BALANCE:       'BALANCE',
   CUSTOM_MODEL:  'CUSTOM_MODEL',
 }
 

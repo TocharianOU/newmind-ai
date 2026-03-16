@@ -45,13 +45,6 @@ export const MODEL_CONFIG = {
     },
 };
 
-// Tool tier mapping: tool name -> tier
-export const TOOL_TIER_MAP = {
-  virustotal: 'A',
-  shodan: 'B',
-  abuseipdb: 'C'
-};
-
 // Monthly default quota per tier per plan
 // X tier (Jira, Confluence, AWS, custom integrations) uses BYOK so no platform quota
 export const TOOL_TIER_QUOTA = {
@@ -79,6 +72,9 @@ export const PLAN_LIMITS = {
 // Internal cost accounting (per 1K raw tokens) is private runtime config.
 // Keep these in env / admin config rather than source code to avoid exposing
 // upstream model economics in distributed builds.
+// Fallback per-1K-token cost for custom/unknown models (prevents $0 billing)
+const FALLBACK_COST_PER_1K = parseFloat(process.env.MODEL_COST_FALLBACK_PER_1K || '0.015');
+
 export const TOKEN_PRICING = {
   'medium-agent': {
     input: parseFloat(process.env.MODEL_COST_MEDIUM_INPUT_PER_1K || '0'),
@@ -89,6 +85,15 @@ export const TOKEN_PRICING = {
     output: parseFloat(process.env.MODEL_COST_STRONG_OUTPUT_PER_1K || '0')
   },
 };
+
+/**
+ * Resolve pricing for any model, with fallback for unknown / custom models.
+ */
+export function getTokenPricing(model) {
+  const p = TOKEN_PRICING[model];
+  if (p && (p.input > 0 || p.output > 0)) return p;
+  return { input: FALLBACK_COST_PER_1K, output: FALLBACK_COST_PER_1K };
+}
 
 // Product-level token multiplier applied when deducting from user's token balance.
 // UsageRecord always stores real tokens for cost analytics.
@@ -102,6 +107,10 @@ export const MODEL_MULTIPLIER = {
 // Check user's monthly token usage (product tokens = real tokens * MODEL_MULTIPLIER).
 // UsageRecord stores raw tokens; we apply the multiplier here for quota checking
 // so that strong usage is counted at 3x against the shared monthly balance.
+//
+// When monthly gifted tokens are exhausted, the function checks the user's USD
+// balance. If there is remaining balance the call is still allowed with
+// billingMode: 'usd' so the caller knows to charge USD instead of tokens.
 export const checkTokenUsage = async (userId, userPlan, modelName = null) => {
   try {
     const { prisma } = await import('./database.js');
@@ -109,7 +118,6 @@ export const checkTokenUsage = async (userId, userPlan, modelName = null) => {
     const planLimits = PLAN_LIMITS[userPlan] || PLAN_LIMITS.BASE;
     const monthlyLimit = planLimits.monthlyTokens;
 
-    // Start of current calendar month (UTC)
     const now = new Date();
     const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
@@ -118,24 +126,42 @@ export const checkTokenUsage = async (userId, userPlan, modelName = null) => {
       select: { modelName: true, inputTokens: true, outputTokens: true }
     });
 
-    // Sum product tokens (real tokens * multiplier for each model)
     const totalProductTokensUsed = allRecords.reduce((acc, r) => {
       const multiplier = MODEL_MULTIPLIER[r.modelName] ?? 1;
       return acc + (r.inputTokens + r.outputTokens) * multiplier;
     }, 0);
 
     if (totalProductTokensUsed >= monthlyLimit) {
+      // Gifted tokens exhausted — check USD balance as fallback
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { usdBalance: true } });
+      const usdBalance = user ? Number(user.usdBalance) : 0;
+
+      if (usdBalance > 0) {
+        return {
+          allowed: true,
+          billingMode: 'usd',
+          totalUsed: totalProductTokensUsed,
+          monthlyLimit,
+          remaining: 0,
+          usdBalance,
+          error: null
+        };
+      }
+
       return {
         allowed: false,
+        billingMode: 'none',
         totalUsed: totalProductTokensUsed,
         monthlyLimit,
         remaining: 0,
-        error: `Monthly token limit exceeded (${totalProductTokensUsed}/${monthlyLimit}). Limit resets on the 1st of next month.`
+        usdBalance: 0,
+        error: `Monthly token limit exceeded (${totalProductTokensUsed}/${monthlyLimit}) and no USD balance remaining. Please top up your balance or wait until the 1st of next month.`
       };
     }
 
     return {
       allowed: true,
+      billingMode: 'token',
       totalUsed: totalProductTokensUsed,
       monthlyLimit,
       remaining: monthlyLimit - totalProductTokensUsed,
@@ -143,7 +169,7 @@ export const checkTokenUsage = async (userId, userPlan, modelName = null) => {
     };
   } catch (error) {
     console.error('Error checking token usage:', error);
-    return { allowed: true, error: null };
+    return { allowed: true, billingMode: 'token', error: null };
   }
 };
 

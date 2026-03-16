@@ -73,9 +73,8 @@ router.post('/user/mcp/search', authenticateToken, async (req, res) => {
         version: server.version || null,
         downloadUrl: server.downloadUrl || null,
         configSchema: safeParseJSON(server.configSchema, null),
-        token_cost: server.tokenCost || 0,
-        token_required: server.tokenRequired || 0,
-        token_price_unit: server.tokenPriceUnit || 'request',
+        tool_tier: server.toolTier || 'X',
+        unit_price_usd: server.unitPriceUsd ?? 0,
         popular: server.popular || false,
         new: server.new || false
       };

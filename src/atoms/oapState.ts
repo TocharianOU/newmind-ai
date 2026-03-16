@@ -27,7 +27,8 @@ export const isOAPUsageLimitAtom = atom((get) => {
   const overMainQuota = oapUsage.total >= oapUsage.limit
   const couponExhausted = (oapUsage.coupon?.limit ?? 0) === 0
     || (oapUsage.coupon.limit > 0 && oapUsage.coupon.total >= oapUsage.coupon.limit)
-  return overMainQuota && couponExhausted
+  const hasUsdBalance = (oapUsage.usdBalance ?? 0) > 0
+  return overMainQuota && couponExhausted && !hasUsdBalance
 })
 
 export const OAPLevelAtom = atom((get) => {

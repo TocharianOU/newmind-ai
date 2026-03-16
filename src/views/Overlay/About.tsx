@@ -28,7 +28,7 @@ const About = () => {
         </div>
 
         <div className="about-footer">
-          <p className="about-copyright">© 2024 {ENV_CONFIG.APP_NAME}. All rights reserved.</p>
+          <p className="about-copyright">© 2026 {ENV_CONFIG.APP_NAME}. All rights reserved.</p>
         </div>
       </div>
     </div>

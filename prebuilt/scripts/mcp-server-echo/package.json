@@ -2,7 +2,7 @@
   "name": "@tocharian/mcp-server-echo",
   "description": "Echo MCP Server for testing",
   "version": "0.1.0",
-  "license": "Apache-2.0",
+  "license": "UNLICENSED",
   "type": "module",
   "main": "dist/index.js",
   "bin": {

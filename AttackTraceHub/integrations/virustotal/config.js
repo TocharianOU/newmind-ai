@@ -131,9 +131,8 @@ Threat intelligence for files, URLs, IP addresses, and domains powered by VirusT
     }
   },
 
-  tokenCost: 0.05,
-  tokenRequired: 0.05,
-  tokenPriceUnit: 'request',
+  toolTier: 'A',
+  unitPriceUsd: 0.05,
   popular: true,
   new: true,
   isActive: true

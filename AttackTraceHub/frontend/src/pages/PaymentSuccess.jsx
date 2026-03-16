@@ -97,7 +97,7 @@ const PaymentSuccess = () => {
     );
   }
 
-  const isTokenPurchase = sessionData?.metadata?.type === 'token_purchase';
+  const purchaseType = sessionData?.metadata?.type;
 
   return (
     <div className="payment-success-page">
@@ -111,7 +111,19 @@ const PaymentSuccess = () => {
 
         <h2>{t('payment.success', 'Payment Successful!')}</h2>
         
-        {isTokenPurchase ? (
+        {purchaseType === 'usd_topup' ? (
+          <>
+            <p className="payment-desc">
+              {t('payment.topupSuccess', 'Your balance has been topped up')}
+            </p>
+            <div className="payment-details">
+              <div className="detail-item">
+                <span className="label">{t('payment.balanceAdded', 'Balance Added')}:</span>
+                <span className="value">${sessionData.amountTotal?.toFixed(2)}</span>
+              </div>
+            </div>
+          </>
+        ) : purchaseType === 'token_purchase' ? (
           <>
             <p className="payment-desc">
               {t('payment.tokenSuccess', 'Your tokens have been added to your account')}
@@ -125,7 +137,7 @@ const PaymentSuccess = () => {
               </div>
               <div className="detail-item">
                 <span className="label">{t('payment.amount', 'Amount')}:</span>
-                <span className="value">${sessionData.amountTotal.toFixed(2)}</span>
+                <span className="value">${sessionData.amountTotal?.toFixed(2)}</span>
               </div>
             </div>
           </>
@@ -137,15 +149,15 @@ const PaymentSuccess = () => {
             <div className="payment-details">
               <div className="detail-item">
                 <span className="label">{t('payment.plan', 'Plan')}:</span>
-                <span className="value">{sessionData.metadata.planId.toUpperCase()}</span>
+                <span className="value">{sessionData.metadata?.planId?.toUpperCase()}</span>
               </div>
               <div className="detail-item">
                 <span className="label">{t('payment.period', 'Period')}:</span>
-                <span className="value">{sessionData.metadata.period}</span>
+                <span className="value">{sessionData.metadata?.period}</span>
               </div>
               <div className="detail-item">
                 <span className="label">{t('payment.amount', 'Amount')}:</span>
-                <span className="value">${sessionData.amountTotal.toFixed(2)}</span>
+                <span className="value">${sessionData.amountTotal?.toFixed(2)}</span>
               </div>
             </div>
           </>

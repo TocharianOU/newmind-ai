@@ -83,6 +83,8 @@ model McpServer {
   tokenCost       Float    @default(0)
   tokenRequired   Float    @default(0)
   tokenPriceUnit  String?  @default("request")
+  toolTier        String?  @db.VarChar(10)
+  unitPriceUsd    Float    @default(0)
   popular         Boolean  @default(false)
   new             Boolean  @default(false)
   version         String?  @db.VarChar(50)
@@ -245,18 +247,27 @@ model PasswordReset {
 }
 
 model User {
-  id                  String                @id
-  email               String                @unique
-  username            String
-  password            String?
-  picture             String?               @db.VarChar(500)
-  team                String?
-  role                UserRole              @default(USER)
-  tokenBalance        Int                   @default(0)
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime
+  id                         String                @id
+  email                      String                @unique
+  username                   String
+  password                   String?
+  picture                    String?               @db.VarChar(500)
+  team                       String?
+  role                       UserRole              @default(USER)
+  tokenBalance               Int                   @default(0)
+  usdBalance                 Decimal               @default(0) @db.Decimal(12, 4)
+  autoTopUpEnabled           Boolean               @default(false)
+  autoTopUpThreshold         Decimal               @default(5.00) @db.Decimal(12, 4)
+  autoTopUpAmount            Decimal               @default(20.00) @db.Decimal(12, 4)
+  stripeCustomerId           String?
+  stripeDefaultPaymentMethod String?
+  lastLowBalanceEmailAt      DateTime?
+  monthlySpendCapUsd         Decimal?              @db.Decimal(12, 4)
+  createdAt                  DateTime              @default(now())
+  updatedAt                  DateTime
   AuditLog            AuditLog[]
   AuthIdentity        AuthIdentity[]
+  BalanceTransaction  BalanceTransaction[]
   ChatSession         ChatSession[]
   Message             Message[]
   PasswordReset       PasswordReset[]
@@ -366,6 +377,7 @@ enum ToolTier {
   A
   B
   C
+  X
 }
 
 enum KeyMode {
@@ -374,15 +386,16 @@ enum KeyMode {
 }
 
 model ToolUsageRecord {
-  id        String   @id @default(uuid())
-  userId    String
-  toolName  String
-  tier      ToolTier
-  keyMode   KeyMode  @default(hub)
-  endpoint  String?
-  createdAt DateTime @default(now())
+  id         String   @id @default(uuid())
+  userId     String
+  toolName   String
+  tier       ToolTier
+  keyMode    KeyMode  @default(hub)
+  endpoint   String?
+  chargedUsd Decimal  @default(0) @db.Decimal(12, 4)
+  createdAt  DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([tier, createdAt])
@@ -420,4 +433,26 @@ model ToolQuotaPurchase {
 
   @@index([userId, tier])
   @@index([stripeSessionId])
+}
+
+// ---------------------------------------------------------------------------
+// USD Balance Ledger
+// ---------------------------------------------------------------------------
+
+model BalanceTransaction {
+  id            String   @id @default(uuid())
+  userId        String
+  type          String   @db.VarChar(30)
+  amountUsd     Decimal  @db.Decimal(12, 4)
+  balanceBefore Decimal  @db.Decimal(12, 4)
+  balanceAfter  Decimal  @db.Decimal(12, 4)
+  referenceType String?  @db.VarChar(30)
+  referenceId   String?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([type])
 }

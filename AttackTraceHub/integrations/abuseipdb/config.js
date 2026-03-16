@@ -126,9 +126,8 @@ Community-powered IP reputation intelligence. Every check draws on millions of c
     }
   },
 
-  tokenCost: 0.03,
-  tokenRequired: 0.03,
-  tokenPriceUnit: 'request',
+  toolTier: 'C',
+  unitPriceUsd: 0.02,
   popular: false,
   new: true,
   isActive: true

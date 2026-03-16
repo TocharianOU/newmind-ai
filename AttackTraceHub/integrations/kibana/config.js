@@ -227,9 +227,8 @@ Manage saved objects, analyze dashboard health, discover API endpoints, and exec
     }
   },
   
-  tokenCost: 0.1,
-  tokenRequired: 0.1,
-  tokenPriceUnit: 'request',
+  toolTier: 'X',
+  unitPriceUsd: 0,
   popular: true,
   new: false,
   isActive: true

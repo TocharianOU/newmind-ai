@@ -1,0 +1,3 @@
+# Customer-specific license file — NEVER commit to the repository.
+# Each enterprise deployment package embeds its own license.json.
+license.json

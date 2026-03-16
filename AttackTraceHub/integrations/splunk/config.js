@@ -166,9 +166,8 @@ Splunk SIEM 集成，面向 SOC/DFIR 调查。所有 SPL 搜索均以异步 Splu
     ]
   },
 
-  tokenCost: 0.03,
-  tokenRequired: 0.03,
-  tokenPriceUnit: 'request',
+  toolTier: 'X',
+  unitPriceUsd: 0,
   popular: false,
   new: true,
   isActive: true

@@ -5,6 +5,7 @@
   "copyright": "Copyright © 2025 Tocharian OU",
   "asar": true,
   "npmRebuild": false,
+  "afterPack": "./scripts/afterPack.cjs",
   "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
   "protocols": {
     "name": "attacktrace",
@@ -84,9 +85,11 @@
     "target": [
       {
         "target": "nsis",
-        "arch": [
-          "x64"
-        ]
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
       }
     ],
     "extraResources": [
@@ -181,7 +184,11 @@
     "oneClick": false,
     "perMachine": false,
     "allowToChangeInstallationDirectory": true,
-    "deleteAppDataOnUninstall": true
+    "deleteAppDataOnUninstall": true,
+    "artifactName": "${productName}-${version}-win-${arch}-setup.${ext}"
+  },
+  "portable": {
+    "artifactName": "${productName}-${version}-win-${arch}-portable.${ext}"
   },
   "extraResources": [
     {

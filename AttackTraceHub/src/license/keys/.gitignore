@@ -4,3 +4,4 @@ private.pem
 
 # The public key (public.pem) IS safe to commit
 !public.pem
+

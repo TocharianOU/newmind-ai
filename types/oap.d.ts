@@ -80,6 +80,8 @@ export type OAPUser = {
   username: string
   picture: string
   team: string
+  tokenBalance?: number
+  usdBalance?: number
   subscription: OAPSubscription
   hubUrl?: string
 }
@@ -98,6 +100,7 @@ export type OAPUsage = {
   mcp: number
   model: number
   total: number //mcp + model
+  usdBalance?: number
   coupon: OAPCoupon
 }
 

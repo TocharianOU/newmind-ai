@@ -354,7 +354,7 @@ AttackTrace OAP 提供灵活的订阅计划，满足不同规模团队的需求�
 
 ## 许可证
 
-本项目采用 MIT 许可证。详见 [LICENSE](./LICENSE) 文件。
+本项目为专有软件，保留所有权利。详见 [LICENSE](./LICENSE) 文件。
 
 ## 联系我们
 

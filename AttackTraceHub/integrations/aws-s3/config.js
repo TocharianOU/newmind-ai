@@ -130,9 +130,8 @@ S3 存储桶安全审计与数据泄露调查，基于 AWS S3 API。
     }
   },
 
-  tokenCost: 0.03,
-  tokenRequired: 0.03,
-  tokenPriceUnit: 'request',
+  toolTier: 'X',
+  unitPriceUsd: 0,
   popular: false,
   new: true,
   isActive: true

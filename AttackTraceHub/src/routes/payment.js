@@ -1,9 +1,10 @@
 import express from 'express';
-import { stripe, TOKEN_PACKAGES, SUBSCRIPTION_PLANS, PLAN_HIERARCHY, TOOL_QUOTA_PACKAGES } from '../config/stripe.js';
+import { stripe, TOKEN_PACKAGES, SUBSCRIPTION_PLANS, PLAN_HIERARCHY, TOOL_QUOTA_PACKAGES, USD_TOPUP_PACKAGES } from '../config/stripe.js';
 import { prisma } from '../config/database.js';
 import { createResponse } from '../config/constants.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { addTokens } from '../utils/tokenBalance.js';
+import { addUsd, getMonthlySpend } from '../utils/usdBalance.js';
 import logger from '../utils/logger.js';
 import { writeAudit, AUDIT_ACTIONS, RESOURCE_TYPES } from '../utils/auditLog.js';
 import { validateBody } from '../middleware/validate.js';
@@ -11,7 +12,272 @@ import { CreateTokenCheckoutSchema, CreateSubscriptionCheckoutSchema } from '../
 
 const router = express.Router();
 
-// GET /api/v1/payment/token-packages - 获取 Token 包列表
+// -----------------------------------------------------------------------
+// USD Balance Top-up (new primary flow)
+// -----------------------------------------------------------------------
+
+// GET /api/v1/payment/topup-packages
+router.get('/topup-packages', authenticateToken, (req, res) => {
+  res.json(createResponse(Object.values(USD_TOPUP_PACKAGES)));
+});
+
+// POST /api/v1/payment/create-topup-checkout
+router.post('/create-topup-checkout', authenticateToken, async (req, res) => {
+  try {
+    const { packageId, customAmount, saveCard = false } = req.body;
+    const user = req.user;
+
+    let amountUsd;
+    let label;
+
+    if (packageId === 'custom') {
+      const parsed = parseFloat(customAmount);
+      if (!parsed || parsed < 5 || parsed > 10000) {
+        return res.status(400).json(createResponse(null, 'Custom amount must be between $5 and $10,000'));
+      }
+      amountUsd = Math.round(parsed * 100) / 100;
+      label = `$${amountUsd} Balance`;
+    } else {
+      const pkg = USD_TOPUP_PACKAGES[packageId];
+      if (!pkg) {
+        return res.status(400).json(createResponse(null, 'Invalid top-up package ID'));
+      }
+      amountUsd = pkg.amount;
+      label = pkg.name;
+    }
+
+    // Get or create a Stripe Customer so we can save the payment method for auto top-up
+    let stripeCustomerId = user.stripeCustomerId;
+    if (!stripeCustomerId) {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        metadata: { userId: user.id },
+      });
+      stripeCustomerId = customer.id;
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { stripeCustomerId },
+      });
+      logger.info(`[Payment] Created Stripe customer ${stripeCustomerId} for user ${user.id}`);
+    }
+
+    const sessionParams = {
+      customer: stripeCustomerId,
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: { name: label, description: `Add ${label} to your account balance` },
+          unit_amount: Math.round(amountUsd * 100),
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: `${process.env.HUB_FRONTEND_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.HUB_FRONTEND_URL}/billing?cancelled=true`,
+      metadata: {
+        userId: user.id,
+        packageId: packageId === 'custom' ? 'custom' : packageId,
+        amountUsd: amountUsd.toString(),
+        type: 'usd_topup',
+        saveCard: saveCard ? 'true' : 'false',
+      },
+    };
+
+    // If saveCard requested, tell Stripe to save the payment method for future off-session charges
+    if (saveCard) {
+      sessionParams.payment_intent_data = { setup_future_usage: 'off_session' };
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
+
+    logger.info(`[Payment] Top-up checkout created for ${user.email}: ${label} (saveCard=${saveCard})`);
+
+    writeAudit(req, {
+      userId: user.id,
+      action: AUDIT_ACTIONS.PAYMENT_CHECKOUT_CREATED,
+      resourceType: RESOURCE_TYPES.PAYMENT,
+      resourceId: session.id,
+      metadata: { packageId, amountUsd, saveCard },
+    });
+
+    res.json(createResponse({ sessionId: session.id, url: session.url }));
+  } catch (error) {
+    logger.error('Error creating top-up checkout:', error);
+    res.status(500).json(createResponse(null, 'Failed to create checkout session'));
+  }
+});
+
+// -----------------------------------------------------------------------
+// Invoices / Receipts
+// -----------------------------------------------------------------------
+
+// GET /api/v1/payment/receipts
+router.get('/receipts', authenticateToken, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { stripeCustomerId: true },
+    });
+
+    if (!user?.stripeCustomerId) {
+      return res.json(createResponse({ receipts: [] }));
+    }
+
+    const { limit = 20 } = req.query;
+
+    // Fetch Stripe invoices (from subscriptions)
+    const invoices = await stripe.invoices.list({
+      customer: user.stripeCustomerId,
+      limit: parseInt(limit),
+    });
+
+    // Fetch Stripe charges (from one-time top-ups)
+    const charges = await stripe.charges.list({
+      customer: user.stripeCustomerId,
+      limit: parseInt(limit),
+    });
+
+    const receipts = [];
+
+    for (const inv of invoices.data) {
+      receipts.push({
+        id: inv.id,
+        type: 'invoice',
+        amount: inv.amount_paid / 100,
+        currency: inv.currency,
+        status: inv.status,
+        date: new Date(inv.created * 1000).toISOString(),
+        pdfUrl: inv.invoice_pdf || null,
+        hostedUrl: inv.hosted_invoice_url || null,
+      });
+    }
+
+    for (const ch of charges.data) {
+      if (ch.invoice) continue;
+      receipts.push({
+        id: ch.id,
+        type: 'charge',
+        amount: ch.amount / 100,
+        currency: ch.currency,
+        status: ch.status,
+        date: new Date(ch.created * 1000).toISOString(),
+        pdfUrl: null,
+        hostedUrl: ch.receipt_url || null,
+      });
+    }
+
+    receipts.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    res.json(createResponse({ receipts }));
+  } catch (error) {
+    logger.error('Error fetching receipts:', error);
+    res.status(500).json(createResponse(null, 'Failed to fetch receipts'));
+  }
+});
+
+// -----------------------------------------------------------------------
+// Monthly Spend
+// -----------------------------------------------------------------------
+
+// GET /api/v1/payment/monthly-spend
+router.get('/monthly-spend', authenticateToken, async (req, res) => {
+  try {
+    const data = await getMonthlySpend(req.user.id);
+    res.json(createResponse(data));
+  } catch (error) {
+    logger.error('Error fetching monthly spend:', error);
+    res.status(500).json(createResponse(null, 'Failed to fetch monthly spend'));
+  }
+});
+
+// -----------------------------------------------------------------------
+// Auto Top-Up Settings
+// -----------------------------------------------------------------------
+
+// GET /api/v1/payment/auto-topup-settings
+router.get('/auto-topup-settings', authenticateToken, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        autoTopUpEnabled: true,
+        autoTopUpThreshold: true,
+        autoTopUpAmount: true,
+        stripeDefaultPaymentMethod: true,
+      },
+    });
+
+    if (!user) return res.status(404).json(createResponse(null, 'User not found'));
+
+    // Retrieve saved card last4 from Stripe if available
+    let savedCard = null;
+    if (user.stripeDefaultPaymentMethod) {
+      try {
+        const pm = await stripe.paymentMethods.retrieve(user.stripeDefaultPaymentMethod);
+        if (pm.card) {
+          savedCard = { brand: pm.card.brand, last4: pm.card.last4, expMonth: pm.card.exp_month, expYear: pm.card.exp_year };
+        }
+      } catch {
+        // Payment method may have been deleted from Stripe
+      }
+    }
+
+    res.json(createResponse({
+      enabled: user.autoTopUpEnabled,
+      threshold: Number(user.autoTopUpThreshold),
+      amount: Number(user.autoTopUpAmount),
+      savedCard,
+    }));
+  } catch (error) {
+    logger.error('Error fetching auto top-up settings:', error);
+    res.status(500).json(createResponse(null, 'Failed to fetch settings'));
+  }
+});
+
+// POST /api/v1/payment/auto-topup-settings
+router.post('/auto-topup-settings', authenticateToken, async (req, res) => {
+  try {
+    const { enabled, threshold, amount } = req.body;
+    const userId = req.user.id;
+
+    const parsedThreshold = parseFloat(threshold);
+    const parsedAmount = parseFloat(amount);
+
+    if (threshold !== undefined && (isNaN(parsedThreshold) || parsedThreshold < 1 || parsedThreshold > 100)) {
+      return res.status(400).json(createResponse(null, 'Threshold must be between $1 and $100'));
+    }
+    if (amount !== undefined && (isNaN(parsedAmount) || parsedAmount < 5 || parsedAmount > 500)) {
+      return res.status(400).json(createResponse(null, 'Top-up amount must be between $5 and $500'));
+    }
+
+    const data = {};
+    if (enabled !== undefined) data.autoTopUpEnabled = Boolean(enabled);
+    if (threshold !== undefined) data.autoTopUpThreshold = parsedThreshold;
+    if (amount !== undefined) data.autoTopUpAmount = parsedAmount;
+
+    await prisma.user.update({ where: { id: userId }, data });
+
+    logger.info(`[Payment] Auto top-up settings updated for user ${userId}: ${JSON.stringify(data)}`);
+    writeAudit(req, {
+      userId,
+      action: 'AUTO_TOPUP_SETTINGS_UPDATED',
+      resourceType: RESOURCE_TYPES.PAYMENT,
+      metadata: data,
+    });
+
+    res.json(createResponse({ message: 'Settings saved' }));
+  } catch (error) {
+    logger.error('Error updating auto top-up settings:', error);
+    res.status(500).json(createResponse(null, 'Failed to update settings'));
+  }
+});
+
+// -----------------------------------------------------------------------
+// Legacy: Token packages (kept for backward compat)
+// -----------------------------------------------------------------------
+
+// GET /api/v1/payment/token-packages
 router.get('/token-packages', authenticateToken, async (req, res) => {
   try {
     const packages = Object.values(TOKEN_PACKAGES);
@@ -22,7 +288,7 @@ router.get('/token-packages', authenticateToken, async (req, res) => {
   }
 });
 
-// GET /api/v1/payment/tool-quota-packages - 获取工具额度补充包列表
+// GET /api/v1/payment/tool-quota-packages (legacy)
 router.get('/tool-quota-packages', authenticateToken, async (req, res) => {
   try {
     const packages = Object.values(TOOL_QUOTA_PACKAGES);
@@ -33,7 +299,7 @@ router.get('/tool-quota-packages', authenticateToken, async (req, res) => {
   }
 });
 
-// POST /api/v1/payment/create-tool-quota-checkout - 购买工具额度补充包
+// POST /api/v1/payment/create-tool-quota-checkout (legacy)
 router.post('/create-tool-quota-checkout', authenticateToken, async (req, res) => {
   try {
     const { packageId } = req.body;
@@ -51,10 +317,7 @@ router.post('/create-tool-quota-checkout', authenticateToken, async (req, res) =
       line_items: [{
         price_data: {
           currency: 'usd',
-          product_data: {
-            name: pkg.name,
-            description: pkg.description,
-          },
+          product_data: { name: pkg.name, description: pkg.description },
           unit_amount: Math.round(pkg.price * 100),
         },
         quantity: 1,
@@ -83,7 +346,7 @@ router.post('/create-tool-quota-checkout', authenticateToken, async (req, res) =
       },
     });
 
-    logger.info(`🛒 Tool quota checkout created for ${user.email}: ${pkg.name}`);
+    logger.info(`[Payment] Tool quota checkout created for ${user.email}: ${pkg.name}`);
     res.json(createResponse({ sessionId: session.id, url: session.url }));
   } catch (error) {
     logger.error('Error creating tool quota checkout:', error);
@@ -294,7 +557,42 @@ export async function stripeWebhookHandler(req, res) {
 async function handleCheckoutCompleted(session) {
   const { userId, packageId, tokensAmount, planId, period, durationDays, type } = session.metadata;
   
-  if (type === 'token_purchase') {
+  if (type === 'usd_topup') {
+    const amountUsd = parseFloat(session.metadata.amountUsd);
+    if (!amountUsd || amountUsd <= 0) {
+      logger.error(`[Payment] Invalid top-up amount in session ${session.id}`);
+      return;
+    }
+    await addUsd(userId, amountUsd, 'topup', 'payment', session.payment_intent, {
+      sessionId: session.id,
+      packageId: session.metadata.packageId,
+    });
+    logger.info(`[Payment] USD top-up completed: $${amountUsd} for user ${userId}`);
+
+    // If saveCard was requested, persist the payment method for auto top-up
+    if (session.metadata.saveCard === 'true' && session.payment_intent) {
+      try {
+        const pi = await stripe.paymentIntents.retrieve(session.payment_intent);
+        if (pi.payment_method) {
+          // Attach to customer so it can be used off_session
+          try {
+            await stripe.paymentMethods.attach(pi.payment_method, { customer: session.customer });
+          } catch (attachErr) {
+            // May already be attached — safe to ignore
+            if (!attachErr.message.includes('already been attached')) throw attachErr;
+          }
+          await prisma.user.update({
+            where: { id: userId },
+            data: { stripeDefaultPaymentMethod: pi.payment_method },
+          });
+          logger.info(`[Payment] Saved payment method ${pi.payment_method} for user ${userId}`);
+        }
+      } catch (pmErr) {
+        logger.warn(`[Payment] Failed to save payment method for user ${userId}: ${pmErr.message}`);
+      }
+    }
+
+  } else if (type === 'token_purchase') {
     // Token 包购买
     const purchase = await prisma.tokenPurchase.findUnique({
       where: { stripeSessionId: session.id }
@@ -575,7 +873,7 @@ router.get('/history', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     const { limit = 20, offset = 0 } = req.query;
     
-    const [tokenPurchases, subscriptionPayments] = await Promise.all([
+    const [tokenPurchases, subscriptionPayments, usdTopups] = await Promise.all([
       prisma.tokenPurchase.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
@@ -587,10 +885,15 @@ router.get('/history', authenticateToken, async (req, res) => {
         orderBy: { createdAt: 'desc' },
         take: parseInt(limit),
         skip: parseInt(offset)
-      })
+      }),
+      prisma.balanceTransaction.findMany({
+        where: { userId, type: 'topup' },
+        orderBy: { createdAt: 'desc' },
+        take: parseInt(limit),
+        skip: parseInt(offset)
+      }),
     ]);
     
-    // 合并并排序
     const history = [
       ...tokenPurchases.map(p => ({
         id: p.id,
@@ -611,7 +914,14 @@ router.get('/history', authenticateToken, async (req, res) => {
         status: p.status,
         createdAt: p.createdAt,
         paidAt: p.paidAt
-      }))
+      })),
+      ...usdTopups.map(t => ({
+        id: t.id,
+        type: 'usd_topup',
+        amount: Number(t.amountUsd),
+        status: 'COMPLETED',
+        createdAt: t.createdAt,
+      })),
     ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     
     res.json(createResponse(history));

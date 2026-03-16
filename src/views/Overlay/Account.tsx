@@ -219,6 +219,13 @@ const Account = () => {
                   </span>
                 </div>
 
+                {(oapUsage?.usdBalance != null && oapUsage.usdBalance > 0) && (
+                  <div className="subscription-info">
+                    <span className="info-label">{t("system.usdBalance", "USD Balance")}：</span>
+                    <span className="info-value">${oapUsage.usdBalance.toFixed(2)}</span>
+                  </div>
+                )}
+
                 {oapUsage && (oapUsage.limit ?? 0) > 0 && (
                   <div className="progress-wrapper">
                     <div className="progress-row">

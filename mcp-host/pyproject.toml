@@ -13,8 +13,7 @@ authors = [
     { name = "Benny Ling", email = "benny@funmula.com" },
     { name = "Louis Liu", email = "louis@funmula.com" }
 ]
-license = "MIT"
-license-files = ["LICENSE"]
+license = "LicenseRef-Proprietary"
 dependencies = [
     "langchain-anthropic>=0.3.18",
     "langchain-core>=0.3.74",
@@ -50,7 +49,6 @@ dependencies = [
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 

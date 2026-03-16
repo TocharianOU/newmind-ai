@@ -26,13 +26,26 @@ export const authLimiter = rateLimit({
 });
 
 /**
- * Payment endpoints:
- * Low limit to prevent checkout-session spam.
- * 20 requests / 15 min per IP.
+ * Payment read endpoints (packages, history, settings):
+ * Higher limit since the Billing page fires multiple GETs on load.
+ * 120 requests / 15 min per IP.
+ */
+export const paymentReadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  message: rateLimitMessage,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Payment write endpoints (checkout, settings update):
+ * Stricter limit to prevent checkout-session spam.
+ * 30 requests / 15 min per IP.
  */
 export const paymentLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: 30,
   message: rateLimitMessage,
   standardHeaders: true,
   legacyHeaders: false,

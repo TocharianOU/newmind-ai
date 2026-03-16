@@ -3,12 +3,14 @@
  * Called from server.js when LICENSE_ENABLED is true.
  */
 
-import { getLicenseStatus } from './validator.js';
+import { getLicenseStatus, autoActivateBundledLicense } from './validator.js';
 import logger from '../utils/logger.js';
 
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // every 6 hours
 
-export function startLicenseCheck() {
+export async function startLicenseCheck() {
+  // Auto-activate bundled license.json (Plan A) before first status check
+  await autoActivateBundledLicense();
   checkAndLog(); // run immediately on startup
   setInterval(checkAndLog, CHECK_INTERVAL_MS);
 }

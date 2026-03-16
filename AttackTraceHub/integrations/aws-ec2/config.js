@@ -118,9 +118,8 @@ EC2 实例清单、安全组暴露面分析与控制台输出取证，面向事�
     }
   },
 
-  tokenCost: 0.03,
-  tokenRequired: 0.03,
-  tokenPriceUnit: 'request',
+  toolTier: 'X',
+  unitPriceUsd: 0,
   popular: false,
   new: true,
   isActive: true

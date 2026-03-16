@@ -71,3 +71,53 @@ export async function sendPasswordResetEmail(to, token) {
 
   logger.info(`[Email] Password reset email sent to ${to}`);
 }
+
+/**
+ * Send a low-balance or auto top-up failure alert.
+ * @param {string}       to           - Recipient email
+ * @param {number|null}  balance      - Current USD balance (null if unknown)
+ * @param {boolean}      topUpFailed  - true when the auto top-up charge failed
+ */
+export async function sendLowBalanceEmail(to, balance, topUpFailed = false) {
+  const balanceText = balance !== null && balance !== undefined
+    ? `$${Number(balance).toFixed(2)}`
+    : 'near zero';
+
+  const topUpUrl = `${FRONTEND_URL}/billing`;
+
+  const subject = topUpFailed
+    ? 'Action Required: Auto Top-Up Failed'
+    : 'Low Balance Alert: Your USD Balance is Running Low';
+
+  const text = topUpFailed
+    ? `Your automatic top-up failed. Your balance is currently ${balanceText}. Please add funds manually: ${topUpUrl}`
+    : `Your USD balance is now ${balanceText}. Top up to continue using AI models and tools: ${topUpUrl}`;
+
+  const html = topUpFailed
+    ? `
+      <p>⚠️ Your <strong>automatic top-up failed</strong>.</p>
+      <p>Your current balance is <strong>${balanceText}</strong>. Please add funds to avoid service interruption.</p>
+      <p style="margin:24px 0">
+        <a href="${topUpUrl}" style="background:#6366f1;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600">
+          Add Funds Now
+        </a>
+      </p>
+      <p style="color:#888;font-size:13px">Or copy: ${topUpUrl}</p>`
+    : `
+      <p>Your USD balance is now <strong>${balanceText}</strong>.</p>
+      <p>Top up to continue using AI models and tools without interruption.</p>
+      <p style="margin:24px 0">
+        <a href="${topUpUrl}" style="background:#6366f1;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600">
+          Top Up Balance
+        </a>
+      </p>
+      <p style="color:#888;font-size:13px">Or copy: ${topUpUrl}</p>`;
+
+  if (!transport) {
+    logger.warn(`[Email] SMTP not configured. Low balance alert for ${to}: ${subject}`);
+    return;
+  }
+
+  await transport.sendMail({ from: FROM, to, subject, text, html });
+  logger.info(`[Email] Low balance alert sent to ${to} (topUpFailed=${topUpFailed})`);
+}

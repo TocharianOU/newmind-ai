@@ -159,9 +159,8 @@ Supports ES 5.x through 9.x with automatic version detection and adapter selecti
     }
   },
   
-  tokenCost: 0.1,
-  tokenRequired: 0.1,
-  tokenPriceUnit: 'request',
+  toolTier: 'X',
+  unitPriceUsd: 0,
   popular: true,
   new: false,
   isActive: true

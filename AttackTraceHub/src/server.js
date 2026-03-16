@@ -35,10 +35,11 @@ import shodanProxyRoutes from './routes/shodan-proxy.js';
 import abuseipdbProxyRoutes from './routes/abuseipdb-proxy.js';
 import syncRoutes from './routes/sync.js';
 import customModelsRoutes from './routes/customModels.js';
+import adminBillingRoutes from './routes/adminBilling.js';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler.js';
-import { rateLimiter, authLimiter, paymentLimiter, syncLimiter } from './middleware/rateLimiter.js';
+import { rateLimiter, authLimiter, paymentLimiter, paymentReadLimiter, syncLimiter } from './middleware/rateLimiter.js';
 
 // Import utilities
 import logger from './utils/logger.js';
@@ -47,6 +48,7 @@ import { initializeSSOProviders } from './sso/index.js';
 import { prisma } from './config/database.js';
 import { startLicenseCheck } from './license/scheduler.js'
 import { startAuditFileCleanup } from './utils/auditFileWriter.js';
+import { syncToolPricingFromConfigs } from './middleware/toolQuota.js';
 
 // ---------------------------------------------------------------------------
 // App setup
@@ -176,7 +178,11 @@ app.use('/api/v1/system-prompt', systemPromptRoutes);
 // Payment routes — SaaS only
 if (featureFlags.BILLING_ENABLED) {
   const { default: paymentRoutes } = await import('./routes/payment.js');
-  app.use('/api/v1/payment', paymentLimiter, paymentRoutes);
+  const paymentRateSplit = (req, _res, next) => {
+    if (req.method === 'GET') return paymentReadLimiter(req, _res, next);
+    return paymentLimiter(req, _res, next);
+  };
+  app.use('/api/v1/payment', paymentRateSplit, paymentRoutes);
 }
 
 // License routes — Enterprise only
@@ -187,6 +193,7 @@ if (featureFlags.LICENSE_ENABLED) {
 }
 
 app.use('/api/v1/admin/custom-models', customModelsRoutes);
+app.use('/api/v1/admin/billing', adminBillingRoutes);
 app.use('/api/v1/projects', projectRoutes);
 app.use('/api/v1/audit', auditRoutes);
 app.use('/api/vt-proxy/v3', vtProxyRoutes);
@@ -217,6 +224,9 @@ server.listen(PORT, () => {
 
   // Audit file writer: daily JSONL rotation + cleanup
   startAuditFileCleanup();
+
+  // Sync tool tier/pricing from integration configs into DB
+  syncToolPricingFromConfigs().catch(e => logger.warn(`Tool pricing sync: ${e.message}`));
 
   // SaaS: watch for subscription expiry
   if (featureFlags.BILLING_ENABLED) {

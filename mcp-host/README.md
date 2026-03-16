@@ -111,4 +111,4 @@ uv run --extra dev --frozen pytest
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is proprietary software. See the [LICENSE](../LICENSE) file for details.

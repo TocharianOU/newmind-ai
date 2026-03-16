@@ -135,9 +135,8 @@ Query live internet data: exposed services, open ports, device banners, and CVE 
     }
   },
 
-  tokenCost: 0.05,
-  tokenRequired: 0.05,
-  tokenPriceUnit: 'request',
+  toolTier: 'B',
+  unitPriceUsd: 0.03,
   popular: false,
   new: true,
   isActive: true

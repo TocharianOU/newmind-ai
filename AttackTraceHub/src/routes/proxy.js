@@ -6,9 +6,10 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
 import { authenticateToken, requirePlan } from '../middleware/auth.js';
-import { createResponse, MODEL_MAPPING, MODEL_PROVIDERS, MODEL_CONFIG, MODEL_MULTIPLIER, checkModelAccess } from '../config/constants.js';
+import { createResponse, MODEL_MAPPING, MODEL_PROVIDERS, MODEL_CONFIG, MODEL_MULTIPLIER, checkModelAccess, getTokenPricing } from '../config/constants.js';
 import { prisma } from '../config/database.js';
 import { deductTokens } from '../utils/tokenBalance.js';
+import { deductUsd, checkUsdBalance } from '../utils/usdBalance.js';
 import featureFlags from '../config/featureFlags.js';
 import { getLicenseStatus } from '../license/validator.js';
 import logger from '../utils/logger.js';
@@ -201,25 +202,19 @@ async function ensureLMStudioModelLoaded(baseUrl, modelName, maxRetries = 3) {
 // UsageRecord always stores real (raw) token counts for cost analytics.
 // tokenBalance deduction applies MODEL_MULTIPLIER so higher tiers can burn
 // more product tokens without exposing runtime model/vendor details.
+// When monthly gifted tokens are exhausted, falls through to USD balance.
 async function recordUsage(userId, model, inputTokens, outputTokens, req) {
   try {
     const rawTokens = inputTokens + outputTokens;
-    const { TOKEN_PRICING } = await import('../config/constants.js');
-    const pricing = TOKEN_PRICING[model] || { input: 0, output: 0 };
+    const { checkTokenUsage } = await import('../config/constants.js');
+    const pricing = getTokenPricing(model);
     const cost = (inputTokens * pricing.input + outputTokens * pricing.output) / 1000;
 
+    const recordId = randomUUID();
     await prisma.usageRecord.create({
-      data: {
-        id: randomUUID(),
-        userId,
-        modelName: model,
-        inputTokens,
-        outputTokens,
-        cost
-      }
+      data: { id: recordId, userId, modelName: model, inputTokens, outputTokens, cost }
     });
 
-    // Audit: model call event
     writeAudit(req, {
       userId,
       action: AUDIT_ACTIONS.MODEL_CALL,
@@ -229,12 +224,21 @@ async function recordUsage(userId, model, inputTokens, outputTokens, req) {
     });
 
     if (featureFlags.BILLING_ENABLED) {
-      try {
-        const multiplier = MODEL_MULTIPLIER[model] ?? 1;
-        const productTokens = Math.ceil(rawTokens * multiplier);
-        await deductTokens(userId, productTokens);
-      } catch (error) {
-        logger.debug(`Token deduction skipped for user ${userId}: ${error.message}`);
+      const multiplier = MODEL_MULTIPLIER[model] ?? 1;
+      const productTokens = Math.ceil(rawTokens * multiplier);
+      const userPlan = req.user?.planName || 'BASE';
+      const usage = await checkTokenUsage(userId, userPlan, model);
+
+      if (usage.billingMode === 'token' && usage.remaining > 0) {
+        try {
+          await deductTokens(userId, productTokens);
+        } catch {
+          const costUsd = cost > 0 ? cost : (rawTokens * 0.000015);
+          await deductUsd(userId, costUsd, 'model_charge', 'usage_record', recordId, { model, rawTokens });
+        }
+      } else {
+        const costUsd = cost > 0 ? cost : (rawTokens * 0.000015);
+        await deductUsd(userId, costUsd, 'model_charge', 'usage_record', recordId, { model, rawTokens });
       }
     }
   } catch (error) {

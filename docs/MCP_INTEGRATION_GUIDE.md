@@ -95,7 +95,7 @@ mcp-<toolname>/
 ├── .env.example             # 示例配置（提交）
 ├── server.json              # MCP 注册清单
 ├── NOTICE                   # 版权声明
-├── LICENSE                  # MIT
+├── LICENSE                  # 版权声明文件
 ├── README.md
 ├── RELEASE.md
 ├── renovate.json

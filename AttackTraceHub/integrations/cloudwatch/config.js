@@ -133,9 +133,8 @@ CloudWatch Logs Insights 查询、原始日志流获取、告警监控和指标�
     }
   },
 
-  tokenCost: 0.03,
-  tokenRequired: 0.03,
-  tokenPriceUnit: 'request',
+  toolTier: 'X',
+  unitPriceUsd: 0,
   popular: false,
   new: true,
   isActive: true

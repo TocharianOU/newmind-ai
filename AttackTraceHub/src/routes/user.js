@@ -1,6 +1,6 @@
 import express from 'express';
 import { prisma } from '../config/database.js';
-import { createResponse, TOOL_TIER_QUOTA, TOOL_TIER_MAP } from '../config/constants.js';
+import { createResponse, TOOL_TIER_QUOTA } from '../config/constants.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/requireAdmin.js';
 import { writeAudit, AUDIT_ACTIONS, RESOURCE_TYPES } from '../utils/auditLog.js';
@@ -35,6 +35,7 @@ router.get('/me', authenticateToken, async (req, res) => {
       team: user.team || '',
       role: user.role,
       tokenBalance: user.tokenBalance || 0,
+      usdBalance: Number(user.usdBalance ?? 0),
       subscription: {
         PlanName: user.Subscription?.planName || 'BASE',
         IsDefaultPlan: user.Subscription?.isDefaultPlan || true,
@@ -136,6 +137,7 @@ router.get('/usage', authenticateToken, async (req, res) => {
       mcp: 0,
       model: totalTokens,
       total: totalTokens,
+      usdBalance: Number(user.usdBalance ?? 0),
       coupon: { model: 0, mcp: 0, total: 0, limit: 0 },
       ...(enterpriseQuota ? { enterpriseQuota } : {}),
     };
@@ -866,11 +868,17 @@ router.get('/tool-quota', authenticateToken, async (req, res) => {
       };
     }
 
-    // Build tier → tools mapping from TOOL_TIER_MAP
+    // Build tier -> tools mapping from McpServer table
+    const mcpServers = await prisma.mcpServer.findMany({
+      where: { isActive: true },
+      select: { name: true, toolTier: true, unitPriceUsd: true },
+    });
     const tierTools = {};
-    for (const [toolName, tier] of Object.entries(TOOL_TIER_MAP)) {
-      if (!tierTools[tier]) tierTools[tier] = [];
-      tierTools[tier].push(toolName);
+    for (const s of mcpServers) {
+      const t = s.toolTier;
+      if (!t || t === 'X') continue;
+      if (!tierTools[t]) tierTools[t] = [];
+      tierTools[t].push({ name: s.name, unitPriceUsd: s.unitPriceUsd ?? 0 });
     }
 
     const result = {};
@@ -886,6 +894,44 @@ router.get('/tool-quota', authenticateToken, async (req, res) => {
   } catch (error) {
     logger.error('Error fetching tool quota:', error);
     res.status(500).json(createResponse(null, 'Failed to fetch tool quota'));
+  }
+});
+
+// GET /api/v1/user/balance-history - USD balance transaction ledger
+router.get('/balance-history', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { limit = 50, offset = 0, type } = req.query;
+
+    const where = { userId };
+    if (type) where.type = type;
+
+    const [transactions, total] = await Promise.all([
+      prisma.balanceTransaction.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: Math.min(parseInt(limit) || 50, 200),
+        skip: parseInt(offset) || 0,
+      }),
+      prisma.balanceTransaction.count({ where }),
+    ]);
+
+    const rows = transactions.map(t => ({
+      id: t.id,
+      type: t.type,
+      amountUsd: Number(t.amountUsd),
+      balanceBefore: Number(t.balanceBefore),
+      balanceAfter: Number(t.balanceAfter),
+      referenceType: t.referenceType,
+      referenceId: t.referenceId,
+      metadata: t.metadata,
+      createdAt: t.createdAt,
+    }));
+
+    res.json(createResponse({ transactions: rows, total }));
+  } catch (error) {
+    logger.error('Error fetching balance history:', error);
+    res.status(500).json(createResponse(null, 'Failed to fetch balance history'));
   }
 });
 

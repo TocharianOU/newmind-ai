@@ -151,15 +151,15 @@ const Dashboard = () => {
           <div className="stat-card">
             <div className="stat-icon token-balance">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M13 10V3L4 14h7v7l9-11h-7z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
             <div className="stat-content">
-              <h3>{formatNumber(user?.tokenBalance || 0)}</h3>
-              <p>{t('dashboard.availableTokens', 'Available Tokens')}</p>
+              <h3>${Number(usage?.usdBalance ?? 0).toFixed(2)}</h3>
+              <p>{t('dashboard.usdBalance', 'USD Balance')}</p>
               {billingEnabled && (
                 <Link to="/billing" className="refill-link">
-                  {t('dashboard.refill', 'Refill')} →
+                  {t('dashboard.topUp', 'Top Up')} →
                 </Link>
               )}
             </div>
@@ -236,7 +236,7 @@ const Dashboard = () => {
             ].map(({ tier, color }) => {
               const q = toolQuota.tiers?.[tier] || { used: 0, limit: 0, tools: [] };
               const pct = q.limit > 0 ? Math.min((q.used / q.limit) * 100, 100) : 0;
-              const toolNames = (q.tools || []).join(', ');
+              const toolNames = (q.tools || []).map(t => typeof t === 'string' ? t : t.name).join(', ');
               return (
                 <div key={tier} className="tool-quota-item">
                   <div className="tool-quota-header">

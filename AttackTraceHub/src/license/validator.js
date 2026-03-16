@@ -4,6 +4,10 @@
  * The private key is held only by the vendor (us).
  * The matching public key is set via LICENSE_PUBLIC_KEY env (PEM) or placed at
  * src/license/keys/public.pem.
+ *
+ * Plan A (embedded license): if src/license/license.json exists at startup,
+ * it is automatically validated and upserted into the DB — no manual activation
+ * required. This enables pre-activated enterprise deployment packages.
  */
 
 import crypto from 'crypto';
@@ -126,6 +130,67 @@ export async function getLicenseStatus() {
   } catch (err) {
     logger.error('[License] getLicenseStatus error:', err);
     return { status: 'INVALID', license: null, reason: err.message };
+  }
+}
+
+/**
+ * Plan A — auto-activate a bundled license.json file.
+ *
+ * Called once at server startup (from scheduler.js).
+ * If src/license/license.json exists and is valid, it is upserted into the DB
+ * so the server starts fully licensed without any manual activation step.
+ *
+ * The file takes precedence over any previously activated license for the same
+ * customerId. If the bundled license has already been upserted (same signature),
+ * the call is a no-op.
+ */
+export async function autoActivateBundledLicense() {
+  const licensePath = join(__dirname, 'license.json');
+  if (!existsSync(licensePath)) return;
+
+  let raw;
+  try {
+    raw = JSON.parse(readFileSync(licensePath, 'utf8'));
+  } catch (err) {
+    logger.error('[License] Failed to parse bundled license.json:', err.message);
+    return;
+  }
+
+  const { valid, reason } = parseLicense(raw);
+  if (!valid) {
+    logger.error(`[License] Bundled license.json is invalid: ${reason}`);
+    return;
+  }
+
+  try {
+    await prisma.license.upsert({
+      where:  { customerId: raw.customerId },
+      create: {
+        customerId:   raw.customerId,
+        customerName: raw.customerName,
+        maxSeats:     raw.maxSeats,
+        maxTokens:    BigInt(raw.maxTokens),
+        features:     raw.features,
+        issuedAt:     new Date(raw.issuedAt),
+        expiresAt:    new Date(raw.expiresAt),
+        signature:    raw.signature,
+        active:       true,
+        activatedBy:  'bundled',
+      },
+      update: {
+        customerName: raw.customerName,
+        maxSeats:     raw.maxSeats,
+        maxTokens:    BigInt(raw.maxTokens),
+        features:     raw.features,
+        issuedAt:     new Date(raw.issuedAt),
+        expiresAt:    new Date(raw.expiresAt),
+        signature:    raw.signature,
+        active:       true,
+      },
+    });
+    logger.info(`[License] ✅ Bundled license auto-activated for "${raw.customerName}" (expires ${raw.expiresAt.slice(0, 10)})`);
+  } catch (err) {
+    logger.error('[License] Failed to upsert bundled license into DB:', err.message);
   }
 }
 

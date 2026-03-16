@@ -1,0 +1,70 @@
+NewChat AI Internal Use License
+
+Copyright (c) 2026 NewChat AI. All rights reserved.
+
+This repository, the software it contains, and all associated source code,
+object code, documentation, configuration, assets, and related materials
+(collectively, the "Software") are proprietary to NewChat AI and its
+licensors.
+
+Subject to the terms of this license, NewChat AI grants the recipient of the
+Software a limited, non-exclusive, non-transferable, non-sublicensable,
+revocable license to:
+
+1. use the Software internally for the recipient's own business purposes;
+2. copy the Software as reasonably necessary for internal development,
+   testing, backup, security review, and deployment;
+3. modify the Software and create derivative works of the Software solely for
+   the recipient's own internal use; and
+4. permit the recipient's employees and individual contractors acting solely
+   on the recipient's behalf to access and use the Software internally, so
+   long as they are bound by confidentiality and use restrictions at least as
+   protective as those in this license.
+
+No other rights are granted.
+
+Without limiting the foregoing, unless expressly permitted in a separate
+written agreement signed by NewChat AI, you may not:
+
+1. distribute, publish, disclose, or otherwise make the Software available to
+   any third party, in source or object form;
+2. sublicense, resell, lease, rent, assign, transfer, or otherwise commercialize
+   the Software;
+3. use the Software to provide a hosted, managed, outsourced, service bureau,
+   white-label, or software-as-a-service offering to any third party;
+4. allow any third party to access the Software except your personnel and
+   contractors as permitted above;
+5. remove, alter, or obscure any copyright, trademark, license, billing,
+   usage-control, attribution, or technical protection notices or mechanisms;
+6. use the Software in a manner that competes with NewChat AI by offering the
+   Software, or a substantially similar service based on it, to third parties;
+   or
+7. use the Software in any manner not expressly authorized by this license.
+
+For clarity, this license permits internal modification and internal use, but
+does not permit redistribution, external sharing, customer delivery, or
+providing the Software as a service to any third party.
+
+Ownership of the Software, all copies, and all derivative works remains with
+NewChat AI and its licensors. Except for the limited internal-use rights
+expressly granted above, all rights are reserved.
+
+Third-party software included with or referenced by this repository may be
+subject to separate license terms. Those third-party components remain under
+their respective licenses, and this license does not limit any rights that
+must be granted under those licenses.
+
+THE SOFTWARE IS PROVIDED "AS IS" TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE
+LAW. NEWCHAT AI DISCLAIMS ALL WARRANTIES, WHETHER EXPRESS, IMPLIED, STATUTORY,
+OR OTHERWISE, INCLUDING ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR
+A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, AND ANY WARRANTIES ARISING FROM
+COURSE OF DEALING, USAGE, OR TRADE PRACTICE.
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT WILL NEWCHAT AI
+OR ITS LICENSORS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+PUNITIVE, OR CONSEQUENTIAL DAMAGES, OR FOR ANY LOSS OF DATA, REVENUE, PROFITS,
+GOODWILL, OR BUSINESS INTERRUPTION, ARISING OUT OF OR RELATED TO THE SOFTWARE
+OR THIS LICENSE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+For commercial licensing, SaaS terms, redistribution rights, or enterprise
+deployment permissions beyond internal use, contact NewChat AI directly.

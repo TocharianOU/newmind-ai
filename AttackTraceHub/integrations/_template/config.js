@@ -105,9 +105,8 @@ Describe how to configure the integration.`,
     ]
   },
   
-  tokenCost: 0.1,
-  tokenRequired: 0.1,
-  tokenPriceUnit: 'request',
+  toolTier: 'X',        // 'A' | 'B' | 'C' | 'X' — internal tier for cost classification
+  unitPriceUsd: 0,      // USD charged per call from user's balance (0 = BYOK / no platform charge)
   popular: false,
   new: true,
   isActive: true

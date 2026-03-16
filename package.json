@@ -35,7 +35,7 @@
     "download:linux-bin": "vite-node scripts/download-uv.ts linux x64 && vite-node scripts/download-python-via-uv.ts linux-x64",
     "package": "npm run build && node scripts/eb-run.cjs",
     "package:windows": "npm run download:windows-bin && run-s package:windows-*",
-    "package:windows-installers": "npm run build:electron && node scripts/eb-run.cjs --win nsis --x64 --publish=never",
+    "package:windows-installers": "npm run build:electron && node scripts/eb-run.cjs --win nsis portable --x64 --publish=never",
     "package:darwin": "npm run download:darwin-bin && npm run prepare-python darwin && npm run build:electron && node scripts/eb-run.cjs --mac --arm64 --x64 --publish=never",
     "package:darwin:unsigned": "CSC_IDENTITY_AUTO_DISCOVERY=false npm run package:darwin",
     "package:darwin-dmg:arm64": "npm run download:darwin-bin:arm64 && npm run prepare-python darwin-arm64 && npm run build:electron && node scripts/eb-run.cjs --mac dmg --arm64 --publish=never",
