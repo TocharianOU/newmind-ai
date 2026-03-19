@@ -19,6 +19,35 @@ async function main() {
   // Create test users
   const hashedPassword = await bcrypt.hash('password123', 10);
 
+  // Create ADMIN user (from env or default)
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@test.com';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'password123';
+  const hashedAdminPassword = await bcrypt.hash(adminPassword, 10);
+
+  const adminUser = await prisma.user.upsert({
+    where: { email: adminEmail },
+    update: { role: 'ADMIN' },
+    create: {
+      id: randomUUID(),
+      email: adminEmail,
+      username: 'Admin',
+      password: hashedAdminPassword,
+      role: 'ADMIN',
+      updatedAt: now,
+      Subscription: {
+        create: {
+          id: randomUUID(),
+          planName: 'ENTERPRISE',
+          isDefaultPlan: false,
+          isActive: true,
+          updatedAt: now,
+        }
+      }
+    }
+  });
+
+  console.log(`✅ Admin user: ${adminUser.email}`);
+
   // Create BASE user
   const baseUser = await prisma.user.upsert({
     where: { email: 'base@test.com' },

@@ -8,7 +8,7 @@ import './AdminStats.css';
 
 const AdminStats = () => {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
@@ -20,7 +20,8 @@ const AdminStats = () => {
   const [userStatsLoading, setUserStatsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Authorization check
+  const dateLocale = language === 'zh' ? 'zh-CN' : 'en-US';
+
   useEffect(() => {
     if (user && user.role !== 'ADMIN') {
       navigate('/dashboard', { replace: true });
@@ -39,18 +40,17 @@ const AdminStats = () => {
     setError(null);
     try {
       const response = await api.get(`/api/v1/user/admin/stats?range=${range}`);
-
       if (response.data.status === 'success') {
         setStats(response.data.data);
       } else {
-        setError(response.data.message || '加载数据失败');
+        setError(response.data.message || t('adminStats.loadFailed', 'Failed to load data'));
       }
     } catch (error) {
       console.error('Error fetching admin stats:', error);
       if (error.response?.status === 403) {
         navigate('/dashboard', { replace: true });
       } else {
-        setError('加载管理员统计数据失败');
+        setError(t('adminStats.loadStatsFailed', 'Failed to load admin stats'));
       }
     } finally {
       setLoading(false);
@@ -92,7 +92,7 @@ const AdminStats = () => {
     setUserStats(null);
   };
 
-  const filteredUsers = users.filter(u => 
+  const filteredUsers = users.filter(u =>
     u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.username?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -107,7 +107,7 @@ const AdminStats = () => {
     return (
       <div className="admin-stats-loading">
         <div className="spinner"></div>
-        <p>加载管理员统计数据...</p>
+        <p>{t('adminStats.loading', 'Loading admin stats...')}</p>
       </div>
     );
   }
@@ -116,7 +116,7 @@ const AdminStats = () => {
     return (
       <div className="admin-stats-error">
         <p>{error}</p>
-        <button onClick={fetchData}>重试</button>
+        <button onClick={fetchData}>{t('common.retry', 'Retry')}</button>
       </div>
     );
   }
@@ -125,34 +125,22 @@ const AdminStats = () => {
     <div className="admin-stats">
       <div className="admin-stats-header">
         <div>
-          <h1>企业管理统计</h1>
-          <p className="subtitle">全平台用户使用概览</p>
+          <h1>{t('adminStats.title', 'Enterprise Admin Stats')}</h1>
+          <p className="subtitle">{t('adminStats.subtitle', 'Platform-wide usage overview')}</p>
         </div>
 
         <div className="range-selector">
-          <button
-            className={range === '7d' ? 'active' : ''}
-            onClick={() => setRange('7d')}
-          >
-            最近7天
+          <button className={range === '7d' ? 'active' : ''} onClick={() => setRange('7d')}>
+            {t('adminStats.last7Days', 'Last 7 days')}
           </button>
-          <button
-            className={range === '30d' ? 'active' : ''}
-            onClick={() => setRange('30d')}
-          >
-            最近30天
+          <button className={range === '30d' ? 'active' : ''} onClick={() => setRange('30d')}>
+            {t('adminStats.last30Days', 'Last 30 days')}
           </button>
-          <button
-            className={range === '90d' ? 'active' : ''}
-            onClick={() => setRange('90d')}
-          >
-            最近90天
+          <button className={range === '90d' ? 'active' : ''} onClick={() => setRange('90d')}>
+            {t('adminStats.last90Days', 'Last 90 days')}
           </button>
-          <button
-            className={range === 'all' ? 'active' : ''}
-            onClick={() => setRange('all')}
-          >
-            全部
+          <button className={range === 'all' ? 'active' : ''} onClick={() => setRange('all')}>
+            {t('adminStats.allTime', 'All time')}
           </button>
         </div>
       </div>
@@ -167,7 +155,7 @@ const AdminStats = () => {
           </div>
           <div className="stat-content">
             <h3>{formatNumber(stats?.totalUsers || 0)}</h3>
-            <p>注册用户总数</p>
+            <p>{t('adminStats.totalUsers', 'Total Users')}</p>
           </div>
         </div>
 
@@ -179,7 +167,7 @@ const AdminStats = () => {
           </div>
           <div className="stat-content">
             <h3>{formatNumber(stats?.summary?.totalCalls || 0)}</h3>
-            <p>API 调用总数</p>
+            <p>{t('adminStats.totalCalls', 'Total API Calls')}</p>
           </div>
         </div>
 
@@ -191,7 +179,7 @@ const AdminStats = () => {
           </div>
           <div className="stat-content">
             <h3>{formatNumber(stats?.summary?.totalTokens || 0)}</h3>
-            <p>Token 使用总量</p>
+            <p>{t('adminStats.totalTokens', 'Total Tokens')}</p>
           </div>
         </div>
 
@@ -203,7 +191,7 @@ const AdminStats = () => {
           </div>
           <div className="stat-content">
             <h3>{formatNumber(stats?.summary?.averageTokensPerCall || 0)}</h3>
-            <p>平均每次调用 Token 数</p>
+            <p>{t('adminStats.avgTokensPerCall', 'Avg Tokens / Call')}</p>
           </div>
         </div>
       </div>
@@ -212,7 +200,7 @@ const AdminStats = () => {
       <div className="charts-grid">
         {stats?.dailyUsage && stats.dailyUsage.length > 0 && (
           <div className="chart-card">
-            <h2>每日 Token 使用趋势</h2>
+            <h2>{t('adminStats.dailyTokenTrend', 'Daily Token Trend')}</h2>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={stats.dailyUsage}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -220,13 +208,7 @@ const AdminStats = () => {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="tokens"
-                  name="Tokens"
-                  stroke="#667eea"
-                  strokeWidth={2}
-                />
+                <Line type="monotone" dataKey="tokens" name="Tokens" stroke="#667eea" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -234,7 +216,7 @@ const AdminStats = () => {
 
         {stats?.modelStats && stats.modelStats.length > 0 && (
           <div className="chart-card">
-            <h2>模型使用分布</h2>
+            <h2>{t('adminStats.modelDistribution', 'Model Usage Distribution')}</h2>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={stats.modelStats}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -242,11 +224,7 @@ const AdminStats = () => {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar
-                  dataKey="totalTokens"
-                  name="总 Token 数"
-                  fill="#764ba2"
-                />
+                <Bar dataKey="totalTokens" name={t('adminStats.totalTokensLabel', 'Total Tokens')} fill="#764ba2" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -256,16 +234,16 @@ const AdminStats = () => {
       {/* Model Stats Table */}
       {stats?.modelStats && stats.modelStats.length > 0 && (
         <div className="table-card">
-          <h2>模型使用详细统计</h2>
+          <h2>{t('adminStats.modelDetailedStats', 'Model Detailed Stats')}</h2>
           <div className="table-container">
             <table className="stats-table">
               <thead>
                 <tr>
-                  <th>模型名称</th>
-                  <th>调用次数</th>
-                  <th>输入 Token</th>
-                  <th>输出 Token</th>
-                  <th>总 Token 数</th>
+                  <th>{t('adminStats.colModelName', 'Model')}</th>
+                  <th>{t('adminStats.colCalls', 'Calls')}</th>
+                  <th>{t('adminStats.colInputTokens', 'Input Tokens')}</th>
+                  <th>{t('adminStats.colOutputTokens', 'Output Tokens')}</th>
+                  <th>{t('adminStats.colTotalTokens', 'Total Tokens')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -287,17 +265,17 @@ const AdminStats = () => {
       {/* Additional Info */}
       <div className="info-card">
         <div className="info-row">
-          <span className="info-label">统计时间范围:</span>
+          <span className="info-label">{t('adminStats.dateRange', 'Date Range:')}</span>
           <span className="info-value">
-            {new Date(stats?.startDate).toLocaleDateString('zh-CN')} - {new Date(stats?.endDate).toLocaleDateString('zh-CN')}
+            {new Date(stats?.startDate).toLocaleDateString(dateLocale)} - {new Date(stats?.endDate).toLocaleDateString(dateLocale)}
           </span>
         </div>
         <div className="info-row">
-          <span className="info-label">输入 Token 总数:</span>
+          <span className="info-label">{t('adminStats.totalInputTokens', 'Total Input Tokens:')}</span>
           <span className="info-value">{formatNumber(stats?.summary?.totalInputTokens || 0)}</span>
         </div>
         <div className="info-row">
-          <span className="info-label">输出 Token 总数:</span>
+          <span className="info-label">{t('adminStats.totalOutputTokens', 'Total Output Tokens:')}</span>
           <span className="info-value">{formatNumber(stats?.summary?.totalOutputTokens || 0)}</span>
         </div>
       </div>
@@ -305,14 +283,14 @@ const AdminStats = () => {
       {/* Users List */}
       <div className="table-card">
         <div className="table-card-header">
-          <h2>注册用户列表</h2>
+          <h2>{t('adminStats.userList', 'Registered Users')}</h2>
           <div className="search-box">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <input
               type="text"
-              placeholder="搜索用户（邮箱或用户名）..."
+              placeholder={t('adminStats.searchPlaceholder', 'Search by email or username...')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -322,13 +300,13 @@ const AdminStats = () => {
           <table className="stats-table users-table">
             <thead>
               <tr>
-                <th>用户</th>
-                <th>邮箱</th>
-                <th>套餐</th>
-                <th>注册时间</th>
-                <th>近30天调用</th>
-                <th>近30天Token</th>
-                <th>操作</th>
+                <th>{t('adminStats.colUser', 'User')}</th>
+                <th>{t('adminStats.colEmail', 'Email')}</th>
+                <th>{t('adminStats.colPlan', 'Plan')}</th>
+                <th>{t('adminStats.colJoined', 'Joined')}</th>
+                <th>{t('adminStats.col30dCalls', '30d Calls')}</th>
+                <th>{t('adminStats.col30dTokens', '30d Tokens')}</th>
+                <th>{t('adminStats.colActions', 'Actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -343,24 +321,21 @@ const AdminStats = () => {
                           {u.username?.charAt(0).toUpperCase() || u.email.charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <span className="user-name">{u.username || '未设置'}</span>
+                      <span className="user-name">{u.username || t('common.notSet', 'Not set')}</span>
                     </div>
                   </td>
                   <td>{u.email}</td>
                   <td>
-                    <span className={`plan-badge ${u.subscription?.planName || 'BASE'}`}>
-                      {u.subscription?.planName || 'BASE'}
+                    <span className={`plan-badge ${u.Subscription?.planName || 'BASE'}`}>
+                      {u.Subscription?.planName || 'BASE'}
                     </span>
                   </td>
-                  <td>{new Date(u.createdAt).toLocaleDateString('zh-CN')}</td>
+                  <td>{new Date(u.createdAt).toLocaleDateString(dateLocale)}</td>
                   <td>{formatNumber(u.usage30d?.calls || 0)}</td>
                   <td>{formatNumber(u.usage30d?.totalTokens || 0)}</td>
                   <td>
-                    <button
-                      className="view-details-btn"
-                      onClick={() => handleUserClick(u)}
-                    >
-                      查看详情
+                    <button className="view-details-btn" onClick={() => handleUserClick(u)}>
+                      {t('adminStats.viewDetails', 'View Details')}
                     </button>
                   </td>
                 </tr>
@@ -384,7 +359,7 @@ const AdminStats = () => {
                   </div>
                 )}
                 <div>
-                  <h2>{selectedUser.username || '未设置用户名'}</h2>
+                  <h2>{selectedUser.username || t('adminStats.noUsername', 'No username')}</h2>
                   <p>{selectedUser.email}</p>
                 </div>
               </div>
@@ -398,48 +373,45 @@ const AdminStats = () => {
             {userStatsLoading ? (
               <div className="modal-loading">
                 <div className="spinner"></div>
-                <p>加载用户统计数据...</p>
+                <p>{t('adminStats.loadingUserStats', 'Loading user stats...')}</p>
               </div>
             ) : userStats ? (
               <div className="modal-body">
-                {/* User Info */}
                 <div className="user-details-grid">
                   <div className="user-detail-item">
-                    <span className="detail-label">套餐:</span>
-                    <span className={`plan-badge ${userStats.user.subscription?.planName || 'BASE'}`}>
-                      {userStats.user.subscription?.planName || 'BASE'}
+                    <span className="detail-label">{t('adminStats.planLabel', 'Plan:')}</span>
+                    <span className={`plan-badge ${userStats.user.Subscription?.planName || 'BASE'}`}>
+                      {userStats.user.Subscription?.planName || 'BASE'}
                     </span>
                   </div>
                   <div className="user-detail-item">
-                    <span className="detail-label">团队:</span>
-                    <span>{userStats.user.team || '未设置'}</span>
+                    <span className="detail-label">{t('adminStats.teamLabel', 'Team:')}</span>
+                    <span>{userStats.user.team || t('common.notSet', 'Not set')}</span>
                   </div>
                   <div className="user-detail-item">
-                    <span className="detail-label">注册时间:</span>
-                    <span>{new Date(userStats.user.createdAt).toLocaleDateString('zh-CN')}</span>
+                    <span className="detail-label">{t('adminStats.joinedLabel', 'Joined:')}</span>
+                    <span>{new Date(userStats.user.createdAt).toLocaleDateString(dateLocale)}</span>
                   </div>
                 </div>
 
-                {/* Stats Cards */}
                 <div className="modal-stats-grid">
                   <div className="modal-stat-card">
                     <h4>{formatNumber(userStats.summary.totalCalls)}</h4>
-                    <p>总调用次数</p>
+                    <p>{t('adminStats.totalCallsLabel', 'Total Calls')}</p>
                   </div>
                   <div className="modal-stat-card">
                     <h4>{formatNumber(userStats.summary.totalTokens)}</h4>
-                    <p>总 Token 数</p>
+                    <p>{t('adminStats.totalTokensLabel', 'Total Tokens')}</p>
                   </div>
                   <div className="modal-stat-card">
                     <h4>{formatNumber(userStats.summary.averageTokensPerCall)}</h4>
-                    <p>平均每次 Token</p>
+                    <p>{t('adminStats.avgTokensLabel', 'Avg Tokens')}</p>
                   </div>
                 </div>
 
-                {/* Charts */}
                 {userStats.dailyUsage && userStats.dailyUsage.length > 0 && (
                   <div className="modal-chart">
-                    <h3>每日使用趋势</h3>
+                    <h3>{t('adminStats.dailyTrend', 'Daily Trend')}</h3>
                     <ResponsiveContainer width="100%" height={250}>
                       <LineChart data={userStats.dailyUsage}>
                         <CartesianGrid strokeDasharray="3 3" />
@@ -447,30 +419,23 @@ const AdminStats = () => {
                         <YAxis />
                         <Tooltip />
                         <Legend />
-                        <Line
-                          type="monotone"
-                          dataKey="tokens"
-                          name="Tokens"
-                          stroke="#667eea"
-                          strokeWidth={2}
-                        />
+                        <Line type="monotone" dataKey="tokens" name="Tokens" stroke="#667eea" strokeWidth={2} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
                 )}
 
-                {/* Model Stats */}
                 {userStats.modelStats && userStats.modelStats.length > 0 && (
                   <div className="modal-table">
-                    <h3>模型使用详情</h3>
+                    <h3>{t('adminStats.modelDetails', 'Model Details')}</h3>
                     <table className="stats-table">
                       <thead>
                         <tr>
-                          <th>模型</th>
-                          <th>调用次数</th>
-                          <th>输入 Token</th>
-                          <th>输出 Token</th>
-                          <th>总 Token</th>
+                          <th>{t('adminStats.colModel', 'Model')}</th>
+                          <th>{t('adminStats.colCalls', 'Calls')}</th>
+                          <th>{t('adminStats.colInputTokens', 'Input Tokens')}</th>
+                          <th>{t('adminStats.colOutputTokens', 'Output Tokens')}</th>
+                          <th>{t('adminStats.colTotalTokens', 'Total Tokens')}</th>
                         </tr>
                       </thead>
                       <tbody>

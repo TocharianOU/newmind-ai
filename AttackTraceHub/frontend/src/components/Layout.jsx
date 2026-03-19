@@ -87,7 +87,7 @@ const Layout = ({ children }) => {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              {t('navigation.adminStats', '管理统计')}
+              {t('navigation.adminStats', 'Admin Stats')}
             </Link>
           )}
 
@@ -160,7 +160,7 @@ const Layout = ({ children }) => {
               {location.pathname === '/settings' && t('navigation.settings', 'Settings')}
               {location.pathname === '/billing' && t('navigation.billing', 'Billing')}
               {location.pathname === '/license' && t('navigation.license', 'License')}
-              {location.pathname === '/admin/stats' && t('navigation.adminStats', '管理统计')}
+              {location.pathname === '/admin/stats' && t('navigation.adminStats', 'Admin Stats')}
               {location.pathname === '/admin/models' && t('navigation.adminModels', 'Custom Models')}
               {location.pathname === '/admin/tool-stats' && t('navigation.toolStats', 'Tool Stats')}
               {location.pathname === '/admin/billing' && t('navigation.adminBilling', 'Billing Report')}

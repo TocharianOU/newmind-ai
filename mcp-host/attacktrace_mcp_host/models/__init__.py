@@ -155,7 +155,7 @@ def load_model(
             else:
                 logger.warning(f"[LOAD_MODEL] Model {model_name} does not support native format, falling back to OpenAI compatibility mode")
             clean_base_url = base_url.rstrip('/api/v1').rstrip('/v1').rstrip('/')
-            fallback_url = f"{clean_base_url}/api/v1/chat/completions"
+            fallback_url = f"{clean_base_url}/api/v1"
 
             model_kwargs = clean_model_kwargs("openai", kwargs)
             model_kwargs["api_key"] = api_key_str

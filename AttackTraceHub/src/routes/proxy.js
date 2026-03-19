@@ -326,7 +326,73 @@ router.post('/messages', authenticateToken, async (req, res) => {
         createResponse(null, accessCheck.error)
       );
     }
-    
+
+    // Custom model path — proxy to external Anthropic-compatible endpoint
+    if (accessCheck.customModel) {
+      const cm = accessCheck.customModel;
+      logger.info(`🔌 [CustomModel] Proxying ${model} -> ${cm.baseURL} (native /messages)`);
+
+      const systemPromptOverride = await getSystemPromptOverride();
+      const requestBody = { ...req.body, model: cm.modelId };
+      if (systemPromptOverride) {
+        insertSystemPromptIntoNativeMessages(requestBody, systemPromptOverride);
+      }
+      if (!requestBody.max_tokens) requestBody.max_tokens = 32000;
+
+      const targetURL = `${cm.baseURL}/messages`;
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(cm.apiKey && {
+          'x-api-key': cm.apiKey,
+          'anthropic-version': '2023-06-01',
+        }),
+      };
+
+      const response = await fetch(targetURL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        logger.error(`❌ [CustomModel] ${model} error ${response.status}: ${errText}`);
+        return res.status(response.status).json({ error: { message: errText, type: 'custom_model_error' } });
+      }
+
+      if (req.body.stream === true) {
+        res.writeHead(200, {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+          'Access-Control-Allow-Origin': '*',
+        });
+        let inputTokens = 0, outputTokens = 0;
+        response.body.on('data', (chunk) => {
+          res.write(chunk);
+          const text = chunk.toString();
+          const usageMatch = text.match(/"input_tokens"\s*:\s*(\d+)/);
+          const outMatch = text.match(/"output_tokens"\s*:\s*(\d+)/);
+          if (usageMatch) inputTokens = parseInt(usageMatch[1]);
+          if (outMatch) outputTokens = parseInt(outMatch[1]);
+        });
+        response.body.on('end', () => {
+          res.end();
+          if (inputTokens > 0 || outputTokens > 0) {
+            setImmediate(() => recordUsage(req.user.id, model, inputTokens, outputTokens, req));
+          }
+        });
+        response.body.on('error', () => res.end());
+      } else {
+        const data = await response.json();
+        if (data.usage) {
+          setImmediate(() => recordUsage(req.user.id, model, data.usage.input_tokens || 0, data.usage.output_tokens || 0, req));
+        }
+        res.json(data);
+      }
+      return;
+    }
+
     const runtimeConfig = getManagedRuntimeConfig(model);
     const runtimeModelId = getManagedModelId(model);
     if (!runtimeConfig || !runtimeModelId) {
