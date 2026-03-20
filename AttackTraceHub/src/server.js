@@ -142,7 +142,7 @@ app.use('/integrations', express.static(path.join(__dirname, '../integrations'))
 // AttackTrace Web App — static SPA served at /app/*
 // The built dist-web/ output from `npm run build:web` is placed in app-dist/.
 // ---------------------------------------------------------------------------
-const APP_DIST_PATH = process.env.APP_DIST_PATH || path.join(__dirname, '../../app-dist');
+const APP_DIST_PATH = process.env.APP_DIST_PATH || path.join(__dirname, '../app-dist');
 if (process.env.SERVE_WEB_APP !== 'false') {
   app.use('/app', express.static(APP_DIST_PATH, { index: false }));
   // SPA fallback — React Router handles client-side routing under /app/*

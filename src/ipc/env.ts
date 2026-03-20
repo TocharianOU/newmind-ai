@@ -5,7 +5,8 @@ export const isTauri = window.__TAURI_INTERNALS__ !== undefined
 export const isWeb = !isElectron && !isTauri
 
 // Use dev server assets in dev, custom protocol in production.
-export const imgPrefix = isTauri ? "/image/" : (import.meta.env.DEV ? "/image/" : "img://")
+// In web mode the SPA is served under /app/, so images live at /app/image/.
+export const imgPrefix = isTauri ? "/image/" : isWeb ? "/app/image/" : (import.meta.env.DEV ? "/image/" : "img://")
 
 export async function initPlatform() {
   if (isElectron) {

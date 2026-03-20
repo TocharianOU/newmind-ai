@@ -80,19 +80,59 @@ AttackTrace 生态系统
 - **订阅管理**：灵活的订阅计划，按需付费
 - **使用统计**：详细的 Token 使用分析和成本控制
 
+## 部署模式
+
+AttackTrace 支持两种部署方式，可按需选择，互不影响：
+
+### 桌面模式（Desktop）
+
+通过 Electron / Tauri 打包为跨平台桌面应用，用户本地运行，完全离线可用。
+
+### Web 模式（starbucks-3 分支）
+
+将前端 React SPA 静态托管在 AttackTraceHub 内，通过浏览器直接访问。适用于团队统一部署、无需安装客户端的场景。
+
+**工作原理**：
+```
+浏览器 → AttackTraceHub (http://host:3000/app/)
+           ├── 用户认证（JWT）
+           ├── 代理 MCP Host API (/api/chat, /api/tools, ...)
+           └── MCP Host（Python FastAPI，内部通信）
+```
+
+**构建 Web 版本**：
+```bash
+# 在项目根目录
+npm run build:web            # 输出到 dist-web/
+cp -r dist-web AttackTraceHub/app-dist   # 部署到 Hub
+```
+
+**启动服务**：
+```bash
+# 1. 启动 Hub（同时服务 Web SPA）
+cd AttackTraceHub && npm start
+
+# 2. 启动 MCP Host
+cd mcp-host && source .venv/bin/activate && attacktrace_httpd
+
+# 访问：http://localhost:3000/app/
+```
+
+---
+
 ## 项目架构
 
 本项目采用 Monorepo 架构，包含以下主要组件：
 
-### 1. AttackTrace Desktop（主应用）
+### 1. AttackTrace 前端（主应用）
 
-基于 Electron + React 的桌面应用程序。
+基于 React + TypeScript 的前端应用，支持 Electron 桌面模式和 Web 浏览器模式。
 
 **技术栈**：
-- Electron 31.x
 - React 18.x
 - TypeScript
 - Vite
+- Electron（桌面模式）/ 浏览器（Web 模式）
 
 **主要功能**：
 - AI 对话界面
@@ -248,13 +288,17 @@ uv run mkdocs serve -a 0.0.0.0:8002
 ### 构建应用
 
 ```bash
-# 构建主应用
+# 构建桌面版（Electron）
 npm run build
 
 # 打包为可执行文件
 npm run build:mac     # macOS
 npm run build:win     # Windows
 npm run build:linux   # Linux
+
+# 构建 Web 版（浏览器 SPA）
+npm run build:web                        # 输出到 dist-web/
+cp -r dist-web AttackTraceHub/app-dist   # 部署到 Hub 静态目录
 ```
 
 ## 子项目文档
@@ -325,7 +369,7 @@ AttackTrace OAP 提供灵活的订阅计划，满足不同规模团队的需求�
 - React 18
 - TypeScript
 - Vite
-- Electron
+- Electron（桌面模式）/ 浏览器（Web 模式）
 
 ### 后端
 - Node.js + Express
