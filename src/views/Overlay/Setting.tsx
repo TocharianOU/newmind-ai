@@ -16,9 +16,11 @@ import { settingTabAtom } from "../../atoms/globalState"
 import { ENV_CONFIG } from "../../config/env"
 import { oapGetToken } from "../../ipc/oap"
 import { sidebarVisibleAtom, toggleSidebarAtom } from "../../atoms/sidebarState"
+import { isWeb } from "../../ipc/env"
 
-const tabs = ["Projects", "Tools", "Model", "Account", "System"] as const
-export type Tab = (typeof tabs)[number]
+const ALL_TABS = ["Projects", "Tools", "Model", "Account", "System"] as const
+export type Tab = (typeof ALL_TABS)[number]
+const tabs = (isWeb ? ALL_TABS.filter(t => t !== "System") : ALL_TABS) as readonly Tab[]
 
 const Setting = ({ _tab }: { _tab: Tab }) => {
   const { t } = useTranslation()
