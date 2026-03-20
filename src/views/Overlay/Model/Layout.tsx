@@ -18,6 +18,7 @@ import isMatch from "lodash/isMatch"
 import { getVerifyKey } from "../../../helper/verify"
 import { getVerifyStatus } from "./ModelVerify"
 import { isOAPUsageLimitAtom } from "../../../atoms/oapState"
+import { isWeb } from "../../../ipc/env"
 
 const PageLayout = () => {
   const { t } = useTranslation()
@@ -184,16 +185,16 @@ const PageLayout = () => {
               </svg>
               {t("models.listTitle")}
             </div>
-            <div className="right">
-              <button
-                className="models-new-key-btn"
-                onClick={() => {
-                  setShowGroupCreator(true)
-                }}
-              >
-                {t("models.newProvider")}
-              </button>
-            </div>
+            {!isWeb && (
+              <div className="right">
+                <button
+                  className="models-new-key-btn"
+                  onClick={() => setShowGroupCreator(true)}
+                >
+                  {t("models.newProvider")}
+                </button>
+              </div>
+            )}
           </div>
           <div className={`providers-list ${isOAPUsageLimit ? "oap-usage-limit" : ""}`}>
             <div className="providers-list-item head">

@@ -82,7 +82,7 @@ export const loadToolsAtom = atom(
     const cacheBuster = `?_t=${Date.now()}`
     
     try {
-      const response = await fetchWithRetry(`/api/tools${cacheBuster}`, {
+      const response = await fetchWithRetry(`/api/tools/${cacheBuster}`, {
         cache: 'no-cache'
       })
       const data = await response.json()

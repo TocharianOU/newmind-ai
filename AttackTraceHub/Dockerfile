@@ -1,51 +1,45 @@
-# Backend Dockerfile for OAP Platform
+# NewMind AI — Hub (Node.js / Express / Prisma)
 FROM node:20-alpine AS base
 
-# Install OpenSSL for Prisma
 RUN apk add --no-cache openssl
 
-# Install dependencies only when needed
+# ── Install dependencies ──────────────────────────────────────────────────────
 FROM base AS deps
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install dependencies (使用npm install代替npm ci)
-RUN npm install --omit=dev && \
-    npx prisma generate
+RUN npm install --omit=dev && npx prisma generate
 
-# Production image
-FROM node:20-alpine AS runner
+# ── Runtime image ─────────────────────────────────────────────────────────────
+FROM base AS runner
 WORKDIR /app
 
-# Install OpenSSL for Prisma runtime
-RUN apk add --no-cache openssl
-
-# Set to production
 ENV NODE_ENV=production
 
-# Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nodejs
+    adduser  --system --uid 1001 nodejs
 
-# Copy necessary files
-COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
-COPY --from=deps --chown=nodejs:nodejs /app/prisma ./prisma
-COPY --chown=nodejs:nodejs ./src ./src
+# Runtime app files
+COPY --from=deps  --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=deps  --chown=nodejs:nodejs /app/prisma      ./prisma
+COPY --chown=nodejs:nodejs ./src         ./src
 COPY --chown=nodejs:nodejs package*.json ./
 
-# Switch to non-root user
+# Pre-built web SPA — produced by the CI step before docker build
+# (run `npm run build:web` in the repo root first)
+COPY --chown=nodejs:nodejs ./app-dist    ./app-dist
+
+# Startup script: migrate then serve
+COPY --chown=nodejs:nodejs docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+
 USER nodejs
 
-# Expose port
 EXPOSE 3000
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD node -e "require('http').get('http://localhost:3000/api/health',(r)=>{process.exit(r.statusCode===200?0:1)})"
 
-# Start the application
-CMD ["npm", "start"]
-
+CMD ["./docker-entrypoint.sh"]

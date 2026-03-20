@@ -20,7 +20,6 @@ import { isWeb } from "../../ipc/env"
 
 const ALL_TABS = ["Projects", "Tools", "Model", "Account", "System"] as const
 export type Tab = (typeof ALL_TABS)[number]
-const tabs = (isWeb ? ALL_TABS.filter(t => t !== "System") : ALL_TABS) as readonly Tab[]
 
 const Setting = ({ _tab }: { _tab: Tab }) => {
   const { t } = useTranslation()
@@ -31,6 +30,11 @@ const Setting = ({ _tab }: { _tab: Tab }) => {
   const setSettingTab = useSetAtom(settingTabAtom)
   const toggleSidebar = useSetAtom(toggleSidebarAtom)
   const isSidebarVisible = useAtomValue(sidebarVisibleAtom)
+
+  const tabs = ALL_TABS.filter(t => {
+    if (isWeb && t === "System") return false
+    return true
+  }) as readonly Tab[]
 
   useEffect(() => {
     setSettingTab(_tab)

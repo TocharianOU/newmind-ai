@@ -1,7 +1,8 @@
 import { invoke } from "@tauri-apps/api/core"
 import { ModelProvider } from "../../types/model"
 import { ModelResults } from "../vite-env"
-import { isElectron, isTauri } from "./env"
+import { isElectron, isTauri, isWeb } from "./env"
+import { getWebToken } from "./oap"
 
 export function fetchElectronModels(provider: ModelProvider, apiKey: string, baseURL: string = "", extra: string[] = []) {
   switch(provider) {
@@ -67,10 +68,33 @@ export async function fetchTauriModels(provider: ModelProvider, apiKey: string, 
   }
 }
 
+/**
+ * In web mode, fetch available models directly from the Hub's OpenAI-compatible
+ * /api/v1/models endpoint. This returns the Hub-managed model list (e.g.
+ * medium-agent, strong-agent) scoped to the current user's plan.
+ */
+async function fetchWebModels(): Promise<ModelResults> {
+  try {
+    const token = getWebToken()
+    const headers: HeadersInit = { "Content-Type": "application/json" }
+    if (token) headers["Authorization"] = `Bearer ${token}`
+    const res = await fetch("/api/v1/models", { headers })
+    if (!res.ok) {
+      return { results: [], error: `Hub returned ${res.status}` }
+    }
+    const data = await res.json()
+    const models: string[] = (data?.data ?? []).map((m: { id: string }) => m.id)
+    return { results: models }
+  } catch (err: any) {
+    return { results: [], error: err?.message ?? String(err) }
+  }
+}
+
 export async function fetchModels(provider: ModelProvider, apiKey: string, baseURL: string = "", extra?: string[]) {
-  // In web mode there is no local SDK access — model lists are not fetchable
-  // from the browser. The user must enter model names manually, or the Hub's
-  // /api/v1/models endpoint can supply a curated list.
+  if (isWeb) {
+    return fetchWebModels()
+  }
+
   if (!isElectron && !isTauri) {
     return { results: [], error: "Model list fetch is not available in web mode" } as ModelResults
   }

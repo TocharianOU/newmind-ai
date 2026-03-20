@@ -80,6 +80,7 @@ export type OAPUser = {
   username: string
   picture: string
   team: string
+  role?: 'USER' | 'ADMIN'
   tokenBalance?: number
   usdBalance?: number
   subscription: OAPSubscription

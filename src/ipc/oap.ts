@@ -5,6 +5,22 @@ import { listenIPC } from "."
 import { getHubLoginUrl, getHubRegisterUrl } from "../config/env"
 
 // ---------------------------------------------------------------------------
+// Web mode event bus — replaces Tauri/Electron IPC events in browser context.
+// ---------------------------------------------------------------------------
+type WebEventCallback = (...args: any[]) => void
+const webEventListeners = new Map<string, Set<WebEventCallback>>()
+
+function emitWebEvent(event: string, ...args: any[]) {
+  webEventListeners.get(event)?.forEach(cb => cb(...args))
+}
+
+function onWebEvent(event: string, cb: WebEventCallback): () => void {
+  if (!webEventListeners.has(event)) webEventListeners.set(event, new Set())
+  webEventListeners.get(event)!.add(cb)
+  return () => { webEventListeners.get(event)?.delete(cb) }
+}
+
+// ---------------------------------------------------------------------------
 // Web mode token helpers — Hub JWT stored in localStorage by Hub's Login page.
 // The Hub stores the JWT under "authToken"; the SPA may also store it under
 // "oap_access_token" when oapLogin() is called directly. We check both so
@@ -101,6 +117,7 @@ export function oapLogin(token: string) {
     }
     if (isWeb) {
         setWebTokens(token)
+        emitWebEvent("login")
         return Promise.resolve({ success: true })
     }
 
@@ -113,6 +130,7 @@ export function oapLogout() {
     }
     if (isWeb) {
         clearWebTokens()
+        emitWebEvent("logout")
         return Promise.resolve()
     }
 
@@ -179,9 +197,8 @@ export function registBackendEvent(event: BackendEvent, callback: (...args: any[
         }
     }
 
-    // Web mode: no IPC events — return a noop unsubscribe
     if (isWeb) {
-        return () => {}
+        return onWebEvent(event, callback)
     }
 
     const listener = (data: any) => callback(data.payload)
@@ -215,6 +232,7 @@ export function oapLoginWithToken(token: string): Promise<{ success: boolean }> 
     }
     if (isWeb) {
         setWebTokens(token)
+        emitWebEvent("login")
         return Promise.resolve({ success: true })
     }
 

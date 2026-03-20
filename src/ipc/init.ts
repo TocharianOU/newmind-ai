@@ -170,7 +170,7 @@ async function initTauriFetch(port: number) {
 }
 
 export async function startReceiveDownloadDependencyLog() {
-  if (isElectron) {
+  if (isElectron || isWeb) {
     return
   }
 
@@ -180,6 +180,9 @@ export async function startReceiveDownloadDependencyLog() {
 export async function onReceiveDownloadDependencyLog(callback: (log: string) => void): Promise<() => void> {
   if (isElectron) {
     return window.ipcRenderer.onReceiveInstallHostDependenciesLog(callback)
+  }
+  if (isWeb) {
+    return () => {}
   }
 
   return listen<{ type: string; data: any }>("install-host-dependencies-log", (event) => {

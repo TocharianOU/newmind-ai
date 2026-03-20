@@ -128,6 +128,14 @@ if (featureFlags.BILLING_ENABLED) {
   logger.info('[Routes] Stripe payment routes disabled (enterprise mode)');
 }
 
+// MCP Host reverse proxy — MUST be mounted BEFORE body parsers so that
+// multipart/form-data and streaming request bodies are piped raw to the
+// upstream without express consuming them.
+if (process.env.MCP_HOST_URL) {
+  app.use('/', mcpProxyRoutes);
+  logger.info(`[mcp-proxy] Proxying MCP Host routes → ${process.env.MCP_HOST_URL}`);
+}
+
 // Body parsers
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -214,14 +222,7 @@ app.use('/api/vt-proxy/v3', vtProxyRoutes);
 app.use('/api/shodan-proxy/v1', shodanProxyRoutes);
 app.use('/api/abuseipdb-proxy/v2', abuseipdbProxyRoutes);
 
-// MCP Host reverse proxy — web deployment only.
-// Routes: /api/chat, /api/tools, /api/config, /api/memory, /api/sync,
-//         /api/plugins, /v1/openai, /model_verify
-// These path prefixes do not conflict with the Hub's own /api/v1/* routes.
-if (process.env.MCP_HOST_URL) {
-  app.use('/', mcpProxyRoutes);
-  logger.info(`[mcp-proxy] Proxying MCP Host routes → ${process.env.MCP_HOST_URL}`);
-}
+// (MCP Host proxy is mounted early — before body parsers — see above)
 
 // ---------------------------------------------------------------------------
 // Error handlers

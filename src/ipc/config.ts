@@ -13,15 +13,19 @@ function webConfigFetch(url: string, options?: RequestInit) {
   return fetch(url, { ...options, headers })
 }
 
+const WEB_MODEL_SETTINGS_KEY = "attacktrace_model_settings"
+
 export async function getModelSettings() {
   if (isElectron) {
     return window.ipcRenderer.getModelSettings()
   }
   if (isWeb) {
-    const res = await webConfigFetch("/api/config/model")
-    if (!res.ok) return null
-    const data = await res.json()
-    return data?.data ?? data ?? null
+    // Web mode: model settings are persisted in localStorage (same format as
+    // the desktop file). The MCP Host's /api/config/model uses a different
+    // schema and must not be used for frontend model group settings.
+    const raw = localStorage.getItem(WEB_MODEL_SETTINGS_KEY)
+    if (!raw) return null
+    try { return JSON.parse(raw) } catch { return null }
   }
 
   const home = await path.homeDir()
@@ -41,10 +45,8 @@ export async function setModelSettings(settings: any) {
     return window.ipcRenderer.setModelSettings(settings)
   }
   if (isWeb) {
-    await webConfigFetch("/api/config/model", {
-      method: "POST",
-      body: JSON.stringify(settings),
-    })
+    // Web mode: persist to localStorage — see getModelSettings for rationale.
+    localStorage.setItem(WEB_MODEL_SETTINGS_KEY, JSON.stringify(settings))
     return
   }
 

@@ -7,6 +7,8 @@ from starlette.middleware.cors import CORSMiddleware
 
 from attacktrace_mcp_host.httpd.conf.httpd_service import ServiceManager
 from attacktrace_mcp_host.httpd.middlewares import default_state, error_handler, AuthMiddleware
+from fastapi.responses import JSONResponse
+
 from attacktrace_mcp_host.httpd.routers.chat import chat
 from attacktrace_mcp_host.httpd.routers.config import config
 from attacktrace_mcp_host.httpd.routers.memory import router as memory_router
@@ -72,5 +74,10 @@ def create_app(
     app.include_router(model_verify, prefix="/model_verify")
     app.include_router(memory_router)  # Memory management routes
     app.include_router(sync, prefix="/api/sync")
+
+    @app.get("/health")
+    async def health() -> JSONResponse:
+        """Liveness probe — auth middleware already allows this path through."""
+        return JSONResponse({"status": "ok"})
 
     return app

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next"
 import Button from "./Button"
 import "@/styles/components/_EmbeddedLogin.scss"
 import { nativeFetch } from "../ipc/init"
+import { isWeb } from "../ipc/env"
 
 interface EmbeddedLoginProps {
   onCancel: () => void
@@ -45,8 +46,8 @@ const EmbeddedLogin: React.FC<EmbeddedLoginProps> = ({ onCancel, onSuccess }) =>
     setIsLoading(true)
     
     try {
-      // Use the exported nativeFetch to bypass the wrapped fetch that causes URL issues.
-      const FULL_LOGIN_URL = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'}/api/auth/login`;
+      const baseUrl = isWeb ? '' : (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000')
+      const FULL_LOGIN_URL = `${baseUrl}/api/auth/login`;
 
       const response = await nativeFetch(FULL_LOGIN_URL, {
         method: 'POST',

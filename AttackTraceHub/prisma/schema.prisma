@@ -299,6 +299,16 @@ model UserPreferences {
   @@index([userId])
 }
 
+// ---------------------------------------------------------------------------
+// Platform-wide admin-controlled settings (key-value store)
+// ---------------------------------------------------------------------------
+
+model GlobalSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
 enum MessageRole {
   user
   assistant

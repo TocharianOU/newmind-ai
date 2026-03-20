@@ -64,13 +64,23 @@ function proxyToMcpHost(req, res, userId) {
     const responseHeaders = { ...proxyRes.headers };
     delete responseHeaders['transfer-encoding']; // let Node handle chunking
 
+    // Rewrite Location headers that point to the internal MCP Host so the
+    // browser follows the redirect back through this proxy rather than hitting
+    // the MCP Host directly (which would bypass auth and CORS).
+    if (responseHeaders['location']) {
+      const mcpOrigin = `${mcpHostUrl.protocol}//${mcpHostUrl.host}`;
+      if (responseHeaders['location'].startsWith(mcpOrigin)) {
+        responseHeaders['location'] = responseHeaders['location'].slice(mcpOrigin.length) || '/';
+      }
+    }
+
     res.writeHead(proxyRes.statusCode || 502, responseHeaders);
 
     // Pipe response body — this works for both JSON and SSE streams
     proxyRes.pipe(res, { end: true });
 
     proxyRes.on('error', (err) => {
-      logger.error('[mcp-proxy] Upstream response error:', err.message);
+      logger.error(`[mcp-proxy] Upstream response error: ${err.message}`);
       if (!res.headersSent) {
         res.status(502).json({ error: 'Bad Gateway', message: err.message });
       } else {
@@ -80,21 +90,17 @@ function proxyToMcpHost(req, res, userId) {
   });
 
   proxyReq.on('error', (err) => {
-    logger.error('[mcp-proxy] Upstream connection error:', err.message);
+    logger.error(`[mcp-proxy] Upstream connection error: ${err.code || ''} ${err.message} → ${MCP_HOST_URL}${req.originalUrl}`);
     if (!res.headersSent) {
-      res.status(502).json({ error: 'Bad Gateway', message: 'MCP Host unreachable' });
+      res.status(502).json({ error: 'Bad Gateway', message: `MCP Host unreachable (${err.code || err.message})` });
     } else {
       res.end();
     }
   });
 
-  // Forward request body for POST/PUT/PATCH
-  if (req.body && ['POST', 'PUT', 'PATCH'].includes(req.method)) {
-    const bodyStr = JSON.stringify(req.body);
-    proxyReq.setHeader('content-length', Buffer.byteLength(bodyStr));
-    proxyReq.write(bodyStr);
-    proxyReq.end();
-  } else if (req.readable) {
+  // Forward request body — the proxy is mounted before express body parsers,
+  // so the request stream is unconsumed and can be piped directly.
+  if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
     req.pipe(proxyReq, { end: true });
   } else {
     proxyReq.end();

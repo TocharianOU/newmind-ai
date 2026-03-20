@@ -18,7 +18,6 @@ import { isWeb } from "../../ipc/env"
 
 const ALL_TABS = ["Projects", "Tools", "Model", "Account", "System", "About"] as const
 export type Tab = (typeof ALL_TABS)[number]
-const tabs = (isWeb ? ALL_TABS.filter(t => t !== "System" && t !== "About") : ALL_TABS) as readonly Tab[]
 
 const Settings = ({ tab }: { tab: Tab }) => {
   const { t } = useTranslation()
@@ -27,6 +26,11 @@ const Settings = ({ tab }: { tab: Tab }) => {
   const oapUser = useAtomValue(oapUserAtom)
   const oapLevel = useAtomValue(OAPLevelAtom)
   const setSettingTab = useSetAtom(settingTabAtom)
+
+  const tabs = ALL_TABS.filter(t => {
+    if (isWeb && (t === "System" || t === "About")) return false
+    return true
+  }) as readonly Tab[]
 
   useEffect(() => {
     setSettingTab(tab)

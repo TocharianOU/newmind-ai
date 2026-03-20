@@ -53,7 +53,7 @@ docker-compose*.yml
 .github
 .gitlab-ci.yml
 
-# Scripts
-*.sh
+# Scripts (keep docker-entrypoint.sh)
 deploy-*.sh
+!docker-entrypoint.sh
 

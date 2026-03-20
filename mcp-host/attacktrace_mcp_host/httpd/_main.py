@@ -8,6 +8,9 @@ from logging.config import dictConfig
 from pathlib import Path
 
 import uvicorn
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from attacktrace_mcp_host.env import RESOURCE_DIR
 from attacktrace_mcp_host.httpd.app import create_app
