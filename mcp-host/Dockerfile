@@ -29,7 +29,7 @@ WORKDIR /app
 COPY --from=deps /build/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock README.md ./
 COPY attacktrace_mcp_host ./attacktrace_mcp_host
 RUN pip install --no-cache-dir --no-deps .
 
