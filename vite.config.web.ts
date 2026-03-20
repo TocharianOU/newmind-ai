@@ -16,11 +16,10 @@ export default defineConfig({
     emptyOutDir: true,
   },
   define: {
-    // Consumed by src/ipc/env.ts and any isWeb checks across the codebase.
     "import.meta.env.VITE_PLATFORM": JSON.stringify("web"),
-    // Empty string so EmbeddedLogin constructs relative URLs like /api/auth/login
-    // instead of pointing at a hardcoded port.
     "import.meta.env.VITE_API_BASE_URL": JSON.stringify(""),
+    "import.meta.env.VITE_APP_NAME": JSON.stringify(process.env.VITE_APP_NAME || "NewMind AI"),
+    "import.meta.env.VITE_PLATFORM_NAME": JSON.stringify(process.env.VITE_PLATFORM_NAME || "NewMind AI Platform"),
   },
   resolve: {
     alias: {

@@ -47,6 +47,9 @@ services:
       MCP_HOST_URL:            http://mcp-host:61990
       MCP_HOST_INTERNAL_TOKEN: ${ATTACKTRACE_AUTH_TOKEN}
       NODE_ENV:                production
+      FORCE_HTTPS:             ${FORCE_HTTPS:-false}
+      ALLOWED_ORIGINS:         ${ALLOWED_ORIGINS:-}
+      HUB_FRONTEND_URL:        ${HUB_FRONTEND_URL:-}
     depends_on:
       postgres:
         condition: service_healthy

@@ -80,6 +80,7 @@ const cspConnectSrc = ["'self'", "http://localhost:23000", "https:", "http:"];
 if (process.env.CUSTOM_LMSTUDIO_URL) cspConnectSrc.push(process.env.CUSTOM_LMSTUDIO_URL);
 if (process.env.HUB_FRONTEND_URL) cspConnectSrc.push(process.env.HUB_FRONTEND_URL);
 
+const useHttps = (process.env.FORCE_HTTPS === 'true');
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -94,6 +95,8 @@ app.use(helmet({
       frameSrc: ["'self'"]
     }
   },
+  hsts: useHttps,
+  crossOriginOpenerPolicy: useHttps,
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
