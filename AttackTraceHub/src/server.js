@@ -36,6 +36,7 @@ import abuseipdbProxyRoutes from './routes/abuseipdb-proxy.js';
 import syncRoutes from './routes/sync.js';
 import customModelsRoutes from './routes/customModels.js';
 import adminBillingRoutes from './routes/adminBilling.js';
+import mcpProxyRoutes from './routes/mcp-proxy.js';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler.js';
@@ -138,6 +139,19 @@ app.use('/api/', rateLimiter);
 app.use('/integrations', express.static(path.join(__dirname, '../integrations')));
 
 // ---------------------------------------------------------------------------
+// AttackTrace Web App — static SPA served at /app/*
+// The built dist-web/ output from `npm run build:web` is placed in app-dist/.
+// ---------------------------------------------------------------------------
+const APP_DIST_PATH = process.env.APP_DIST_PATH || path.join(__dirname, '../../app-dist');
+if (process.env.SERVE_WEB_APP !== 'false') {
+  app.use('/app', express.static(APP_DIST_PATH, { index: false }));
+  // SPA fallback — React Router handles client-side routing under /app/*
+  app.get('/app', (_req, res) => res.sendFile(path.join(APP_DIST_PATH, 'index.html')));
+  app.get('/app/*', (_req, res) => res.sendFile(path.join(APP_DIST_PATH, 'index.html')));
+  logger.info(`[Web App] Serving AttackTrace SPA from ${APP_DIST_PATH} at /app`);
+}
+
+// ---------------------------------------------------------------------------
 // Health check
 // ---------------------------------------------------------------------------
 app.get('/api/health', async (req, res) => {
@@ -199,6 +213,15 @@ app.use('/api/v1/audit', auditRoutes);
 app.use('/api/vt-proxy/v3', vtProxyRoutes);
 app.use('/api/shodan-proxy/v1', shodanProxyRoutes);
 app.use('/api/abuseipdb-proxy/v2', abuseipdbProxyRoutes);
+
+// MCP Host reverse proxy — web deployment only.
+// Routes: /api/chat, /api/tools, /api/config, /api/memory, /api/sync,
+//         /api/plugins, /v1/openai, /model_verify
+// These path prefixes do not conflict with the Hub's own /api/v1/* routes.
+if (process.env.MCP_HOST_URL) {
+  app.use('/', mcpProxyRoutes);
+  logger.info(`[mcp-proxy] Proxying MCP Host routes → ${process.env.MCP_HOST_URL}`);
+}
 
 // ---------------------------------------------------------------------------
 // Error handlers

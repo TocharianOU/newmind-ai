@@ -1,6 +1,8 @@
 /**
  * Project management IPC wrapper
  */
+import { isWeb } from "./env"
+import { getWebToken } from "./oap"
 
 export interface Project {
   id: string
@@ -27,16 +29,33 @@ export interface UpdateProjectRequest {
   description?: string
 }
 
-const isElectron = typeof window !== 'undefined' && window.ipcRenderer
+const isElectron = typeof window !== "undefined" && window.ipcRenderer
+
+// Web mode: current project tracked in sessionStorage so it persists across
+// page refreshes but resets when the browser tab is closed.
+const WEB_PROJECT_KEY = "attacktrace_current_project"
+
+function webProjectFetch(path: string, options?: RequestInit): Promise<Response> {
+  const token = getWebToken()
+  const headers = new Headers(options?.headers || {})
+  if (token) headers.set("Authorization", `Bearer ${token}`)
+  if (!headers.has("Content-Type") && options?.body) {
+    headers.set("Content-Type", "application/json")
+  }
+  return fetch(path, { ...options, headers })
+}
 
 /**
  * Get current project ID
  */
 export async function getCurrentProject(): Promise<string> {
   if (isElectron) {
-    return window.ipcRenderer.invoke('project:getCurrentProject')
+    return window.ipcRenderer.invoke("project:getCurrentProject")
   }
-  return 'default'
+  if (isWeb) {
+    return sessionStorage.getItem(WEB_PROJECT_KEY) || "default"
+  }
+  return "default"
 }
 
 /**
@@ -44,17 +63,27 @@ export async function getCurrentProject(): Promise<string> {
  */
 export async function setCurrentProject(projectId: string): Promise<{ success: boolean; projectId: string }> {
   if (isElectron) {
-    return window.ipcRenderer.invoke('project:setCurrentProject', projectId)
+    return window.ipcRenderer.invoke("project:setCurrentProject", projectId)
   }
-  return { success: false, projectId: 'default' }
+  if (isWeb) {
+    sessionStorage.setItem(WEB_PROJECT_KEY, projectId)
+    return { success: true, projectId }
+  }
+  return { success: false, projectId: "default" }
 }
 
 /**
  * Get project list
  */
-export async function projectList(hubUrl?: string): Promise<{ projects: Project[]; error?: string }> {
+export async function projectList(_hubUrl?: string): Promise<{ projects: Project[]; error?: string }> {
   if (isElectron) {
-    return window.ipcRenderer.invoke('project:list', hubUrl)
+    return window.ipcRenderer.invoke("project:list", _hubUrl)
+  }
+  if (isWeb) {
+    const res = await webProjectFetch("/api/v1/projects")
+    if (!res.ok) return { projects: [], error: `HTTP ${res.status}` }
+    const data = await res.json()
+    return { projects: data.data ?? data.projects ?? [] }
   }
   return { projects: [] }
 }
@@ -64,12 +93,20 @@ export async function projectList(hubUrl?: string): Promise<{ projects: Project[
  */
 export async function projectCreate(
   data: CreateProjectRequest,
-  hubUrl?: string
+  _hubUrl?: string
 ): Promise<{ project: Project }> {
   if (isElectron) {
-    return window.ipcRenderer.invoke('project:create', data, hubUrl)
+    return window.ipcRenderer.invoke("project:create", data, _hubUrl)
   }
-  throw new Error('Not supported in browser mode')
+  if (isWeb) {
+    const res = await webProjectFetch("/api/v1/projects", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+    const json = await res.json()
+    return { project: json.data ?? json.project }
+  }
+  throw new Error("Not supported in browser mode")
 }
 
 /**
@@ -78,12 +115,20 @@ export async function projectCreate(
 export async function projectUpdate(
   projectId: string,
   data: UpdateProjectRequest,
-  hubUrl?: string
+  _hubUrl?: string
 ): Promise<{ project: Project }> {
   if (isElectron) {
-    return window.ipcRenderer.invoke('project:update', projectId, data, hubUrl)
+    return window.ipcRenderer.invoke("project:update", projectId, data, _hubUrl)
   }
-  throw new Error('Not supported in browser mode')
+  if (isWeb) {
+    const res = await webProjectFetch(`/api/v1/projects/${projectId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    })
+    const json = await res.json()
+    return { project: json.data ?? json.project }
+  }
+  throw new Error("Not supported in browser mode")
 }
 
 /**
@@ -91,10 +136,15 @@ export async function projectUpdate(
  */
 export async function projectDelete(
   projectId: string,
-  hubUrl?: string
+  _hubUrl?: string
 ): Promise<{ success: boolean; message: string }> {
   if (isElectron) {
-    return window.ipcRenderer.invoke('project:delete', projectId, hubUrl)
+    return window.ipcRenderer.invoke("project:delete", projectId, _hubUrl)
   }
-  throw new Error('Not supported in browser mode')
+  if (isWeb) {
+    const res = await webProjectFetch(`/api/v1/projects/${projectId}`, { method: "DELETE" })
+    const json = await res.json()
+    return { success: res.ok, message: json.message ?? "" }
+  }
+  throw new Error("Not supported in browser mode")
 }

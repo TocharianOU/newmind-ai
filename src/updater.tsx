@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react"
 import { useSetAtom } from "jotai"
 import { newVersionAtom } from "./atoms/globalState"
-import { invokeIPC, isElectron, listenIPC } from "./ipc"
+import { invokeIPC, isElectron, isWeb, listenIPC } from "./ipc"
 import { check } from "@tauri-apps/plugin-updater"
 
 export const getAutoDownload = () => !!localStorage.getItem("autoDownload")
@@ -72,6 +72,10 @@ function TauriUpdater() {
 }
 
 export default function Updater() {
+  if (isWeb) {
+    return null
+  }
+
   if (isElectron) {
     return <ElectronUpdater />
   }

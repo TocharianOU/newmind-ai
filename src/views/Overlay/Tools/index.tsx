@@ -15,6 +15,8 @@ import { isLoggedInOAPAtom } from "../../../atoms/oapState"
 import { currentProjectIdAtom } from "../../../atoms/projectState"
 import { OAP_ROOT_URL } from "../../../../shared/oap"
 import { openUrl } from "../../../ipc/util"
+import { isWeb } from "../../../ipc/env"
+import { restartHost } from "../../../ipc/host"
 import cloneDeep from "lodash/cloneDeep"
 import { ClickOutside } from "../../../components/ClickOutside"
 import Button from "../../../components/Button"
@@ -309,7 +311,7 @@ const Tools = () => {
         duration: 5000
       })
       try {
-        await window.ipcRenderer.restartHost()
+        await restartHost()
       } catch (e) {
         console.error('[Keychain] Failed to restart host after credential save:', e)
       }
@@ -938,7 +940,7 @@ const Tools = () => {
         <div className="tools-header">
           <div>{t("tools.title")}</div>
           <div className="header-actions">
-            {isLoggedInOAP && (
+            {isLoggedInOAP && !isWeb && (
               <Tooltip content={t("tools.oap.marketplaceAlt") || "Browse available integrations from the cloud"}>
                 <Button
                   onClick={() => openDrawer({
@@ -1017,7 +1019,7 @@ const Tools = () => {
         </div>
 
         <div className="tools-list">
-          {isLoggedInOAP &&
+          {isLoggedInOAP && !isWeb &&
             <Tabs
               className="tools-type-tabs"
               tabs={[{ label: t("tools.tab.all"), value: "all" }, { label: t("tools.tab.oap"), value: "oap" }, { label: t("tools.tab.custom"), value: "custom" }]}

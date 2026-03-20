@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core"
 import { ModelProvider } from "../../types/model"
 import { ModelResults } from "../vite-env"
-import { isTauri } from "./env"
+import { isElectron, isTauri } from "./env"
 
 export function fetchElectronModels(provider: ModelProvider, apiKey: string, baseURL: string = "", extra: string[] = []) {
   switch(provider) {
@@ -68,6 +68,13 @@ export async function fetchTauriModels(provider: ModelProvider, apiKey: string, 
 }
 
 export async function fetchModels(provider: ModelProvider, apiKey: string, baseURL: string = "", extra?: string[]) {
+  // In web mode there is no local SDK access — model lists are not fetchable
+  // from the browser. The user must enter model names manually, or the Hub's
+  // /api/v1/models endpoint can supply a curated list.
+  if (!isElectron && !isTauri) {
+    return { results: [], error: "Model list fetch is not available in web mode" } as ModelResults
+  }
+
   const res = isTauri
     ? await fetchTauriModels(provider, apiKey, baseURL, extra)
     : await fetchElectronModels(provider, apiKey, baseURL, extra)

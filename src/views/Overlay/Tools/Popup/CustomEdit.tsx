@@ -113,6 +113,7 @@ const emptyCustom = (): customListProps => {
 }
 
 import SchemaForm from "./SchemaForm"
+import { isWeb } from "../../../../ipc/env"
 
 const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, onSubmit, toolLog }: customEditPopupProps) => {
   const [type, setType] = useState<customEditPopupProps["_type"]>(_type)
@@ -1257,8 +1258,8 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
                 />
               </div>
               
-              {/* Command - only show for stdio transport */}
-              {(!currentMcpServers.transport || currentMcpServers.transport === "stdio") && (
+              {/* Command - only show for stdio transport (desktop only) */}
+              {!isWeb && (!currentMcpServers.transport || currentMcpServers.transport === "stdio") && (
                 <div className="field-item">
                   <label>Command</label>
                   <input
@@ -1270,23 +1271,25 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
                 </div>
               )}
               
-              {/* Transport */}
+              {/* Transport — web mode only allows HTTP-based transports (no stdio) */}
               <div className="field-item">
                 <label>Transport</label>
                 <Select
-                  options={FieldType.transport.options.map((option) => ({
-                    value: option,
-                    label: (
+                  options={FieldType.transport.options
+                    .filter((option) => !isWeb || option !== "stdio")
+                    .map((option) => ({
+                      value: option,
+                      label: (
                         <div className="model-select-label" key={option}>
                           <span className="model-select-label-text">
                             {option}
                           </span>
                         </div>
                       )
-                    })
-                  )}
+                    }))
+                  }
                   placeholder={t("tools.transportPlaceholder")}
-                  value={currentMcpServers.transport ?? FieldType.transport.options[0]}
+                  value={currentMcpServers.transport ?? (isWeb ? "streamable" : FieldType.transport.options[0])}
                   onSelect={(value) => handleCustomChange("transport", value)}
                 />
               </div>

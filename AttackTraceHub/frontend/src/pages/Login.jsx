@@ -82,6 +82,9 @@ const Login = () => {
           window.location.href = `attacktrace://signin/${authToken}`;
         }
       }, 1500);
+    } else if (appRedirect === 'web' && (token || user)) {
+      // SSO callback for web app — token already in localStorage via AuthContext
+      window.location.href = '/app';
     }
   }, [searchParams, user, showAppRedirect]);
 
@@ -93,10 +96,13 @@ const Login = () => {
     try {
       await login(formData.email, formData.password);
 
-      // Check if we should redirect to app
       const appRedirect = searchParams.get('appRedirect');
       if (appRedirect === 'attacktrace') {
+        // Desktop deep-link flow
         setShowAppRedirect(true);
+      } else if (appRedirect === 'web') {
+        // Web app flow — navigate to the embedded SPA
+        window.location.href = '/app';
       } else {
         navigate('/dashboard');
       }
@@ -125,7 +131,7 @@ const Login = () => {
   const handleSSOLogin = (provider) => {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || window.location.origin;
     const appRedirect = searchParams.get('appRedirect');
-    const ssoUrl = `${apiBaseUrl}/api/auth/sso/${provider}/start${appRedirect ? `?appRedirect=${appRedirect}` : ''}`;
+    const ssoUrl = `${apiBaseUrl}/api/auth/sso/${provider}/start${appRedirect ? `?appRedirect=${encodeURIComponent(appRedirect)}` : ''}`;
     window.location.href = ssoUrl;
   };
 

@@ -15,6 +15,8 @@
   },
   "scripts": {
     "dev": "vite-node scripts/download-host-deps.ts && vite --config vite.config.electron.ts",
+    "dev:web": "vite --config vite.config.web.ts",
+    "build:web": "tsc -b --noEmit && vite build --config vite.config.web.ts",
     "dev:tauri": "vite",
     "dev-local": "vite --config vite.config.electron.ts",
     "lint": "eslint .",

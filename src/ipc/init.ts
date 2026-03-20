@@ -1,4 +1,4 @@
-import { isElectron, isTauri } from "./env"
+import { isElectron, isTauri, isWeb } from "./env"
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http"
 import { watch, readTextFile, exists } from "@tauri-apps/plugin-fs"
 import * as path from "@tauri-apps/api/path"
@@ -95,6 +95,13 @@ async function getPort() {
 }
 
 export async function initFetch() {
+  // In web mode the SPA is served from the Hub. All relative-path API calls
+  // (/api/chat, /api/tools, etc.) resolve directly to the Hub, which proxies
+  // them to the MCP Host internally. No fetch patching is needed.
+  if (isWeb) {
+    return globalThis.fetch
+  }
+
   const port = await getPort()
   console.log("host port", port)
   setOapHost(`http://localhost:${port}`)

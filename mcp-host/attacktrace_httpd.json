@@ -1,0 +1,5 @@
+{
+  "checkpointer": {
+    "uri": "sqlite:///./checkpointer.db"
+  }
+}

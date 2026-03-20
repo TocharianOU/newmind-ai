@@ -1,4 +1,6 @@
 import { getCurrentProject } from "@/ipc/project"
+import { isWeb } from "@/ipc/env"
+import { getWebToken } from "@/ipc/oap"
 
 type ApiFetchInit = RequestInit & {
   /** Explicitly override which project ID is sent in X-Project-ID.
@@ -7,7 +9,11 @@ type ApiFetchInit = RequestInit & {
 }
 
 /**
- * Enhanced fetch wrapper that automatically injects X-Project-ID and X-Auth-Token headers
+ * Enhanced fetch wrapper that automatically injects X-Project-ID and auth headers.
+ *
+ * Desktop / Tauri: injects X-Auth-Token (shared secret with local MCP Host).
+ * Web: injects Authorization: Bearer {jwt} — the Hub validates it and injects
+ *      X-Auth-Token + X-User-ID when proxying to the MCP Host.
  */
 export async function apiFetch(
   input: RequestInfo | URL,
@@ -18,27 +24,29 @@ export async function apiFetch(
 
   const headers = new Headers(restInit?.headers || {})
   
-  // Inject X-Project-ID header for all project-scoped requests
   if (currentProjectId) {
-    headers.set('X-Project-ID', currentProjectId)
+    headers.set("X-Project-ID", currentProjectId)
   }
 
-  // Security: Inject X-Auth-Token header for MCP Host authentication
-  try {
-    const authToken = await window.ipcRenderer.getAuthToken()
-    if (authToken) {
-      headers.set('X-Auth-Token', authToken)
+  if (isWeb) {
+    // Web mode: authenticate via Hub JWT — Hub forwards with internal token
+    const token = getWebToken()
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`)
     }
-  } catch (error) {
-    console.error("[Security] Failed to get auth token:", error)
+  } else {
+    // Desktop / Tauri mode: authenticate directly against local MCP Host
+    try {
+      const authToken = await window.ipcRenderer.getAuthToken()
+      if (authToken) {
+        headers.set("X-Auth-Token", authToken)
+      }
+    } catch (error) {
+      console.error("[Security] Failed to get auth token:", error)
+    }
   }
 
-  const enhancedInit: RequestInit = {
-    ...restInit,
-    headers
-  }
-
-  return fetch(input, enhancedInit)
+  return fetch(input, { ...restInit, headers })
 }
 
 /**

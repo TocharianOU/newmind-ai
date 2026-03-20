@@ -8,6 +8,7 @@ import Switch from "../../components/Switch"
 import { getAutoDownload, setAutoDownload as _setAutoDownload } from "../../updater"
 import { disableDiveSystemPromptAtom, updateDisableDiveSystemPromptAtom } from "../../atoms/configState"
 import { getIPCAutoLaunch, getIPCMinimalToTray, setIPCAutoLaunch, setIPCMinimalToTray } from "../../ipc/system"
+import { isWeb } from "../../ipc/env"
 import "../../styles/overlay/_System.scss"
 
 const System = () => {
@@ -74,50 +75,56 @@ const System = () => {
             <span className="system-list-description">{t("system.themeDescription")}</span>
           </div>
 
-          {/* minimal to tray */}
-          <div className="system-list-section">
-            <div className="system-list-content">
-              <span className="system-list-name">{t("system.minimalToTray")}</span>
-              <div className="system-list-switch-container">
-                <Switch
-                  checked={minimalToTray}
-                  onChange={e => handleMinimalToTrayChange(e.target.checked)}
-                />
+          {/* minimal to tray — desktop only */}
+          {!isWeb && (
+            <div className="system-list-section">
+              <div className="system-list-content">
+                <span className="system-list-name">{t("system.minimalToTray")}</span>
+                <div className="system-list-switch-container">
+                  <Switch
+                    checked={minimalToTray}
+                    onChange={e => handleMinimalToTrayChange(e.target.checked)}
+                  />
+                </div>
               </div>
+              <span className="system-list-description">{t("system.minimalToTrayDescription")}</span>
             </div>
-            <span className="system-list-description">{t("system.minimalToTrayDescription")}</span>
-          </div>
+          )}
 
-          {/* auto launch */}
-          <div className="system-list-section">
-            <div className="system-list-content">
-              <span className="system-list-name">{t("system.autoLaunch")}</span>
-              <div className="system-list-switch-container">
-                <Switch
-                  checked={autoLaunch}
-                  onChange={e => handleAutoLaunchChange(e.target.checked)}
-                />
+          {/* auto launch — desktop only */}
+          {!isWeb && (
+            <div className="system-list-section">
+              <div className="system-list-content">
+                <span className="system-list-name">{t("system.autoLaunch")}</span>
+                <div className="system-list-switch-container">
+                  <Switch
+                    checked={autoLaunch}
+                    onChange={e => handleAutoLaunchChange(e.target.checked)}
+                  />
+                </div>
               </div>
+              <span className="system-list-description">{t("system.autoLaunchDescription")}</span>
             </div>
-            <span className="system-list-description">{t("system.autoLaunchDescription")}</span>
-          </div>
+          )}
 
-          {/* auto download */}
-          <div className="system-list-section">
-            <div className="system-list-content">
-              <span className="system-list-name">{t("system.autoDownload")}</span>
-              <div className="system-list-switch-container">
-                <Switch
-                  checked={autoDownload}
-                  onChange={(e) => {
-                    setAutoDownload(e.target.checked)
-                    _setAutoDownload(e.target.checked)
-                  }}
-                />
+          {/* auto download — desktop only */}
+          {!isWeb && (
+            <div className="system-list-section">
+              <div className="system-list-content">
+                <span className="system-list-name">{t("system.autoDownload")}</span>
+                <div className="system-list-switch-container">
+                  <Switch
+                    checked={autoDownload}
+                    onChange={(e) => {
+                      setAutoDownload(e.target.checked)
+                      _setAutoDownload(e.target.checked)
+                    }}
+                  />
+                </div>
               </div>
+              <span className="system-list-description">{t("system.autoDownloadDescription")}</span>
             </div>
-            <span className="system-list-description">{t("system.autoDownloadDescription")}</span>
-          </div>
+          )}
 
           {/* language */}
           <div className="system-list-section">

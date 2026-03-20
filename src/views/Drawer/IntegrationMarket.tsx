@@ -8,7 +8,7 @@ import { showToastAtom } from "../../atoms/toastState"
 import { currentProjectIdAtom } from "../../atoms/projectState"
 import { OAPMCPServer, InstanceInfo } from "../../../types/oap"
 import { apiFetch } from "../../utils/api"
-import { oapSearchMCPServer } from "../../ipc"
+import { oapSearchMCPServer, oapGetToken, restartHost } from "../../ipc"
 import Button from "../../components/Button"
 import WrappedInput from "../../components/WrappedInput"
 import InfiniteScroll from "../../components/InfiniteScroll"
@@ -609,7 +609,7 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
             delete stringifiedConfig.SHODAN_API_KEY
             stringifiedConfig.SHODAN_BASE_URL = `${OAP_ROOT_URL}/api/shodan-proxy/v1`
             try {
-              const token = await window.ipcRenderer.oapGetToken()
+              const token = await oapGetToken()
               stringifiedConfig.SHODAN_AUTH_TOKEN = token || "{{device_token}}"
             } catch {
               stringifiedConfig.SHODAN_AUTH_TOKEN = "{{device_token}}"
@@ -624,7 +624,7 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
             delete stringifiedConfig.ABUSEIPDB_API_KEY
             stringifiedConfig.ABUSEIPDB_BASE_URL = `${OAP_ROOT_URL}/api/abuseipdb-proxy/v2`
             try {
-              const token = await window.ipcRenderer.oapGetToken()
+              const token = await oapGetToken()
               stringifiedConfig.ABUSEIPDB_AUTH_TOKEN = token || "{{device_token}}"
             } catch {
               stringifiedConfig.ABUSEIPDB_AUTH_TOKEN = "{{device_token}}"
@@ -641,7 +641,7 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
             delete stringifiedConfig.VIRUSTOTAL_API_KEY
             stringifiedConfig.VIRUSTOTAL_BASE_URL = `${OAP_ROOT_URL}/api/vt-proxy/v3`
             try {
-              const token = await window.ipcRenderer.oapGetToken()
+              const token = await oapGetToken()
               stringifiedConfig.VIRUSTOTAL_AUTH_TOKEN = token || "{{device_token}}"
             } catch {
               // Fall back to the mcp-host template variable which is resolved server-side
@@ -771,7 +771,7 @@ const IntegrationMarket = ({ onIntegrationAdded, onClose }: IntegrationMarketPro
             duration: 5000
           })
           try {
-            await window.ipcRenderer.restartHost()
+            await restartHost()
           } catch (e) {
             console.error('[Keychain] Failed to restart host after credential save:', e)
           }
