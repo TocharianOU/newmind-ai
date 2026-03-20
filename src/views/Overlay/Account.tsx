@@ -3,55 +3,36 @@ import { Trans, useTranslation } from "react-i18next"
 
 import { isLoggedInOAPAtom, isOAPUsageLimitAtom, OAPLevelAtom, oapUsageAtom, oapUserAtom } from "../../atoms/oapState"
 import { ENV_CONFIG } from "../../config/env"
+import { isWeb } from "../../ipc/env"
 
 import Tooltip from "../../components/Tooltip"
-import { openUrl } from "../../ipc/util"
-import { oapGetMe, oapLogin, oapLogout, oapLoginWithToken, openOapLoginPage, oapGetToken } from "../../ipc/oap"
+import { oapGetMe, oapLogout, oapLoginWithToken, openOapLoginPage, oapGetToken } from "../../ipc/oap"
 import Button from "../../components/Button"
 import React, { useState } from "react"
 import "../../styles/overlay/_Account.scss"
 import EmbeddedLogin from "../../components/EmbeddedLogin"
 import EditUsernameModal from "../../components/EditUsernameModal"
 
-// Use Hub URLs with session token passing
-const getHubUrlWithToken = async (path: string) => {
-  try {
-    // Get token from Electron main process instead of localStorage
-    const token = await oapGetToken();
-    console.log('🔗 Getting token for Hub URL:', { token: token ? `${token.substring(0, 8)}...` : 'null', path });
-    return `${ENV_CONFIG.HUB_BASE_URL}${path}${token ? `?token=${token}` : ''}`;
-  } catch (error) {
-    console.error('🔗 Error getting token:', error);
-    return `${ENV_CONFIG.HUB_BASE_URL}${path}`;
-  }
-};
-
-// Function to open Hub URLs with session token
+// Open a Hub management page.
+// Web mode: same-origin navigation (Hub is at the same host).
+// Desktop: open in external browser via IPC or window.open.
 const openHubUrl = async (path: string) => {
+  if (isWeb) {
+    window.open(path, '_blank');
+    return;
+  }
   try {
-    const url = await getHubUrlWithToken(path);
-    console.log('🔗 Opening Hub URL:', url);
-    
+    const token = await oapGetToken();
+    const url = `${ENV_CONFIG.HUB_BASE_URL}${path}${token ? `?token=${token}` : ''}`;
     if (window.ipcRenderer && window.ipcRenderer.invoke) {
-      // Use IPC to open external browser
       window.ipcRenderer.invoke('open-external-url', url);
     } else {
-      // Fallback to window.open
       window.open(url, '_blank');
     }
-  } catch (error) {
-    console.error('🔗 Error opening Hub URL:', error);
-    // Fallback to URL without token
-    const fallbackUrl = `${ENV_CONFIG.HUB_BASE_URL}${path}`;
-    if (window.ipcRenderer && window.ipcRenderer.invoke) {
-      window.ipcRenderer.invoke('open-external-url', fallbackUrl);
-    } else {
-      window.open(fallbackUrl, '_blank');
-    }
+  } catch {
+    window.open(`${ENV_CONFIG.HUB_BASE_URL}${path}`, '_blank');
   }
 };
-
-// Removed static URL generation - now using async functions
 
 const Account = () => {
   const { t } = useTranslation()

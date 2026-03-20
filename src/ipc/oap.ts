@@ -60,11 +60,11 @@ export function openOapLoginPage(regist: boolean) {
         VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL
     });
     
-    // Fallback URL using environment variable or default
-    const fallbackUrl = regist 
-        ? 'http://localhost:23001/register'
-        : 'http://localhost:23001/login';
-    
+    // Fallback: in web mode use same-origin Hub routes, otherwise use env config
+    const fallbackUrl = isWeb
+        ? (regist ? `${window.location.origin}/register` : `${window.location.origin}/login`)
+        : (regist ? 'http://localhost:23001/register' : 'http://localhost:23001/login');
+
     const finalUrl = hubUrl || fallbackUrl;
     console.log('🔗 Final URL:', finalUrl);
     
