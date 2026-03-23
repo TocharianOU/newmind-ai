@@ -1,14 +1,46 @@
-node_modules
-.github
-.vscode
+# Root .dockerignore — used when building the Hub image (context: monorepo root)
+
+.git
 .gitignore
-.dockerignore
-.env
-.env.example
-.env.local
-.env.production
-.env.test
-release
-dist
-dist-electron
-src-tauri/target
+.vscode
+.idea
+.DS_Store
+
+# Electron / Tauri — not needed for web build
+electron/
+dist-electron/
+src-tauri/
+release/
+*.zip
+
+# Pre-existing build artifacts
+dist-web/
+app-dist/
+AttackTraceHub/app-dist/
+AttackTraceHub/frontend/
+
+# Node modules (installed fresh inside Docker)
+node_modules/
+AttackTraceHub/node_modules/
+
+# MCP Host (has its own Docker build)
+mcp-host/
+
+# Dev / test files
+temp/
+prebuilt/
+bin/
+host-deps/
+coverage/
+*.log
+logs/
+uploads/
+projects/
+
+# Documentation
+attacktrace-docs/
+docs/
+
+# Docker files
+docker/
+AttackTraceHub/docker-compose*.yml

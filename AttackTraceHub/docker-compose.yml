@@ -36,8 +36,8 @@ services:
 
   hub:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: AttackTraceHub/Dockerfile
     restart: unless-stopped
     ports:
       - "23000:3000"

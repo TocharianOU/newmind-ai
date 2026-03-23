@@ -9,13 +9,14 @@ import { fromRawConfigToModelGroupSetting } from "./helper/model"
 import { initFetch } from "./ipc"
 import { getModelSettings, setModelSettings } from "./ipc/config"
 import { apiFetch } from "./utils/api"
+import { isWeb } from "./ipc/env"
 
 function Root() {
   const loadConfig = useSetAtom(loadConfigAtom)
   const loadHotkeyMap = useSetAtom(loadHotkeyMapAtom)
   const setModelSetting = useSetAtom(modelSettingsAtom)
   const [loading, setLoading] = useState(true)
-  const [downloading, setDownloading] = useState(window.PLATFORM !== "darwin")
+  const [downloading, setDownloading] = useState(!isWeb && window.PLATFORM !== "darwin")
   const init = useRef(false)
 
   const initHost = useCallback(async () => {
