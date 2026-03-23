@@ -93,7 +93,7 @@ app.use(helmet({
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
       frameSrc: ["'self'"],
-      upgradeInsecureRequests: useHttps ? [] : null
+      ...(useHttps ? { upgradeInsecureRequests: [] } : {})
     }
   },
   hsts: useHttps,
