@@ -103,6 +103,24 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
+// ---------------------------------------------------------------------------
+// Static files — mounted BEFORE CORS so that CSS/JS/image assets served with
+// the Vite-generated `crossorigin` attribute are never rejected by the origin
+// allow-list. Only API routes need CORS checking.
+// ---------------------------------------------------------------------------
+app.use('/integrations', express.static(path.join(__dirname, '../integrations')));
+
+const APP_DIST_PATH = process.env.APP_DIST_PATH || path.join(__dirname, '../app-dist');
+if (process.env.SERVE_WEB_APP !== 'false') {
+  app.use('/app', express.static(APP_DIST_PATH, { index: false }));
+  app.get('/app', (_req, res) => res.sendFile(path.join(APP_DIST_PATH, 'index.html')));
+  app.get('/app/*', (_req, res) => res.sendFile(path.join(APP_DIST_PATH, 'index.html')));
+  logger.info(`[Web App] Serving SPA from ${APP_DIST_PATH} at /app`);
+}
+
+// ---------------------------------------------------------------------------
+// CORS — applies to API routes only (static files already handled above)
+// ---------------------------------------------------------------------------
 app.use(cors({
   origin: (origin, callback) => {
     if (allowedOrigins.includes('*') || !origin || allowedOrigins.includes(origin)) {
@@ -147,22 +165,6 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Rate limiting
 app.use('/api/', rateLimiter);
-
-// Static files
-app.use('/integrations', express.static(path.join(__dirname, '../integrations')));
-
-// ---------------------------------------------------------------------------
-// AttackTrace Web App — static SPA served at /app/*
-// The built dist-web/ output from `npm run build:web` is placed in app-dist/.
-// ---------------------------------------------------------------------------
-const APP_DIST_PATH = process.env.APP_DIST_PATH || path.join(__dirname, '../app-dist');
-if (process.env.SERVE_WEB_APP !== 'false') {
-  app.use('/app', express.static(APP_DIST_PATH, { index: false }));
-  // SPA fallback — React Router handles client-side routing under /app/*
-  app.get('/app', (_req, res) => res.sendFile(path.join(APP_DIST_PATH, 'index.html')));
-  app.get('/app/*', (_req, res) => res.sendFile(path.join(APP_DIST_PATH, 'index.html')));
-  logger.info(`[Web App] Serving AttackTrace SPA from ${APP_DIST_PATH} at /app`);
-}
 
 // ---------------------------------------------------------------------------
 // Health check

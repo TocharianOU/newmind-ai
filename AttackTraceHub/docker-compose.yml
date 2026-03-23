@@ -40,16 +40,38 @@ services:
       dockerfile: AttackTraceHub/Dockerfile
     restart: unless-stopped
     ports:
-      - "23000:3000"
+      - "${PORT:-23000}:3000"
     environment:
       DATABASE_URL:            postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/attacktrace
       JWT_SECRET:              ${JWT_SECRET}
       MCP_HOST_URL:            http://mcp-host:61990
       MCP_HOST_INTERNAL_TOKEN: ${ATTACKTRACE_AUTH_TOKEN}
       NODE_ENV:                production
+
+      # Admin
+      ADMIN_EMAIL:             ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD:          ${ADMIN_PASSWORD:-}
+      ADMIN_EMAILS:            ${ADMIN_EMAILS:-}
+
+      # Networking / security
       FORCE_HTTPS:             ${FORCE_HTTPS:-false}
       ALLOWED_ORIGINS:         ${ALLOWED_ORIGINS:-}
       HUB_FRONTEND_URL:        ${HUB_FRONTEND_URL:-}
+
+      # Feature flags
+      DEPLOYMENT_MODE:         ${DEPLOYMENT_MODE:-enterprise}
+      SSO_ENABLED:             ${SSO_ENABLED:-false}
+      BILLING_ENABLED:         ${BILLING_ENABLED:-false}
+      INVITE_CODE_ENABLED:     ${INVITE_CODE_ENABLED:-false}
+
+      # SSO providers (only needed when SSO_ENABLED=true)
+      SSO_CALLBACK_BASE_URL:   ${SSO_CALLBACK_BASE_URL:-}
+      SSO_GOOGLE_CLIENT_ID:    ${SSO_GOOGLE_CLIENT_ID:-}
+      SSO_GOOGLE_CLIENT_SECRET: ${SSO_GOOGLE_CLIENT_SECRET:-}
+      SSO_AZURE_ENABLED:       ${SSO_AZURE_ENABLED:-false}
+      SSO_AZURE_TENANT_ID:     ${SSO_AZURE_TENANT_ID:-}
+      SSO_AZURE_CLIENT_ID:     ${SSO_AZURE_CLIENT_ID:-}
+      SSO_AZURE_CLIENT_SECRET: ${SSO_AZURE_CLIENT_SECRET:-}
     depends_on:
       postgres:
         condition: service_healthy
