@@ -5,6 +5,9 @@ set -e
 echo "[entrypoint] Running database migrations..."
 npx prisma migrate deploy
 
+echo "[entrypoint] Syncing schema to database..."
+npx prisma db push --accept-data-loss --skip-generate
+
 # Auto-create admin on first boot when ADMIN_EMAIL is set
 if [ -n "$ADMIN_EMAIL" ] && [ -n "$ADMIN_PASSWORD" ]; then
   node --input-type=module -e "
@@ -24,14 +27,13 @@ if [ -n "$ADMIN_EMAIL" ] && [ -n "$ADMIN_PASSWORD" ]; then
         }
       } else {
         const hashed = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
-        const uid = randomUUID();
         const now = new Date();
         await prisma.user.create({
           data: {
-            id: uid, email, username: 'Admin',
+            id: randomUUID(), email, username: 'Admin',
             password: hashed, role: 'ADMIN',
             Subscription: { create: { id: randomUUID(), planName: 'ENTERPRISE', isDefaultPlan: false, isActive: true, updatedAt: now } },
-            Project: { create: { id: 'default', name: 'Default', description: 'Default project', isDefault: true, updatedAt: now } }
+            Project: { create: { id: randomUUID(), name: 'Default', description: 'Default project', isDefault: true, updatedAt: now } }
           }
         });
         console.log('[entrypoint] Created admin: ' + email);
