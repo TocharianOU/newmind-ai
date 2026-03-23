@@ -92,7 +92,8 @@ app.use(helmet({
       connectSrc: cspConnectSrc,
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
-      frameSrc: ["'self'"]
+      frameSrc: ["'self'"],
+      upgradeInsecureRequests: useHttps ? [] : null
     }
   },
   hsts: useHttps,
