@@ -31,7 +31,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 COPY pyproject.toml uv.lock README.md ./
 COPY attacktrace_mcp_host ./attacktrace_mcp_host
-RUN pip install --no-cache-dir --no-deps .
+RUN /app/.venv/bin/pip install --no-cache-dir --no-deps .
 
 # Persistent volume for config, SQLite DB, uploads, cache, logs
 VOLUME /app/data
@@ -49,4 +49,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:61990/health')" || exit 1
 
 # --listen 0.0.0.0 is required — default 127.0.0.1 is unreachable inside Docker
-CMD ["attacktrace_httpd", "--listen", "0.0.0.0", "--port", "61990"]
+CMD ["/app/.venv/bin/attacktrace_httpd", "--listen", "0.0.0.0", "--port", "61990"]
