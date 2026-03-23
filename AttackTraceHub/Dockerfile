@@ -21,7 +21,7 @@ COPY types/  ./types/
 COPY public/ ./public/
 
 RUN npm install --ignore-scripts
-RUN npm run build:web
+RUN npx vite build --config vite.config.web.ts
 
 # ── Stage 2: Install Hub (server) dependencies ───────────────────────────────
 FROM node:20-alpine AS deps
