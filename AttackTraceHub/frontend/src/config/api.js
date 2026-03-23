@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Environment configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 // Documentation URL configuration
 export const DOCS_URL = import.meta.env.VITE_DOCS_URL || 'http://localhost:23002';
@@ -40,7 +40,7 @@ function processQueue(error, token = null) {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const isAuthPage = window.location.pathname === '/login' || window.location.pathname === '/register';
+    const isAuthPage = window.location.pathname.endsWith('/login') || window.location.pathname.endsWith('/register');
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !isAuthPage && !originalRequest._retry) {
@@ -48,7 +48,7 @@ api.interceptors.response.use(
 
       if (!refreshToken) {
         localStorage.removeItem('authToken');
-        window.location.href = '/login';
+        window.location.href = '/console/login';
         return Promise.reject(error);
       }
 
@@ -81,7 +81,7 @@ api.interceptors.response.use(
         processQueue(refreshError, null);
         localStorage.removeItem('authToken');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        window.location.href = '/console/login';
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

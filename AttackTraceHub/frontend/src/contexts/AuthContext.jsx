@@ -123,7 +123,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('authToken');
       localStorage.removeItem('refreshToken');
       setUser(null);
-      window.location.href = '/login';
+      window.location.href = '/console/login';
     }
   };
 

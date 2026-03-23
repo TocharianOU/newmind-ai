@@ -23,7 +23,18 @@ COPY public/ ./public/
 RUN npm install --ignore-scripts
 RUN npx vite build --config vite.config.web.ts
 
-# ── Stage 2: Install Hub (server) dependencies ───────────────────────────────
+# ── Stage 2: Build the Admin Console SPA ─────────────────────────────────────
+FROM node:20-alpine AS dashboard
+
+WORKDIR /build
+
+COPY AttackTraceHub/frontend/package.json AttackTraceHub/frontend/package-lock.json ./
+RUN npm install --ignore-scripts
+
+COPY AttackTraceHub/frontend/ ./
+RUN npx vite build
+
+# ── Stage 3: Install Hub (server) dependencies ───────────────────────────────
 FROM node:20-alpine AS deps
 
 RUN apk add --no-cache openssl
@@ -35,7 +46,7 @@ COPY AttackTraceHub/prisma ./prisma/
 
 RUN npm install --omit=dev && npx prisma generate
 
-# ── Stage 3: Runtime image ───────────────────────────────────────────────────
+# ── Stage 4: Runtime image ───────────────────────────────────────────────────
 FROM node:20-alpine AS runner
 
 RUN apk add --no-cache openssl
@@ -59,6 +70,9 @@ COPY --chown=nodejs:nodejs AttackTraceHub/system-prompt.txt ./system-prompt.txt
 
 # Frontend SPA — built in stage 1
 COPY --from=frontend --chown=nodejs:nodejs /build/dist-web ./app-dist
+
+# Admin Console — built in stage 2
+COPY --from=dashboard --chown=nodejs:nodejs /build/dist ./console-dist
 
 # Startup script: runs Prisma migrations then starts the server
 COPY --chown=nodejs:nodejs AttackTraceHub/docker-entrypoint.sh ./

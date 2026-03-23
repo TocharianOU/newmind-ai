@@ -207,7 +207,7 @@ function AppRoutes() {
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/console">
       <LanguageProvider>
         <ThemeProvider>
           <FeatureFlagsProvider>

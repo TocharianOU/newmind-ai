@@ -118,6 +118,14 @@ if (process.env.SERVE_WEB_APP !== 'false') {
   logger.info(`[Web App] Serving SPA from ${APP_DIST_PATH} at /app`);
 }
 
+const CONSOLE_DIST_PATH = process.env.CONSOLE_DIST_PATH || path.join(__dirname, '../console-dist');
+if (process.env.SERVE_CONSOLE !== 'false') {
+  app.use('/console', express.static(CONSOLE_DIST_PATH, { index: false }));
+  app.get('/console', (_req, res) => res.sendFile(path.join(CONSOLE_DIST_PATH, 'index.html')));
+  app.get('/console/*', (_req, res) => res.sendFile(path.join(CONSOLE_DIST_PATH, 'index.html')));
+  logger.info(`[Console] Serving admin console from ${CONSOLE_DIST_PATH} at /console`);
+}
+
 // ---------------------------------------------------------------------------
 // CORS — applies to API routes only (static files already handled above)
 // ---------------------------------------------------------------------------
