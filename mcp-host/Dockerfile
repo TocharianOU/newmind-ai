@@ -27,11 +27,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 COPY --from=deps /build/.venv /app/.venv
+COPY --from=base /usr/local/bin/uv /usr/local/bin/uv
 ENV PATH="/app/.venv/bin:$PATH"
+ENV VIRTUAL_ENV=/app/.venv
 
 COPY pyproject.toml uv.lock README.md ./
 COPY attacktrace_mcp_host ./attacktrace_mcp_host
-RUN /app/.venv/bin/pip install --no-cache-dir --no-deps .
+RUN uv pip install --no-cache --no-deps .
 
 # Persistent volume for config, SQLite DB, uploads, cache, logs
 VOLUME /app/data
