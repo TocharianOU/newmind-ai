@@ -63,6 +63,7 @@ services:
       SSO_ENABLED:             ${SSO_ENABLED:-false}
       BILLING_ENABLED:         ${BILLING_ENABLED:-false}
       INVITE_CODE_ENABLED:     ${INVITE_CODE_ENABLED:-false}
+      LICENSE_ENABLED:         ${LICENSE_ENABLED:-false}
 
       # SSO providers (only needed when SSO_ENABLED=true)
       SSO_CALLBACK_BASE_URL:   ${SSO_CALLBACK_BASE_URL:-}

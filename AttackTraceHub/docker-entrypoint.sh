@@ -7,35 +7,40 @@ npx prisma migrate deploy
 
 # Auto-create admin on first boot when ADMIN_EMAIL is set
 if [ -n "$ADMIN_EMAIL" ] && [ -n "$ADMIN_PASSWORD" ]; then
-  node -e "
-    const { PrismaClient } = require('@prisma/client');
-    const bcrypt = require('bcryptjs');
-    const { randomUUID } = require('node:crypto');
+  node --input-type=module -e "
+    import { PrismaClient } from '@prisma/client';
+    import bcrypt from 'bcryptjs';
+    import { randomUUID } from 'node:crypto';
     const prisma = new PrismaClient();
-    (async () => {
-      const existing = await prisma.user.findUnique({ where: { email: process.env.ADMIN_EMAIL } });
+    try {
+      const email = process.env.ADMIN_EMAIL;
+      const existing = await prisma.user.findUnique({ where: { email } });
       if (existing) {
         if (existing.role !== 'ADMIN') {
           await prisma.user.update({ where: { id: existing.id }, data: { role: 'ADMIN' } });
-          console.log('[entrypoint] Promoted ' + process.env.ADMIN_EMAIL + ' to ADMIN');
+          console.log('[entrypoint] Promoted ' + email + ' to ADMIN');
         } else {
-          console.log('[entrypoint] Admin already exists: ' + process.env.ADMIN_EMAIL);
+          console.log('[entrypoint] Admin already exists: ' + email);
         }
       } else {
         const hashed = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
         const uid = randomUUID();
+        const now = new Date();
         await prisma.user.create({
           data: {
-            id: uid, email: process.env.ADMIN_EMAIL, username: 'Admin',
+            id: uid, email, username: 'Admin',
             password: hashed, role: 'ADMIN',
-            Subscription: { create: { id: randomUUID(), planName: 'ENTERPRISE', isDefaultPlan: false, isActive: true, updatedAt: new Date() } },
-            Project: { create: { id: 'default', name: 'Default', description: 'Default project', isDefault: true, updatedAt: new Date() } }
+            Subscription: { create: { id: randomUUID(), planName: 'ENTERPRISE', isDefaultPlan: false, isActive: true, updatedAt: now } },
+            Project: { create: { id: 'default', name: 'Default', description: 'Default project', isDefault: true, updatedAt: now } }
           }
         });
-        console.log('[entrypoint] Created admin: ' + process.env.ADMIN_EMAIL);
+        console.log('[entrypoint] Created admin: ' + email);
       }
+    } catch (e) {
+      console.error('[entrypoint] Admin seed failed:', e.message);
+    } finally {
       await prisma.\$disconnect();
-    })().catch(e => { console.error('[entrypoint] Admin seed failed:', e.message); });
+    }
   "
 fi
 
