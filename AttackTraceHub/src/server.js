@@ -83,6 +83,7 @@ if (process.env.HUB_FRONTEND_URL) cspConnectSrc.push(process.env.HUB_FRONTEND_UR
 const useHttps = (process.env.FORCE_HTTPS === 'true');
 app.use(helmet({
   contentSecurityPolicy: {
+    useDefaults: false,
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
