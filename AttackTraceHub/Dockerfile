@@ -44,7 +44,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser  --system --uid 1001 nodejs
+    adduser  --system --uid 1001 nodejs && \
+    mkdir -p /app/logs/audit && chown -R nodejs:nodejs /app/logs
 
 # Hub server dependencies + Prisma client
 COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules

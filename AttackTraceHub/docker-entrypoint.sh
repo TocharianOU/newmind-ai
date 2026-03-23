@@ -31,7 +31,7 @@ if [ -n "$ADMIN_EMAIL" ] && [ -n "$ADMIN_PASSWORD" ]; then
         await prisma.user.create({
           data: {
             id: randomUUID(), email, username: 'Admin',
-            password: hashed, role: 'ADMIN',
+            password: hashed, role: 'ADMIN', updatedAt: now,
             Subscription: { create: { id: randomUUID(), planName: 'ENTERPRISE', isDefaultPlan: false, isActive: true, updatedAt: now } },
             Project: { create: { id: randomUUID(), name: 'Default', description: 'Default project', isDefault: true, updatedAt: now } }
           }

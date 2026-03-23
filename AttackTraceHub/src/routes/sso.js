@@ -184,7 +184,7 @@ router.get('/:provider/callback', async (req, res) => {
   } catch (error) {
     logger.error('SSO callback error:', error);
     await writeAudit(req, {
-      userId: 'anonymous',
+      userId: null,
       action: AUDIT_ACTIONS.SSO_LOGIN_FAILURE,
       resourceType: RESOURCE_TYPES.AUTH,
       metadata: { error: error.message },

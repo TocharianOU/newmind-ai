@@ -198,7 +198,7 @@ router.post('/login', validateBody(LoginSchema), async (req, res) => {
 
     if (!user) {
       await writeAudit(req, {
-        userId: 'anonymous',
+        userId: null,
         action: AUDIT_ACTIONS.LOGIN_FAILURE,
         resourceType: RESOURCE_TYPES.AUTH,
         metadata: { email, reason: 'user_not_found' },
