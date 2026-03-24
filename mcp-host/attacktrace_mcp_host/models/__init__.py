@@ -1,6 +1,8 @@
 """Additional models for the MCP."""
 
 import logging
+import os
+import re
 import requests
 from importlib import import_module
 from typing import Any
@@ -12,6 +14,35 @@ from attacktrace_mcp_host.models.helpers import clean_model_kwargs
 from attacktrace_mcp_host.models.model_cache import model_cache
 
 logger = logging.getLogger("attacktrace_mcp_host.models")
+
+_HUB_INTERNAL_URL = os.environ.get("HUB_INTERNAL_URL", "").rstrip("/")
+
+
+_HUB_EXTERNAL_PORT = os.environ.get("HUB_EXTERNAL_PORT", "23000")
+
+
+def _rewrite_hub_url(url: str) -> str:
+    """Rewrite browser-facing Hub URLs to the Docker-internal address.
+
+    Handles both localhost and any external IP/hostname that targets the
+    Hub's published port (default 23000).
+    """
+    if not _HUB_INTERNAL_URL or not url:
+        return url
+    rewritten = re.sub(
+        rf"https?://[^/\s]+:{re.escape(_HUB_EXTERNAL_PORT)}",
+        _HUB_INTERNAL_URL,
+        url,
+    )
+    if rewritten == url:
+        rewritten = re.sub(
+            r"https?://(?:localhost|127\.0\.0\.1)(?::\d+)?",
+            _HUB_INTERNAL_URL,
+            url,
+        )
+    if rewritten != url:
+        logger.info("[URL_REWRITE] %s -> %s", url, rewritten)
+    return rewritten
 
 def get_model_info_from_hub(model_name: str, hub_base_url: str, api_key: str) -> dict:
     """从Hub获取模型的详细信息，包括真实provider
@@ -90,8 +121,7 @@ def load_model(
         )
         model = model_module.load_model(*args, **kwargs)
     elif provider == "oap":
-        # OAP动态Provider路由 - 根据Hub返回的信息选择真实provider
-        base_url = kwargs.get('base_url', 'http://localhost:3000')
+        base_url = _rewrite_hub_url(kwargs.get('base_url', 'http://localhost:3000'))
         api_key = kwargs.get('api_key', '')
         
         # 处理SecretStr对象 - 转换为普通字符串
