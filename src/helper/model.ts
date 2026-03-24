@@ -64,8 +64,9 @@ export function fromModelConfigToLLMGroup(config: ModelConfig): LLMGroup {
 }
 
 export function fromRawConfigToModelGroupSetting(rawConfig: RawModelConfig): ModelGroupSetting {
-  const { configs, disableDiveSystemPrompt } = rawConfig
   const settings = defaultModelGroupSetting()
+  if (!rawConfig) return settings
+  const { configs, disableDiveSystemPrompt } = rawConfig
   settings.disableDiveSystemPrompt = disableDiveSystemPrompt ?? false
   const allVerifiedList = localStorage.getItem("modelVerify")
 
@@ -474,6 +475,7 @@ export function getTermFromModelConfig(config: ModelConfig): { group: GroupTerm,
 }
 
 export function getTermFromRawModelConfig(config: RawModelConfig): { group: GroupTerm, model: ModelTerm } | null {
+  if (!config) return null
   const { configs, activeProvider } = config
   if (!configs[activeProvider]) {
     return null
