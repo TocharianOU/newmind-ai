@@ -1,9 +1,11 @@
 import React from "react"
-import { useAtom, useSetAtom } from "jotai"
+import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { sidebarVisibleAtom, toggleSidebarAtom } from "../atoms/sidebarState"
+import { oapUserAtom } from "../atoms/oapState"
 import { useTranslation } from "react-i18next"
 import { keymapModalVisibleAtom } from "../atoms/modalState"
 import { openDrawerAtom } from "../atoms/drawerState"
+import { isWeb } from "../ipc/env"
 import ModelSelect from "./ModelSelect"
 import ProjectSelector from "./ProjectSelector"
 import Tooltip from "./Tooltip"
@@ -22,6 +24,8 @@ const Header = ({ showHelpButton = false, showModelSelect = false, showProjectSe
   const setKeymapModalVisible = useSetAtom(keymapModalVisibleAtom)
   const openDrawer = useSetAtom(openDrawerAtom)
   const [isSidebarVisible] = useAtom(sidebarVisibleAtom)
+  const oapUser = useAtomValue(oapUserAtom)
+  const showConsole = isWeb && oapUser?.role === "ADMIN"
 
   const onClose = () => {
     toggleSidebar()
@@ -55,6 +59,20 @@ const Header = ({ showHelpButton = false, showModelSelect = false, showProjectSe
         {showHelpButton && (
           <div className="right-side">
             <UpdateButton />
+            {showConsole && (
+              <Tooltip content={t("header.console", "Admin Console")}>
+                <a
+                  className="settings-btn"
+                  href="/console/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+                  </svg>
+                </a>
+              </Tooltip>
+            )}
             <Tooltip content={t("header.settings")}>
               <button
                 className="settings-btn"

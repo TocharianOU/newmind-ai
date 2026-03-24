@@ -21,7 +21,7 @@ const Layout = ({ children }) => {
       <aside className="sidebar">
         <div className="sidebar-header">
           <img 
-            src="/image/logo_oap.svg" 
+            src={`${import.meta.env.BASE_URL}image/logo_oap.svg`} 
             alt="OAP Platform Logo" 
             className="sidebar-logo"
             style={{ width: '84px', height: '84px', marginRight: '16px', marginTop: '14px', objectFit: 'contain' }}
@@ -126,6 +126,16 @@ const Layout = ({ children }) => {
               {t('navigation.adminBilling', 'Billing Report')}
             </Link>
           )}
+
+          <a
+            href="/app/"
+            className="nav-item"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {t('navigation.chatApp', 'Chat App')}
+          </a>
 
           <a
             href={DOCS_URL}
