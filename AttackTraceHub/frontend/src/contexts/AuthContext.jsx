@@ -27,9 +27,11 @@ export const AuthProvider = ({ children }) => {
     if (urlToken) {
       try {
         localStorage.setItem('authToken', urlToken);
+        localStorage.setItem('oap_access_token', urlToken);
         const urlRefreshToken = urlParams.get('refreshToken');
         if (urlRefreshToken) {
           localStorage.setItem('refreshToken', urlRefreshToken);
+          localStorage.setItem('oap_refresh_token', urlRefreshToken);
         }
 
         // Verify the token by calling /api/v1/user/me
@@ -82,8 +84,10 @@ export const AuthProvider = ({ children }) => {
     });
     if (response.data.success) {
       localStorage.setItem('authToken', response.data.data.accessToken);
+      localStorage.setItem('oap_access_token', response.data.data.accessToken);
       if (response.data.data.refreshToken) {
         localStorage.setItem('refreshToken', response.data.data.refreshToken);
+        localStorage.setItem('oap_refresh_token', response.data.data.refreshToken);
       }
       setUser(response.data.data.user);
       return response.data;
@@ -108,6 +112,7 @@ export const AuthProvider = ({ children }) => {
     const response = await api.post('/api/auth/register', requestData);
     if (response.data.status === 'success') {
       localStorage.setItem('authToken', response.data.data.token);
+      localStorage.setItem('oap_access_token', response.data.data.token);
       setUser(response.data.data.user);
       return response.data;
     }
@@ -122,6 +127,8 @@ export const AuthProvider = ({ children }) => {
     } finally {
       localStorage.removeItem('authToken');
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem('oap_access_token');
+      localStorage.removeItem('oap_refresh_token');
       setUser(null);
       window.location.href = '/console/login';
     }

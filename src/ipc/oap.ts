@@ -37,6 +37,7 @@ export function getWebToken(): string | null {
 
 export function setWebTokens(access: string, refresh?: string) {
   localStorage.setItem(WEB_TOKEN_KEY, access)
+  localStorage.setItem(HUB_TOKEN_KEY, access)
   if (refresh) localStorage.setItem(WEB_REFRESH_TOKEN_KEY, refresh)
 }
 
