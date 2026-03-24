@@ -88,9 +88,14 @@ const ModelSelect = ({ showSettingsButton = true }: ModelSelectProps) => {
           message: t("setup.saveSuccess"),
           type: "success"
         })
+      } else {
+        console.error("Model config save returned unsuccessful:", data)
+        showToast({ message: t("setup.saveFailed") || "Failed to save model config", type: "error" })
+        setModel(_model)
       }
     } catch (error) {
-      console.error(error)
+      console.error("Model config save error:", error)
+      showToast({ message: t("setup.saveFailed") || "Failed to save model config", type: "error" })
       setModel(_model)
     }
   }

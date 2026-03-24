@@ -1,7 +1,7 @@
 import { RouterProvider } from "react-router-dom"
 import { router } from "./router"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
-import { reloadOapConfigAtom, removeOapConfigAtom, writeOapConfigAtom } from "./atoms/configState"
+import { loadConfigAtom, reloadOapConfigAtom, removeOapConfigAtom, writeOapConfigAtom } from "./atoms/configState"
 import { showToastAtom } from "./atoms/toastState"
 import { useEffect, useRef, useState } from "react"
 import { handleGlobalHotkey } from "./atoms/hotkeyState"
@@ -32,6 +32,7 @@ function App() {
   const setOAPUser = useSetAtom(oapUserAtom)
   const setOAPUsage = useSetAtom(oapUsageAtom)
   const updateOAPUsage = useSetAtom(updateOAPUsageAtom)
+  const loadConfig = useSetAtom(loadConfigAtom)
   const writeOapConfig = useSetAtom(writeOapConfigAtom)
   const removeOapConfig = useSetAtom(removeOapConfigAtom)
   const reloadOapConfig = useSetAtom(reloadOapConfigAtom)
@@ -112,12 +113,12 @@ function App() {
   useEffect(() => {
     const unregistLogin = registBackendEvent("login", () => {
       console.info("oap login")
-      // Clear UI state immediately so old account sessions are never shown.
       setCurrentChatId("")
       clearHistories()
       updateOAPUser()
         .catch(console.error)
         .then(() => removeOapConfig())
+        .then(() => loadConfig())
         .then(() => writeOapConfig())
         .then(() => loadCurrentProjectId())
         .then(() => loadMcpConfig())

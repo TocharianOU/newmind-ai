@@ -182,6 +182,10 @@ export const loadConfigAtom = atom(
   async (get, set) => {
     try {
       const response = await apiFetch("/api/config/model")
+      if (!response.ok) {
+        console.warn(`Load config HTTP ${response.status}`)
+        return null
+      }
       const data = await response.json()
       if (data.config) {
         set(configAtom, data.config)
@@ -205,6 +209,11 @@ export const writeRawConfigAtom = atom(
         },
         body: JSON.stringify(rawConfig),
       })
+
+      if (!response.ok) {
+        console.error(`Config save HTTP ${response.status}:`, await response.text().catch(() => ""))
+        return { success: false }
+      }
 
       const data = await response.json()
       if (data.success) {
