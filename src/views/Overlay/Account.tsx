@@ -17,20 +17,21 @@ import EditUsernameModal from "../../components/EditUsernameModal"
 // Web mode: same-origin navigation (Hub is at the same host).
 // Desktop: open in external browser via IPC or window.open.
 const openHubUrl = async (path: string) => {
+  const consoleUrl = `${ENV_CONFIG.HUB_BASE_URL}${path}`;
   if (isWeb) {
-    window.open(path, '_blank');
+    window.open(consoleUrl, '_blank');
     return;
   }
   try {
     const token = await oapGetToken();
-    const url = `${ENV_CONFIG.HUB_BASE_URL}${path}${token ? `?token=${token}` : ''}`;
+    const url = `${consoleUrl}${token ? `?token=${token}` : ''}`;
     if (window.ipcRenderer && window.ipcRenderer.invoke) {
       window.ipcRenderer.invoke('open-external-url', url);
     } else {
       window.open(url, '_blank');
     }
   } catch {
-    window.open(`${ENV_CONFIG.HUB_BASE_URL}${path}`, '_blank');
+    window.open(consoleUrl, '_blank');
   }
 };
 

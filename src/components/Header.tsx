@@ -1,7 +1,6 @@
 import React from "react"
-import { useAtom, useAtomValue, useSetAtom } from "jotai"
+import { useAtom, useSetAtom } from "jotai"
 import { sidebarVisibleAtom, toggleSidebarAtom } from "../atoms/sidebarState"
-import { oapUserAtom } from "../atoms/oapState"
 import { useTranslation } from "react-i18next"
 import { keymapModalVisibleAtom } from "../atoms/modalState"
 import { openDrawerAtom } from "../atoms/drawerState"
@@ -24,8 +23,6 @@ const Header = ({ showHelpButton = false, showModelSelect = false, showProjectSe
   const setKeymapModalVisible = useSetAtom(keymapModalVisibleAtom)
   const openDrawer = useSetAtom(openDrawerAtom)
   const [isSidebarVisible] = useAtom(sidebarVisibleAtom)
-  const oapUser = useAtomValue(oapUserAtom)
-  const showConsole = isWeb && oapUser?.role === "ADMIN"
 
   const onClose = () => {
     toggleSidebar()
@@ -59,8 +56,8 @@ const Header = ({ showHelpButton = false, showModelSelect = false, showProjectSe
         {showHelpButton && (
           <div className="right-side">
             <UpdateButton />
-            {showConsole && (
-              <Tooltip content={t("header.console", "Admin Console")}>
+            {isWeb && (
+              <Tooltip content={t("header.console", "Console")}>
                 <a
                   className="settings-btn"
                   href="/console/"
