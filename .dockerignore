@@ -17,7 +17,7 @@ release/
 dist-web/
 app-dist/
 AttackTraceHub/app-dist/
-AttackTraceHub/frontend/
+AttackTraceHub/frontend/node_modules/
 
 # Node modules (installed fresh inside Docker)
 node_modules/
