@@ -6,15 +6,17 @@ No external dependencies required - uses pure Python cryptography library.
 Key features:
 - Pure Python implementation (no SQLCipher needed)
 - Cross-platform (macOS/Linux/Windows)
-- Keys stored in system keychain
+- Keys stored in system keychain with file-based fallback for headless environments
 - Transparent encryption/decryption via SQLAlchemy events
 """
 
 import base64
+import os
 import secrets
 import subprocess
 import sys
 from logging import getLogger
+from pathlib import Path
 from typing import Optional
 
 from cryptography.fernet import Fernet, InvalidToken
@@ -28,6 +30,8 @@ _FERNET_TOKEN_PREFIX = "gAAAAA"
 # Service name for keychain storage
 KEYCHAIN_SERVICE = "com.attacktrace.database"
 KEYCHAIN_ACCOUNT_PREFIX = "encryption-key"
+
+_KEY_FILE_DIR = Path(os.environ.get("MCP_DATA_DIR", "/app/data"))
 
 
 class DatabaseEncryption:
@@ -129,48 +133,72 @@ class DatabaseEncryption:
             logger.error("[Encryption] Unexpected decryption error for project '%s': %s", self.project_id, e)
             return ""
 
+    # ── File-based fallback (Docker / headless) ────────────────────────
+
+    @property
+    def _key_file_path(self) -> Path:
+        return _KEY_FILE_DIR / f".encryption-key-{self.project_id}"
+
+    def _get_key_from_file(self) -> Optional[str]:
+        try:
+            p = self._key_file_path
+            if p.exists():
+                key = p.read_text(encoding="utf-8").strip()
+                if key:
+                    logger.info("[Encryption] Retrieved key from file fallback for project '%s'", self.project_id)
+                    return key
+        except Exception as e:
+            logger.debug("[Encryption] File-based key read failed: %s", e)
+        return None
+
+    def _store_key_to_file(self, key: str) -> bool:
+        try:
+            p = self._key_file_path
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(key, encoding="utf-8")
+            p.chmod(0o600)
+            logger.info("[Encryption] Stored key via file fallback for project '%s'", self.project_id)
+            return True
+        except Exception as e:
+            logger.error("[Encryption] File-based key write failed: %s", e)
+            return False
+
+    # ── Key retrieval / storage dispatch ──────────────────────────────
+
     def _get_key_from_keychain(self) -> Optional[str]:
-        """Retrieve encryption key from system keychain.
-        
-        Returns:
-            Base64-encoded Fernet key or None if not found
-        """
+        """Retrieve encryption key from system keychain, falling back to file."""
+        key = None
         try:
             if sys.platform == "darwin":
-                return self._get_key_macos()
+                key = self._get_key_macos()
             elif sys.platform == "win32":
-                return self._get_key_windows()
+                key = self._get_key_windows()
             elif sys.platform.startswith("linux"):
-                return self._get_key_linux()
-            else:
-                logger.warning(f"[Encryption] Unsupported platform: {sys.platform}")
-                return None
+                key = self._get_key_linux()
         except Exception as e:
-            logger.error(f"[Encryption] Failed to retrieve key from keychain: {e}")
-            return None
+            logger.debug("[Encryption] Keychain read failed: %s", e)
+
+        if key is None:
+            key = self._get_key_from_file()
+        return key
 
     def _store_key_in_keychain(self, key: str) -> bool:
-        """Store encryption key in system keychain.
-        
-        Args:
-            key: Base64-encoded Fernet key
-            
-        Returns:
-            True if successful, False otherwise
-        """
+        """Store encryption key in system keychain, falling back to file."""
+        stored = False
         try:
             if sys.platform == "darwin":
-                return self._store_key_macos(key)
+                stored = self._store_key_macos(key)
             elif sys.platform == "win32":
-                return self._store_key_windows(key)
+                stored = self._store_key_windows(key)
             elif sys.platform.startswith("linux"):
-                return self._store_key_linux(key)
-            else:
-                logger.warning(f"[Encryption] Unsupported platform: {sys.platform}")
-                return False
+                stored = self._store_key_linux(key)
         except Exception as e:
-            logger.error(f"[Encryption] Failed to store key in keychain: {e}")
-            return False
+            logger.debug("[Encryption] Keychain write failed: %s", e)
+
+        if not stored:
+            logger.info("[Encryption] System keychain unavailable, using file-based fallback")
+            stored = self._store_key_to_file(key)
+        return stored
 
     # macOS Keychain implementation
     def _get_key_macos(self) -> Optional[str]:
