@@ -52,9 +52,13 @@ class CommandAliasManager:
 
         if env_config:
             config_content = env_config
-        else:
+        elif Path(self._config_path).exists():
             with Path(self._config_path).open(encoding="utf-8") as f:
                 config_content = f.read()
+        else:
+            logger.info("Command alias config not found at %s, using empty defaults", self._config_path)
+            self._current_config = {}
+            return
 
         config_dict = CommandAliasConfig.model_validate_json(config_content)
         self._current_config = config_dict.root

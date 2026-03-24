@@ -37,7 +37,9 @@ RUN uv pip install --no-cache --no-deps .
 
 # Persistent volume for config, SQLite DB, uploads, cache, logs
 VOLUME /app/data
-RUN mkdir -p /app/data && echo '[]' > /app/data/plugin_config.json
+RUN mkdir -p /app/data \
+    && echo '[]' > /app/data/plugin_config.json \
+    && echo '{}' > /app/data/command_alias.json
 
 ENV RESOURCE_DIR=/app/data
 ENV ATTACKTRACE_CONFIG_DIR=/app/data

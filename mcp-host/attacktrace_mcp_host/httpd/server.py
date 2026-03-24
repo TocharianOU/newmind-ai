@@ -301,11 +301,7 @@ class AttackTraceHostAPI(FastAPI):
         if self._service_config_manager.current_setting is None:
             raise ValueError("MCPServer config manager is not initialized")
 
-        if self._command_alias_config_manager.current_config is None:
-            raise ValueError("Command alias config manager is not initialized")
-
-        if self._model_config_manager.full_config is None:
-            raise ValueError("Model config manager is not initialized")
+        command_aliases = self._command_alias_config_manager.current_config or {}
 
         effective_manager = mcp_manager or self._mcp_server_config_manager
 
@@ -317,7 +313,7 @@ class AttackTraceHostAPI(FastAPI):
 
             # Apply command alias
             if server_config.command:
-                command = self._command_alias_config_manager.current_config.get(
+                command = command_aliases.get(
                     server_config.command, server_config.command
                 )
             else:
@@ -339,9 +335,10 @@ class AttackTraceHostAPI(FastAPI):
 
         logger.debug("got %s mcp servers in config", len(mcp_servers))
 
+        full_config = self._model_config_manager.full_config
         return HostConfig(
             llm=model_setting,
-            embed=self._model_config_manager.full_config.embed_config,
+            embed=full_config.embed_config if full_config else None,
             checkpointer=self._service_config_manager.current_setting.checkpointer,
             mcp_servers=mcp_servers,
             log_config=self._service_config_manager.current_setting.mcp_server_log,
