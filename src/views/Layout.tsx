@@ -12,6 +12,7 @@ import KeymapModal from "../components/Modal/KeymapModal"
 import CodeModal from "./Chat/CodeModal"
 import { overlaysAtom } from "../atoms/layerState"
 import { isLoggedInOAPAtom } from "../atoms/oapState"
+import { isWeb } from "../ipc/env"
 import Login from "./Login"
 
 const Layout = () => {
@@ -38,10 +39,9 @@ const Layout = () => {
   return (
     <div className="app-container" data-theme={theme === "system" ? systemTheme : theme}>
       <div className="app-content">
-        {!isConfigNotInitialized && <HistorySidebar />}
+        {(!isConfigNotInitialized || isWeb) && <HistorySidebar />}
         <div className="outlet-container">
-          {/* Header 始终显示，包括侧边栏切换按钮 */}
-          {!isConfigNotInitialized && <Header showHelpButton={overlays.length === 0} showModelSelect={overlays.length === 0} showProjectSelector={true} />}
+          {(!isConfigNotInitialized || isWeb) && <Header showHelpButton={overlays.length === 0} showModelSelect={overlays.length === 0} showProjectSelector={true} />}
           <Outlet />
         </div>
         <CodeModal />
