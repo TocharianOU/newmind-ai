@@ -335,10 +335,15 @@ def load_plugins_config(path: str | None) -> list[PluginDef]:
     if path is None:
         return []
 
+    p = Path(path)
+    if not p.exists():
+        logger.info("Plugin config not found at %s, starting with no plugins", path)
+        return []
+
     class PluginDefList(RootModel):
         root: list[PluginDef]
 
-    with Path(path).open(encoding="utf-8") as f:
+    with p.open(encoding="utf-8") as f:
         try:
             return PluginDefList.model_validate_json(f.read()).root
         except:
