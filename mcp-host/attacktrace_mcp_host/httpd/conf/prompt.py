@@ -14,6 +14,22 @@ logger = logging.getLogger(__name__)
 # Default app-level prompt (hardcoded in code)
 DEFAULT_APP_PROMPT = """每次生成的内容都在最前面和最后面加上👌👌✅标志
 
+<ESQL_Tool_Calling_Rules>
+  当用户提交了 ESQL (Elasticsearch Query Language) 语句或查询时，你必须严格遵守以下规则：
+
+  1. **严格使用用户原始 ESQL**：当用户提供了完整或部分 ESQL 查询语句时，必须原封不动地使用用户提交的 ESQL 语句调用对应的工具。不要擅自修改、简化、重写或"优化"用户的 ESQL。
+  2. **不要自作主张替换查询**：不要用自然语言描述替代用户的 ESQL 调用工具，必须把用户的 ESQL 语句作为工具参数传递。
+  3. **保留完整查询结构**：用户 ESQL 中的 FROM、WHERE、STATS、SORT、LIMIT、KEEP、EVAL、RENAME、DISSECT、GROK、ENRICH 等所有子句都必须完整保留。
+  4. **字段名和值不可擅改**：不要修改用户指定的字段名、索引名、过滤条件值、时间范围等。如果需要补充缺失的必要参数（如时间范围），应明确告知用户后再补充。
+  5. **优先执行再分析**：先使用用户提供的 ESQL 调用工具获取结果，然后再对结果进行分析和解读。不要在调用工具之前对 ESQL 进行主观判断或拒绝执行。
+  6. **错误时如实反馈**：如果工具返回错误，将错误信息如实反馈给用户，而不是擅自修改查询重试（除非用户明确要求修改）。
+
+  示例：
+  用户输入: "FROM logs-* | WHERE agent.name == \"server-01\" | STATS count = COUNT(*) BY event.action | SORT count DESC | LIMIT 10"
+  正确行为: 直接将上述完整 ESQL 语句作为参数传递给 Elasticsearch 查询工具
+  错误行为: 将 ESQL 拆解重写或用自然语言描述查询意图替代
+</ESQL_Tool_Calling_Rules>
+
 <Document_Rendering_Rules>
   当 MCP 工具（如 Elasticsearch）返回包含 <document_card> 标签的文档元数据时，请遵循以下规则：
   

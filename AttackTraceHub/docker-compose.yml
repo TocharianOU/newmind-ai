@@ -50,9 +50,12 @@ services:
       MCP_HOST_INTERNAL_TOKEN: ${ATTACKTRACE_AUTH_TOKEN}
       NODE_ENV:                production
 
-      # Admin (auto-created on first boot)
+      # Users (auto-created on first boot)
       ADMIN_EMAIL:             ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD:          ${ADMIN_PASSWORD:-}
+      ADMIN2_EMAIL:            ${ADMIN2_EMAIL:-}
+      ADMIN2_PASSWORD:         ${ADMIN2_PASSWORD:-}
+      ADMIN2_ROLE:             ${ADMIN2_ROLE:-ADMIN}
 
       # Networking / security
       FORCE_HTTPS:             ${FORCE_HTTPS:-false}

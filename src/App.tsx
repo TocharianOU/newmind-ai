@@ -60,18 +60,17 @@ function App() {
   }, [modelSetting])
 
   useEffect(() => {
-    // CRITICAL: Load current project ID FIRST before any other API calls
     const init = async () => {
       console.log("[App] Starting initialization...")
       await loadCurrentProjectId()
       console.log("[App] Project ID loaded, now loading configs and tools...")
-      // Only load configs AFTER project ID is set
+      await loadConfig()
       loadMcpConfig()
       loadTools()
       console.log("[App] Initialization complete")
     }
     init()
-  }, [loadCurrentProjectId, loadTools, loadMcpConfig])
+  }, [loadCurrentProjectId, loadConfig, loadTools, loadMcpConfig])
 
   // init app
   useEffect(() => {
@@ -186,9 +185,9 @@ function App() {
         }
 
         if (user && queryGroup({ modelProvider: "oap" }, modelGroups).length === 0) {
-          writeOapConfig().catch(console.error)
+          loadConfig().then(() => writeOapConfig()).catch(console.error)
         } else if (user) {
-          reloadOapConfig().catch(console.error)
+          loadConfig().then(() => reloadOapConfig()).catch(console.error)
         } else {
           removeOapConfig()
         }

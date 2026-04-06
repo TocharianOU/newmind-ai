@@ -34,12 +34,25 @@ export const currentProjectAtom = atom<Project | null>(
   }
 )
 
-// Load current project ID
+// Load current project ID, auto-resolving the isDefault project on first visit
 export const loadCurrentProjectIdAtom = atom(
   null,
   async (get, set) => {
     try {
-      const projectId = await getCurrentProject()
+      let projectId = await getCurrentProject()
+
+      if (projectId === "default") {
+        const result = await projectList()
+        if (result.projects?.length > 0) {
+          const defaultProject = result.projects.find(p => p.isDefault) || result.projects[0]
+          if (defaultProject.id !== "default") {
+            projectId = defaultProject.id
+            await setCurrentProject(projectId)
+          }
+          set(projectsAtom, result.projects)
+        }
+      }
+
       console.log(`[ProjectState] Loaded project ID: ${projectId}`)
       set(currentProjectIdAtom, projectId)
       return projectId

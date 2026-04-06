@@ -33,13 +33,47 @@ if [ -n "$ADMIN_EMAIL" ] && [ -n "$ADMIN_PASSWORD" ]; then
             id: randomUUID(), email, username: 'Admin',
             password: hashed, role: 'ADMIN', updatedAt: now,
             Subscription: { create: { id: randomUUID(), planName: 'ENTERPRISE', isDefaultPlan: false, isActive: true, updatedAt: now } },
-            Project: { create: { id: randomUUID(), name: 'Default', description: 'Default project', isDefault: true, updatedAt: now } }
+            Project: { create: { id: 'default', name: 'Default', description: 'Default project', isDefault: true, updatedAt: now } }
           }
         });
         console.log('[entrypoint] Created admin: ' + email);
       }
     } catch (e) {
       console.error('[entrypoint] Admin seed failed:', e.message);
+    } finally {
+      await prisma.\$disconnect();
+    }
+  "
+fi
+
+# Auto-create second user when ADMIN2_EMAIL is set
+if [ -n "$ADMIN2_EMAIL" ] && [ -n "$ADMIN2_PASSWORD" ]; then
+  node --input-type=module -e "
+    import { PrismaClient } from '@prisma/client';
+    import bcrypt from 'bcryptjs';
+    import { randomUUID } from 'node:crypto';
+    const prisma = new PrismaClient();
+    try {
+      const email = process.env.ADMIN2_EMAIL;
+      const role = process.env.ADMIN2_ROLE || 'ADMIN';
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing) {
+        console.log('[entrypoint] User already exists: ' + email);
+      } else {
+        const hashed = await bcrypt.hash(process.env.ADMIN2_PASSWORD, 10);
+        const now = new Date();
+          await prisma.user.create({
+          data: {
+            id: randomUUID(), email, username: email.split('@')[0],
+            password: hashed, role, updatedAt: now,
+            Subscription: { create: { id: randomUUID(), planName: 'ENTERPRISE', isDefaultPlan: false, isActive: true, updatedAt: now } },
+            Project: { create: { id: randomUUID(), name: 'Default', description: 'Default project', isDefault: true, updatedAt: now } }
+          }
+        });
+        console.log('[entrypoint] Created user: ' + email + ' (' + role + ')');
+      }
+    } catch (e) {
+      console.error('[entrypoint] User2 seed failed:', e.message);
     } finally {
       await prisma.\$disconnect();
     }

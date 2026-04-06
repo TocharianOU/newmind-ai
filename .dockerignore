@@ -13,6 +13,9 @@ src-tauri/
 release/
 *.zip
 
+
+flask_route
+
 # Pre-existing build artifacts
 dist-web/
 app-dist/
