@@ -62,7 +62,7 @@ if [ -n "$ADMIN2_EMAIL" ] && [ -n "$ADMIN2_PASSWORD" ]; then
       } else {
         const hashed = await bcrypt.hash(process.env.ADMIN2_PASSWORD, 10);
         const now = new Date();
-          await prisma.user.create({
+        await prisma.user.create({
           data: {
             id: randomUUID(), email, username: email.split('@')[0],
             password: hashed, role, updatedAt: now,
