@@ -1,1 +1,1 @@
-{"activeProvider":"act","enableTools":true,"configs":{"act":{"modelProvider":"oap","model":"medium-agent","apiKey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI3NDA3YmRlYi01YjE0LTRjMTQtODBjOC1kMGRiZTYzNzBkZTciLCJpYXQiOjE3NzQwMDkyNzMsImV4cCI6MTc3NDYxNDA3M30.Qk7Twd7O7WSmWCbzBXtCgI_XWNjG4ngXrRCLzpzeq2s","configuration":{"baseURL":"http://localhost:23000/api/v1"},"active":true,"checked":false,"toolsInPrompt":false,"disable_streaming":false}},"disableDiveSystemPrompt":false}
+{}

@@ -43,48 +43,51 @@ An AI-powered operations and security intelligence platform. Combines a multi-pr
 
 ---
 
-## Quick Start (Docker)
+## Server Deployment (Docker)
 
-### 1. Prerequisites
-
-- Docker Engine 24+
-- Docker Compose v2
-- Git
-
-### 2. Clone and configure
+### One-command startup (existing installation)
 
 ```bash
-# Clone the repository (contact your administrator for the repo URL)
-cd newmind-ai/oaphub
+cd oaphub/
+docker compose up -d
 ```
 
-Create `.env` in `oaphub/`:
+### First-time setup
+
+**Step 1 — Create persistent volumes**
+
+```bash
+docker volume create oaphub_postgres_data
+docker volume create oaphub_mcp_data
+```
+
+**Step 2 — Create `oaphub/.env`**
 
 ```env
-# Database
+# ── Required ──────────────────────────────────────────────
 POSTGRES_PASSWORD=your_strong_password_here
 
-# JWT signing key (generate with: openssl rand -hex 32)
+# JWT signing key — generate with: openssl rand -hex 32
 JWT_SECRET=your_jwt_secret_here
 
-# Shared secret between Hub and MCP Host (generate with: openssl rand -hex 32)
+# Shared secret between Hub and MCP Host
 OAP_AUTH_TOKEN=your_auth_token_here
 
-# Initial admin account (created automatically on first boot)
+# ── Bootstrap admin accounts ───────────────────────────────
 ADMIN_EMAIL=admin@yourdomain.com
 ADMIN_PASSWORD=your_admin_password
 
-# Optional second admin / operator account
+# Optional second account
 ADMIN2_EMAIL=operator@yourdomain.com
 ADMIN2_PASSWORD=your_operator_password
 ADMIN2_ROLE=ADMIN
 
-# Networking
+# ── Networking ─────────────────────────────────────────────
 PORT=23000
 ALLOWED_ORIGINS=https://yourdomain.com
 HUB_FRONTEND_URL=https://yourdomain.com
 
-# Feature flags
+# ── Feature flags ──────────────────────────────────────────
 DEPLOYMENT_MODE=enterprise   # enterprise | saas
 SSO_ENABLED=false
 BILLING_ENABLED=false
@@ -92,32 +95,25 @@ INVITE_CODE_ENABLED=false
 LICENSE_ENABLED=false
 ```
 
-### 3. Create Docker volumes (first time only)
+**Step 3 — Build images and start**
 
 ```bash
-docker volume create oaphub_postgres_data
-docker volume create oaphub_mcp_data
-```
-
-### 4. Build and start
-
-```bash
-# From the oaphub/ directory
+cd oaphub/
 docker compose build
 docker compose up -d
 ```
 
-### 5. Access
+**Step 4 — Access**
 
 | URL | Description |
 |-----|-------------|
 | `http://your-server:23000/app/` | NewMind AI Chat UI |
 | `http://your-server:23000/console/` | OAP Hub Admin Console |
-| `http://your-server:23000/api/health` | Health check |
+| `http://your-server:23000/api/health` | Health check endpoint |
 
----
+> Database migrations run automatically on every startup via `prisma migrate deploy`.
 
-## Update / Redeploy
+### Update / Redeploy
 
 ```bash
 cd oaphub/
@@ -126,7 +122,19 @@ docker compose build --no-cache
 docker compose up -d
 ```
 
-Database migrations run automatically on startup via `prisma migrate deploy`.
+### Useful Docker commands
+
+```bash
+# View live logs
+docker compose logs -f hub
+docker compose logs -f mcp-host
+
+# Stop all services
+docker compose down
+
+# Stop and wipe database (destructive!)
+docker compose down -v
+```
 
 ---
 
@@ -288,6 +296,83 @@ SSO_WECHATWORK_SECRET=your_app_secret
 | `SSO_WECHATWORK_CORP_ID` | WeCom Corp ID |
 | `SSO_WECHATWORK_AGENT_ID` | WeCom Agent ID |
 | `SSO_WECHATWORK_SECRET` | WeCom app secret |
+
+---
+
+## Desktop App Packaging
+
+The Electron desktop app bundles a self-contained Python runtime, `uv`, and the MCP Host — users don't need to install anything extra.
+
+### Prerequisites
+
+- Node.js 20+, npm
+- All dependencies: `npm install`
+
+### macOS (DMG + ZIP)
+
+```bash
+# Download platform binaries (Node, uv, Python) for both architectures
+npm run download:darwin-bin
+
+# Build — produces arm64 and x64 DMG + ZIP in release/<version>/
+npm run package:darwin
+
+# Skip code signing (for internal/test builds)
+npm run package:darwin:unsigned
+```
+
+To build a single architecture:
+
+```bash
+# Apple Silicon only
+npm run package:darwin-dmg:arm64:unsigned
+
+# Intel only
+npm run package:darwin-dmg:x64:unsigned
+```
+
+Output: `release/<version>/NewMind AI-<version>-mac-arm64.dmg` etc.
+
+### Linux (AppImage + tar.gz)
+
+```bash
+# Download uv and Python for Linux x64
+npm run download:linux-bin
+
+# Build AppImage
+npm run package:linux-appImage
+
+# Build tar.gz archive
+npm run package:linux-tar
+```
+
+Output: `release/<version>/NewMind AI-<version>-linux-x64.AppImage`
+
+> The Linux build bundles the full Python runtime and MCP Host source.
+> Run `chmod +x NewMind\ AI-*.AppImage && ./NewMind\ AI-*.AppImage` to launch.
+
+### Windows (NSIS installer + Portable)
+
+```bash
+# Must be run inside Docker on a Linux host (cross-compilation)
+npm run docker:build-win
+
+# Or natively on Windows:
+npm run package:windows
+```
+
+Output: `release/<version>/NewMind AI-<version>-win-x64-setup.exe` and `-portable.exe`
+
+### Build internals
+
+Each platform build runs these steps automatically:
+
+1. **Download binaries** — fetches the right Node.js, `uv`, and standalone Python for the target platform into `bin/`
+2. **Build MCP Echo server** — compiles the bundled test MCP server in `prebuilt/scripts/`
+3. **Compile TypeScript** — `tsc -b`
+4. **Download host deps** — runs `scripts/download-host-deps.ts` to prepare MCP Host dependencies
+5. **Vite build** — bundles the React UI (`vite.config.electron.ts`)
+6. **electron-builder** — packages everything into the final installer/archive
 
 ---
 
