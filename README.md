@@ -33,192 +33,126 @@ An AI-powered operations and security intelligence platform. Combines a multi-pr
                          └──────────────────────────────┘
 ```
 
-**Three runtime services (all managed by Docker Compose):**
-
-| Service | Technology | Default Port |
-|---------|-----------|-------------|
-| `hub` | Node.js 20, Express, Prisma, PostgreSQL | 23000 (external) |
-| `mcp-host` | Python 3.12, FastAPI, LangChain/LangGraph | 61990 (internal) |
+| Service | Technology | Port |
+|---------|-----------|------|
+| `hub` | Node.js 20, Express, Prisma | 23000 (external) |
+| `mcp-host` | Python 3.12, FastAPI, LangChain | 61990 (internal) |
 | `postgres` | PostgreSQL 16 | 5432 (internal) |
 
 ---
 
 ## Server Deployment (Docker)
 
-### One-command startup (existing installation)
-
-```bash
-cd oaphub/
-docker compose up -d
-```
-
 ### First-time setup
 
-**Step 1 — Create persistent volumes**
-
 ```bash
+# 1. Create persistent volumes
 docker volume create oaphub_postgres_data
 docker volume create oaphub_mcp_data
 ```
 
-**Step 2 — Create `oaphub/.env`**
+Create `oaphub/.env`:
 
 ```env
-# ── Required ──────────────────────────────────────────────
+# Required
 POSTGRES_PASSWORD=your_strong_password_here
+JWT_SECRET=your_jwt_secret_here          # openssl rand -hex 32
+OAP_AUTH_TOKEN=your_auth_token_here      # openssl rand -hex 32
 
-# JWT signing key — generate with: openssl rand -hex 32
-JWT_SECRET=your_jwt_secret_here
-
-# Shared secret between Hub and MCP Host
-OAP_AUTH_TOKEN=your_auth_token_here
-
-# ── Bootstrap admin accounts ───────────────────────────────
+# Bootstrap admin (auto-created on first boot)
 ADMIN_EMAIL=admin@yourdomain.com
 ADMIN_PASSWORD=your_admin_password
 
-# Optional second account
-ADMIN2_EMAIL=operator@yourdomain.com
-ADMIN2_PASSWORD=your_operator_password
-ADMIN2_ROLE=ADMIN
-
-# ── Networking ─────────────────────────────────────────────
+# Networking
 PORT=23000
 ALLOWED_ORIGINS=https://yourdomain.com
 HUB_FRONTEND_URL=https://yourdomain.com
 
-# ── Feature flags ──────────────────────────────────────────
-DEPLOYMENT_MODE=enterprise   # enterprise | saas
+# SSO (disabled by default)
 SSO_ENABLED=false
-BILLING_ENABLED=false
-INVITE_CODE_ENABLED=false
-LICENSE_ENABLED=false
+DEPLOYMENT_MODE=enterprise
 ```
 
-**Step 3 — Build images and start**
-
 ```bash
+# 2. Build and start
 cd oaphub/
 docker compose build
 docker compose up -d
 ```
 
-**Step 4 — Access**
-
 | URL | Description |
 |-----|-------------|
-| `http://your-server:23000/app/` | NewMind AI Chat UI |
-| `http://your-server:23000/console/` | OAP Hub Admin Console |
-| `http://your-server:23000/api/health` | Health check endpoint |
-
-> Database migrations run automatically on every startup via `prisma migrate deploy`.
+| `:23000/app/` | NewMind AI Chat UI |
+| `:23000/console/` | OAP Hub Admin Console |
+| `:23000/api/health` | Health check |
 
 ### Update / Redeploy
 
 ```bash
 cd oaphub/
-git pull
 docker compose build --no-cache
 docker compose up -d
 ```
 
-### Useful Docker commands
+### Common commands
 
 ```bash
-# View live logs
-docker compose logs -f hub
-docker compose logs -f mcp-host
-
-# Stop all services
-docker compose down
-
-# Stop and wipe database (destructive!)
-docker compose down -v
+docker compose logs -f hub          # live logs
+docker compose down                 # stop
+docker compose down -v              # stop + wipe data
 ```
 
 ---
 
 ## SSO Configuration
 
-NewMind AI supports **Google**, **Azure AD**, **AWS Cognito**, and **WeCom (企业微信)** as SSO providers.
-
-Set `SSO_ENABLED=true` in `.env` plus the provider-specific variables below.
+Set `SSO_ENABLED=true` in `.env` plus the provider variables below.
 
 ### Google OAuth 2.0
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services** → **Credentials** → **Create Credentials** → **OAuth 2.0 Client ID**
-2. Application type: **Web application**
-3. Add Authorized redirect URI:
-   ```
-   https://yourdomain.com/api/auth/sso/google/callback
-   ```
-4. Add to `.env`:
+1. [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services** → **Credentials** → **Create OAuth 2.0 Client ID**
+2. Redirect URI: `https://yourdomain.com/api/auth/sso/google/callback`
 
 ```env
-SSO_ENABLED=true
 SSO_CALLBACK_BASE_URL=https://yourdomain.com
-SSO_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
-SSO_GOOGLE_CLIENT_SECRET=your_google_client_secret
+SSO_GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com
+SSO_GOOGLE_CLIENT_SECRET=xxxx
 ```
 
----
+### Azure AD (Microsoft Entra ID)
 
-### Azure Active Directory (Microsoft Entra ID)
-
-1. Go to [Azure Portal](https://portal.azure.com/) → **Azure Active Directory** → **App registrations** → **New registration**
-2. Set redirect URI:
-   ```
-   https://yourdomain.com/api/auth/sso/azure/callback
-   ```
-3. Note the **Application (client) ID** and **Directory (tenant) ID**
-4. Go to **Certificates & secrets** → create a new client secret
-5. Add to `.env`:
+1. [Azure Portal](https://portal.azure.com/) → **App registrations** → **New registration**
+2. Redirect URI: `https://yourdomain.com/api/auth/sso/azure/callback`
+3. Note the **Application (client) ID**, **Directory (tenant) ID**, and create a client secret.
 
 ```env
-SSO_ENABLED=true
 SSO_CALLBACK_BASE_URL=https://yourdomain.com
 SSO_AZURE_ENABLED=true
 SSO_AZURE_TENANT_ID=your_tenant_id
-SSO_AZURE_CLIENT_ID=your_application_client_id
+SSO_AZURE_CLIENT_ID=your_client_id
 SSO_AZURE_CLIENT_SECRET=your_client_secret
 ```
 
-Azure uses standard OIDC discovery (`/.well-known/openid-configuration`) — no extra endpoint configuration needed.
-
----
-
 ### AWS Cognito
 
-1. Go to **AWS Console** → **Cognito** → **User Pools** → your pool → **App integration**
-2. Create an **App client** with OAuth 2.0 enabled
-3. Set callback URL:
-   ```
-   https://yourdomain.com/api/auth/sso/aws/callback
-   ```
-4. Add to `.env`:
+1. **AWS Console** → **Cognito** → **User Pools** → **App integration** → create App client
+2. Callback URL: `https://yourdomain.com/api/auth/sso/aws/callback`
 
 ```env
-SSO_ENABLED=true
 SSO_CALLBACK_BASE_URL=https://yourdomain.com
 SSO_AWS_ENABLED=true
 SSO_AWS_REGION=us-east-1
 SSO_AWS_USER_POOL_ID=us-east-1_xxxxxxxxx
-SSO_AWS_CLIENT_ID=your_cognito_app_client_id
-SSO_AWS_CLIENT_SECRET=your_cognito_app_client_secret
+SSO_AWS_CLIENT_ID=your_client_id
+SSO_AWS_CLIENT_SECRET=your_client_secret
 ```
 
----
+### WeCom (企业微信)
 
-### WeCom / WeChatWork (企业微信)
-
-1. 登录[企业微信管理后台](https://work.weixin.qq.com/wework_admin/) → **应用管理** → 创建或选择应用
-2. 在应用详情中找到 **AgentId** 和 **Secret**
-3. 设置网页授权回调域名为你的服务器域名
-4. 在**企业信息**中获取 **企业 CorpID**
-5. 添加到 `.env`：
+1. 企业微信管理后台 → **应用管理** → 选择应用，获取 **AgentId** 和 **Secret**
+2. 设置网页授权回调域名为你的服务器域名，从**企业信息**获取 **CorpID**
 
 ```env
-SSO_ENABLED=true
 SSO_CALLBACK_BASE_URL=https://yourdomain.com
 SSO_WECHATWORK_ENABLED=true
 SSO_WECHATWORK_CORP_ID=your_corp_id
@@ -226,185 +160,47 @@ SSO_WECHATWORK_AGENT_ID=your_agent_id
 SSO_WECHATWORK_SECRET=your_app_secret
 ```
 
----
-
-### SSO Notes
-
-- When SSO is enabled, users can log in via the SSO button on the login page. On first login, a new account is automatically created and linked to the SSO identity.
-- Existing email/password accounts can also be linked to an SSO identity automatically if the email matches.
-- SSO-only users have no password set and can only log in via SSO.
-- If you use a proxy server, set `HTTP_PROXY` or `HTTPS_PROXY` in the Hub environment — the Google and OIDC providers will automatically route through it.
-
----
-
-## Environment Variables Reference
-
-### Required
-
-| Variable | Description |
-|----------|-------------|
-| `POSTGRES_PASSWORD` | PostgreSQL superuser password |
-| `JWT_SECRET` | Secret key for signing JWT tokens (min 32 chars) |
-| `OAP_AUTH_TOKEN` | Shared secret between Hub and MCP Host |
-
-### Networking
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `23000` | External port for the Hub |
-| `ALLOWED_ORIGINS` | _(empty)_ | Comma-separated CORS allowed origins |
-| `HUB_FRONTEND_URL` | _(empty)_ | Public base URL, used for SSO callbacks |
-| `FORCE_HTTPS` | `false` | Redirect HTTP → HTTPS |
-
-### Bootstrap Users
-
-| Variable | Description |
-|----------|-------------|
-| `ADMIN_EMAIL` | Email for the primary admin (created on first boot) |
-| `ADMIN_PASSWORD` | Password for the primary admin |
-| `ADMIN2_EMAIL` | Email for a second user (optional) |
-| `ADMIN2_PASSWORD` | Password for the second user |
-| `ADMIN2_ROLE` | Role for the second user: `ADMIN` or `USER` |
-
-### Feature Flags
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DEPLOYMENT_MODE` | `enterprise` | `enterprise` (all features, no billing) or `saas` |
-| `SSO_ENABLED` | `false` | Enable SSO login |
-| `BILLING_ENABLED` | `false` | Enable Stripe billing |
-| `INVITE_CODE_ENABLED` | `false` | Require invite code for registration |
-| `LICENSE_ENABLED` | `false` | Enable license key enforcement |
-
-### SSO
-
-| Variable | Description |
-|----------|-------------|
-| `SSO_CALLBACK_BASE_URL` | Public base URL for OAuth callbacks (e.g. `https://yourdomain.com`) |
-| `SSO_GOOGLE_CLIENT_ID` | Google OAuth client ID |
-| `SSO_GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
-| `SSO_AZURE_ENABLED` | Enable Azure AD SSO (`true`/`false`) |
-| `SSO_AZURE_TENANT_ID` | Azure tenant ID |
-| `SSO_AZURE_CLIENT_ID` | Azure app client ID |
-| `SSO_AZURE_CLIENT_SECRET` | Azure app client secret |
-| `SSO_AWS_ENABLED` | Enable AWS Cognito SSO |
-| `SSO_AWS_REGION` | AWS region |
-| `SSO_AWS_USER_POOL_ID` | Cognito user pool ID |
-| `SSO_AWS_CLIENT_ID` | Cognito app client ID |
-| `SSO_AWS_CLIENT_SECRET` | Cognito app client secret |
-| `SSO_WECHATWORK_ENABLED` | Enable WeCom SSO |
-| `SSO_WECHATWORK_CORP_ID` | WeCom Corp ID |
-| `SSO_WECHATWORK_AGENT_ID` | WeCom Agent ID |
-| `SSO_WECHATWORK_SECRET` | WeCom app secret |
+> On first SSO login, an account is created automatically. Existing accounts are linked by matching email. Use `HTTP_PROXY` / `HTTPS_PROXY` if the server needs a proxy to reach SSO providers.
 
 ---
 
 ## Desktop App Packaging
 
-The Electron desktop app bundles a self-contained Python runtime, `uv`, and the MCP Host — users don't need to install anything extra.
+The Electron app bundles a self-contained Python runtime, `uv`, and MCP Host — no dependencies required on the end user's machine.
 
-### Prerequisites
+**Prerequisites:** Node.js 20+, run `npm install` first.
 
-- Node.js 20+, npm
-- All dependencies: `npm install`
-
-### macOS (DMG + ZIP)
+### macOS
 
 ```bash
-# Download platform binaries (Node, uv, Python) for both architectures
-npm run download:darwin-bin
-
-# Build — produces arm64 and x64 DMG + ZIP in release/<version>/
-npm run package:darwin
-
-# Skip code signing (for internal/test builds)
+# Unsigned build (arm64 + x64 DMG + ZIP)
 npm run package:darwin:unsigned
-```
 
-To build a single architecture:
-
-```bash
-# Apple Silicon only
+# Single arch
 npm run package:darwin-dmg:arm64:unsigned
-
-# Intel only
 npm run package:darwin-dmg:x64:unsigned
 ```
 
-Output: `release/<version>/NewMind AI-<version>-mac-arm64.dmg` etc.
+Output: `release/<version>/NewMind AI-<version>-mac-arm64.dmg`
 
-### Linux (AppImage + tar.gz)
+### Linux
 
 ```bash
-# Download uv and Python for Linux x64
-npm run download:linux-bin
-
-# Build AppImage
-npm run package:linux-appImage
-
-# Build tar.gz archive
-npm run package:linux-tar
+npm run package:linux-appImage   # → AppImage
+npm run package:linux-tar        # → tar.gz
 ```
 
 Output: `release/<version>/NewMind AI-<version>-linux-x64.AppImage`
 
-> The Linux build bundles the full Python runtime and MCP Host source.
-> Run `chmod +x NewMind\ AI-*.AppImage && ./NewMind\ AI-*.AppImage` to launch.
-
-### Windows (NSIS installer + Portable)
+### Windows
 
 ```bash
-# Must be run inside Docker on a Linux host (cross-compilation)
-npm run docker:build-win
-
-# Or natively on Windows:
+npm run docker:build-win         # cross-compile via Docker (on Linux host)
+# or natively on Windows:
 npm run package:windows
 ```
 
-Output: `release/<version>/NewMind AI-<version>-win-x64-setup.exe` and `-portable.exe`
-
-### Build internals
-
-Each platform build runs these steps automatically:
-
-1. **Download binaries** — fetches the right Node.js, `uv`, and standalone Python for the target platform into `bin/`
-2. **Build MCP Echo server** — compiles the bundled test MCP server in `prebuilt/scripts/`
-3. **Compile TypeScript** — `tsc -b`
-4. **Download host deps** — runs `scripts/download-host-deps.ts` to prepare MCP Host dependencies
-5. **Vite build** — bundles the React UI (`vite.config.electron.ts`)
-6. **electron-builder** — packages everything into the final installer/archive
-
----
-
-## Development
-
-### Hub (Node.js)
-
-```bash
-cd oaphub/
-npm install
-# Set DATABASE_URL in .env, then:
-npx prisma migrate dev
-npm run dev
-```
-
-### MCP Host (Python)
-
-```bash
-cd mcp-host/
-uv sync
-uv run oap_httpd --port 61990
-```
-
-### Chat UI (React)
-
-```bash
-# Web mode (connects to Hub at /api)
-npm run dev:web
-
-# Electron desktop mode
-npm run dev
-```
+Output: `release/<version>/NewMind AI-<version>-win-x64-setup.exe`
 
 ---
 
@@ -417,15 +213,13 @@ newmind-ai/
 │   ├── src/              # Hub server — Express + Prisma
 │   ├── frontend/         # Admin Console — React (Vite)
 │   ├── prisma/           # Database schema + migrations
-│   ├── integrations/     # Third-party integration configs
-│   ├── Dockerfile        # Multi-stage build (hub + UI)
+│   ├── integrations/     # Third-party MCP integration configs
+│   ├── Dockerfile
 │   └── docker-compose.yml
 ├── mcp-host/
 │   ├── oap_mcp_host/     # Python MCP host package
 │   └── Dockerfile
 ├── electron/             # Electron main process
-├── shared/               # Shared utilities
-├── types/                # TypeScript type definitions
 └── public/               # Static assets
 ```
 
