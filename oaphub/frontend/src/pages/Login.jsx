@@ -139,7 +139,7 @@ const Login = () => {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <h1>OAP Platform</h1>
+          <h1>OAP Hub</h1>
           <p>{t('auth.loginTitle')}</p>
         </div>
 

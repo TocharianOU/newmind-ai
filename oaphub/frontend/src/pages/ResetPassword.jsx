@@ -68,7 +68,7 @@ const ResetPassword = () => {
       <div className="auth-container">
         <div className="auth-card">
           <div className="auth-header">
-            <h1>OAP Platform</h1>
+            <h1>OAP Hub</h1>
           </div>
           <div className="auth-form">
             <div className="auth-error">
@@ -87,7 +87,7 @@ const ResetPassword = () => {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <h1>OAP Platform</h1>
+          <h1>OAP Hub</h1>
           <p>{t('auth.resetPasswordTitle', 'Set a new password')}</p>
         </div>
 

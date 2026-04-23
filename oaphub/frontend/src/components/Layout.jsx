@@ -22,7 +22,7 @@ const Layout = ({ children }) => {
         <div className="sidebar-header">
           <img 
             src={`${import.meta.env.BASE_URL}image/logo_oap.svg`} 
-            alt="OAP Platform Logo" 
+            alt="NewMind AI Logo" 
             className="sidebar-logo"
             style={{ width: '84px', height: '84px', marginRight: '16px', marginTop: '14px', objectFit: 'contain' }}
           />
