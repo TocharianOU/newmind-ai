@@ -54,7 +54,7 @@ An AI-powered operations and security intelligence platform. Combines a multi-pr
 ### 2. Clone and configure
 
 ```bash
-git clone https://github.com/TocharianOU/attacktrace.git newmind-ai
+# Clone the repository (contact your administrator for the repo URL)
 cd newmind-ai/oaphub
 ```
 
