@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from attacktrace_mcp_host.host.conf.llm import LLMOapConfig
-from attacktrace_mcp_host.httpd.routers.models import ModelSingleConfig
+from oap_mcp_host.host.conf.llm import LLMOapConfig
+from oap_mcp_host.httpd.routers.models import ModelSingleConfig
 
 
 @pytest.mark.parametrize(

@@ -316,8 +316,8 @@
     "logProcessing": "处理中...",
     "no_tool_title": "目前没有任何的 MCP Server",
     "no_AttackTrace_tool_message": {
-      "all": "请选择要使用的 AttackTrace MCP Server，或新增自定义的 MCP Server。",
-      "AttackTrace": "请选择要使用的 AttackTrace MCP Server。",
+      "all": "请选择要使用的 OAP Hub MCP Server，或新增自定义的 MCP Server。",
+      "AttackTrace": "请选择要使用的 OAP Hub MCP Server。",
       "custom": "请新增自定义的 MCP Server。"
     },
     "no_oap_tool_message": {

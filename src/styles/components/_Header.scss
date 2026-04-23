@@ -298,6 +298,40 @@
     }
   }
 
+  .header-memory-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border: 1px solid var(--border-weak);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-weak);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    -webkit-app-region: no-drag;
+
+    svg {
+      flex-shrink: 0;
+      stroke-width: 2;
+    }
+
+    &:hover {
+      background: var(--bg-ultraweak);
+      border-color: var(--border);
+      color: var(--text);
+    }
+
+    &.active {
+      background: var(--bg-pri-blue-op-light, rgba(24, 144, 255, 0.12));
+      border-color: var(--bg-pri-blue);
+      color: var(--bg-pri-blue);
+    }
+  }
+
   // Project selector - center position with refined styling
   .project-selector {
     .project-select-button {

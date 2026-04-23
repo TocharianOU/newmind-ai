@@ -121,7 +121,7 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
 
       const currentValue = formData[key]
       if (!currentValue || !isKeychainReference(String(currentValue))) {
-        updates[key] = generateKeychainReference(`attacktrace-${key.toLowerCase()}`, "default")
+        updates[key] = generateKeychainReference(`newmind-${key.toLowerCase()}`, "default")
       }
     })
 
@@ -225,7 +225,7 @@ const SchemaForm: React.FC<SchemaFormProps> = ({ schema, config, onChange, disab
     // Secret/Password field — always use keychain when available
     if (fieldSchema.format === "password" || key.includes("KEY") || key.includes("PASSWORD") || key.includes("SECRET")) {
       const parsedKeychain = isKeychainReference(value) ? parseKeychainReference(value) : null
-      const keychainService = parsedKeychain?.service ?? `attacktrace-${key.toLowerCase()}`
+      const keychainService = parsedKeychain?.service ?? `newmind-${key.toLowerCase()}`
       const keychainAccount = parsedKeychain?.account ?? "default"
 
       return (

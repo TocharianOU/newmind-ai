@@ -8,8 +8,8 @@ import httpx
 import pytest
 import pytest_asyncio
 
-from attacktrace_mcp_host.host.conf import LogConfig
-from attacktrace_mcp_host.host.tools import ServerConfig
+from oap_mcp_host.host.conf import LogConfig
+from oap_mcp_host.host.tools import ServerConfig
 
 
 @pytest.fixture
@@ -29,7 +29,7 @@ def echo_tool_stdio_config() -> dict[str, ServerConfig]:  # noqa: D103
             command="python3",
             args=[
                 "-m",
-                "attacktrace_mcp_host.host.tools.echo",
+                "oap_mcp_host.host.tools.echo",
                 "--transport=stdio",
             ],
             transport="stdio",
@@ -49,7 +49,7 @@ def echo_tool_local_sse_config(
             command="python3",
             args=[
                 "-m",
-                "attacktrace_mcp_host.host.tools.echo",
+                "oap_mcp_host.host.tools.echo",
                 "--transport=sse",
                 "--host=localhost",
                 f"--port={port}",
@@ -70,7 +70,7 @@ async def echo_tool_sse_server(
     proc = await asyncio.create_subprocess_exec(
         "python3",
         "-m",
-        "attacktrace_mcp_host.host.tools.echo",
+        "oap_mcp_host.host.tools.echo",
         "--transport=sse",
         "--host=localhost",
         f"--port={port}",
@@ -107,7 +107,7 @@ async def echo_tool_streamable_server(
     proc = await asyncio.create_subprocess_exec(
         "python3",
         "-m",
-        "attacktrace_mcp_host.host.tools.echo",
+        "oap_mcp_host.host.tools.echo",
         "--transport=streamable",
         "--host=localhost",
         f"--port={port}",
@@ -146,7 +146,7 @@ async def echo_with_slash_tool_streamable_server(
     proc = await asyncio.create_subprocess_exec(
         "python3",
         "-m",
-        "attacktrace_mcp_host.host.tools.echo",
+        "oap_mcp_host.host.tools.echo",
         "--transport=streamable",
         "--host=localhost",
         f"--port={port}",

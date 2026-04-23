@@ -31,8 +31,8 @@ COPY --from=base /usr/local/bin/uv /usr/local/bin/uv
 ENV PATH="/app/.venv/bin:$PATH"
 ENV VIRTUAL_ENV=/app/.venv
 
-COPY pyproject.toml uv.lock README.md ./
-COPY attacktrace_mcp_host ./attacktrace_mcp_host
+COPY pyproject.toml uv.lock ./
+COPY oap_mcp_host ./oap_mcp_host
 RUN uv pip install --no-cache --no-deps .
 
 # Persistent volume for config, SQLite DB, uploads, cache, logs
@@ -42,7 +42,7 @@ RUN mkdir -p /app/data \
     && echo '{}' > /app/data/command_alias.json
 
 ENV RESOURCE_DIR=/app/data
-ENV ATTACKTRACE_CONFIG_DIR=/app/data
+ENV OAP_CONFIG_DIR=/app/data
 
 # Minimal service config — checkpointer SQLite in /app/data survives restarts.
 # Override via DIVE_SERVICE_CONFIG_CONTENT if needed.
@@ -54,4 +54,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:61990/health')" || exit 1
 
 # --listen 0.0.0.0 is required — default 127.0.0.1 is unreachable inside Docker
-CMD ["/app/.venv/bin/attacktrace_httpd", "--listen", "0.0.0.0", "--port", "61990"]
+CMD ["/app/.venv/bin/oap_httpd", "--listen", "0.0.0.0", "--port", "61990"]

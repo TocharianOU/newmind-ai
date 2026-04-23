@@ -16,8 +16,8 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from attacktrace_mcp_host.httpd.database.migrate import db_migration
-from attacktrace_mcp_host.httpd.database.models import (
+from oap_mcp_host.httpd.database.migrate import db_migration
+from oap_mcp_host.httpd.database.models import (
     Chat,
     ChatMessage,
     Message,
@@ -26,12 +26,12 @@ from attacktrace_mcp_host.httpd.database.models import (
     ResourceUsage,
     Role,
 )
-from attacktrace_mcp_host.httpd.database.msg_store.base import BaseMessageStore
-from attacktrace_mcp_host.httpd.database.msg_store.sqlite import SQLiteMessageStore
-from attacktrace_mcp_host.httpd.database.orm_models import Chat as ORMChat
-from attacktrace_mcp_host.httpd.database.orm_models import Message as ORMMessage
-from attacktrace_mcp_host.httpd.database.orm_models import Users as ORMUsers
-from attacktrace_mcp_host.httpd.routers.models import SortBy
+from oap_mcp_host.httpd.database.msg_store.base import BaseMessageStore
+from oap_mcp_host.httpd.database.msg_store.sqlite import SQLiteMessageStore
+from oap_mcp_host.httpd.database.orm_models import Chat as ORMChat
+from oap_mcp_host.httpd.database.orm_models import Message as ORMMessage
+from oap_mcp_host.httpd.database.orm_models import Users as ORMUsers
+from oap_mcp_host.httpd.routers.models import SortBy
 from tests.helper import SQLITE_URI, SQLITE_URI_ASYNC
 
 # Fixtures for database setup and teardown

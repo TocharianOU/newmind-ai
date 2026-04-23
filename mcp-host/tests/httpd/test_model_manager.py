@@ -8,8 +8,8 @@ import pytest
 import pytest_asyncio
 from pydantic import SecretStr
 
-from attacktrace_mcp_host.host.conf.llm import LLMAnthropicConfig
-from attacktrace_mcp_host.httpd.conf.models import ModelManager
+from oap_mcp_host.host.conf.llm import LLMAnthropicConfig
+from oap_mcp_host.httpd.conf.models import ModelManager
 
 # Register custom mark
 integration = pytest.mark.integration
@@ -149,7 +149,7 @@ class TestModelManagerIntegration:
             yield str(config_path)
 
     @pytest.mark.asyncio
-    @patch("attacktrace_mcp_host.httpd.conf.models.json.dump")
+    @patch("oap_mcp_host.httpd.conf.models.json.dump")
     async def test_full_model_workflow(self, mock_json_dump, test_config_path):
         """Test the complete model configuration, initialization, and usage workflow."""
         # Mock json.dump to avoid serialization issues

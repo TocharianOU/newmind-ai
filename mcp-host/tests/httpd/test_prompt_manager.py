@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 import pytest_asyncio
 
-from attacktrace_mcp_host.httpd.conf.prompt import PromptKey, PromptManager
+from oap_mcp_host.httpd.conf.prompt import PromptKey, PromptManager
 
 # Register custom mark
 integration = pytest.mark.integration

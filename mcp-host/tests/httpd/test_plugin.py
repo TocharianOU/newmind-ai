@@ -7,10 +7,10 @@ import pytest_asyncio
 from fastapi import APIRouter, Request, Response
 from fastapi.testclient import TestClient
 
-from attacktrace_mcp_host.host.helpers.context import ContextProtocol
-from attacktrace_mcp_host.httpd.conf.httpd_service import ConfigLocation, ServiceManager
-from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
-from attacktrace_mcp_host.plugins.registry import Callbacks
+from oap_mcp_host.host.helpers.context import ContextProtocol
+from oap_mcp_host.httpd.conf.httpd_service import ConfigLocation, ServiceManager
+from oap_mcp_host.httpd.server import AttackTraceHostAPI
+from oap_mcp_host.plugins.registry import Callbacks
 from tests.httpd.routers.conftest import ConfigFileNames, config_files  # noqa: F401
 
 

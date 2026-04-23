@@ -8,8 +8,8 @@ import pytest
 import pytest_asyncio
 from pydantic import AnyUrl
 
-from attacktrace_mcp_host.env import RESOURCE_DIR
-from attacktrace_mcp_host.httpd.conf.httpd_service import ServiceManager
+from oap_mcp_host.env import RESOURCE_DIR
+from oap_mcp_host.httpd.conf.httpd_service import ServiceManager
 
 # Register custom mark
 integration = pytest.mark.integration
@@ -79,7 +79,7 @@ class TestServiceManager:
     def test_default_config_path(self):
         """Test the default configuration path."""
         manager = ServiceManager()
-        assert manager.config_path == str(Path.cwd() / "attacktrace_httpd.json")
+        assert manager.config_path == str(Path.cwd() / "oap_httpd.json")
 
     def test_initialize_with_missing_config_file(self):
         """Test initializing with a missing configuration file."""

@@ -19,12 +19,12 @@ flask_route
 # Pre-existing build artifacts
 dist-web/
 app-dist/
-AttackTraceHub/app-dist/
-AttackTraceHub/frontend/node_modules/
+oaphub/app-dist/
+oaphub/frontend/node_modules/
 
 # Node modules (installed fresh inside Docker)
 node_modules/
-AttackTraceHub/node_modules/
+oaphub/node_modules/
 
 # MCP Host (has its own Docker build)
 mcp-host/
@@ -41,9 +41,8 @@ uploads/
 projects/
 
 # Documentation
-attacktrace-docs/
 docs/
 
 # Docker files
 docker/
-AttackTraceHub/docker-compose*.yml
+oaphub/docker-compose*.yml

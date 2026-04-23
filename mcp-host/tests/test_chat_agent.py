@@ -1,8 +1,8 @@
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 
-from attacktrace_mcp_host.host.agents.chat_agent import ChatAgentFactory
-from attacktrace_mcp_host.models.fake import FakeMessageToolModel
+from oap_mcp_host.host.agents.chat_agent import ChatAgentFactory
+from oap_mcp_host.models.fake import FakeMessageToolModel
 
 
 @pytest.fixture

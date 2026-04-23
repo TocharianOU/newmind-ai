@@ -28,7 +28,7 @@ protocol.registerSchemesAsPrivileged([
 
 /** Directories that local-file:// is allowed to serve from. */
 const LOCAL_FILE_ALLOWED_ROOTS = () => [
-  path.join(os.homedir(), ".attacktrace"),
+  path.join(os.homedir(), ".newmind"),
   app.getPath("temp"),
   app.getPath("userData"),
 ]

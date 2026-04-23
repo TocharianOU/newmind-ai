@@ -10,15 +10,15 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from langchain_core.messages import AIMessage, AIMessageChunk, ToolCall
 
-from attacktrace_mcp_host.httpd.routers.chat import ERROR_MSG_ID, DataResult
-from attacktrace_mcp_host.httpd.routers.models import SortBy
-from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
+from oap_mcp_host.httpd.routers.chat import ERROR_MSG_ID, DataResult
+from oap_mcp_host.httpd.routers.models import SortBy
+from oap_mcp_host.httpd.server import AttackTraceHostAPI
 
 if TYPE_CHECKING:
-    from attacktrace_mcp_host.host.host import AttackTraceMcpHost
+    from oap_mcp_host.host.host import AttackTraceMcpHost
 
-from attacktrace_mcp_host.httpd.database.models import Chat, ChatMessage, Message
-from attacktrace_mcp_host.models.fake import FakeMessageToolModel
+from oap_mcp_host.httpd.database.models import Chat, ChatMessage, Message
+from oap_mcp_host.models.fake import FakeMessageToolModel
 from tests import helper
 
 from .conftest import TEST_CHAT_ID
@@ -1019,7 +1019,7 @@ def test_chat_with_tool_calls(test_client, monkeypatch):  # noqa: C901, PLR0912,
         return response_generator()
 
     # mock the query method
-    monkeypatch.setattr("attacktrace_mcp_host.host.chat.Chat.query", mock_query)
+    monkeypatch.setattr("oap_mcp_host.host.chat.Chat.query", mock_query)
 
     chat_id = str(uuid.uuid4())
 
@@ -1144,7 +1144,7 @@ def test_chat_error(test_client, monkeypatch):
         raise RuntimeError("an test error")
 
     monkeypatch.setattr(
-        "attacktrace_mcp_host.httpd.routers.utils.ChatProcessor._process_chat",
+        "oap_mcp_host.httpd.routers.utils.ChatProcessor._process_chat",
         mock_process_chat,
     )
     response = client.post(

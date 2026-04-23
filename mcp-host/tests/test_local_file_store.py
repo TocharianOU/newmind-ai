@@ -3,8 +3,8 @@ import tempfile
 
 import pytest
 
-from attacktrace_mcp_host.httpd.store.cache import CacheKeys, LocalFileCache
-from attacktrace_mcp_host.httpd.store.local import LocalStore
+from oap_mcp_host.httpd.store.cache import CacheKeys, LocalFileCache
+from oap_mcp_host.httpd.store.local import LocalStore
 
 
 @pytest.fixture

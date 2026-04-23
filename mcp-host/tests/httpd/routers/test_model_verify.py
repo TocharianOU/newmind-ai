@@ -9,7 +9,7 @@ import pytest
 from fastapi import status
 from openai import AuthenticationError
 
-from attacktrace_mcp_host.httpd.routers.model_verify import ToolVerifyState
+from oap_mcp_host.httpd.routers.model_verify import ToolVerifyState
 from tests import helper
 
 ERROR_NOT_NULL = "ERROR_NOT_NULL"

@@ -8,17 +8,17 @@ import pytest_asyncio
 from fastapi.testclient import TestClient
 from pydantic import AnyUrl
 
-from attacktrace_mcp_host.host.conf import CheckpointerConfig
-from attacktrace_mcp_host.host.conf.llm import LLMConfiguration
-from attacktrace_mcp_host.httpd.app import AttackTraceHostAPI, create_app
-from attacktrace_mcp_host.httpd.conf.httpd_service import (
+from oap_mcp_host.host.conf import CheckpointerConfig
+from oap_mcp_host.host.conf.llm import LLMConfiguration
+from oap_mcp_host.httpd.app import AttackTraceHostAPI, create_app
+from oap_mcp_host.httpd.conf.httpd_service import (
     ConfigLocation,
     DBConfig,
     ServiceConfig,
     ServiceManager,
 )
-from attacktrace_mcp_host.httpd.conf.mcp_servers import Config, MCPServerConfig
-from attacktrace_mcp_host.httpd.routers.models import ModelFullConfigs
+from oap_mcp_host.httpd.conf.mcp_servers import Config, MCPServerConfig
+from oap_mcp_host.httpd.routers.models import ModelFullConfigs
 
 TEST_CHAT_ID = "41a81e8c-ed6d-4d93-8988-c8763f7b3e30"
 
@@ -78,7 +78,7 @@ def config_files() -> Generator[ConfigFileNames, None, None]:
                         command="python3",
                         args=[
                             "-m",
-                            "attacktrace_mcp_host.host.tools.echo",
+                            "oap_mcp_host.host.tools.echo",
                             "--transport=stdio",
                         ],
                         env={"NODE_ENV": "production"},

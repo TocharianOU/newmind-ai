@@ -195,9 +195,9 @@ async function initApp() {
   const modelConfigPath = path.join(baseConfigDir, "model_config.json")
   await createFileIfNotExists(modelConfigPath, JSON.stringify(DEF_MODEL_CONFIG, null, 2))
 
-  // create attacktrace_httpd config file if not exists
-  const attacktraceHttpdConfigPath = path.join(baseConfigDir, "attacktrace_httpd.json")
-  await createFileIfNotExists(attacktraceHttpdConfigPath, JSON.stringify(DEF_ATTACKTRACE_HTTPD_CONFIG, null, 2))
+  // create oap_httpd config file if not exists
+  const oapHttpdConfigPath = path.join(baseConfigDir, "oap_httpd.json")
+  await createFileIfNotExists(oapHttpdConfigPath, JSON.stringify(DEF_ATTACKTRACE_HTTPD_CONFIG, null, 2))
 
   // create plugin config file if not exists
   const pluginConfigPath = path.join(baseConfigDir, "plugin_config.json")
@@ -601,9 +601,9 @@ async function startHostService() {
   const httpdExec = app.isPackaged ? pyPath : "uv"
   const httpdParam = app.isPackaged
     ? process.platform === "darwin"
-      ? ["-I", path.join(pyBinPath, "attacktrace_httpd")]
-      : ["-I", "-c", `import sys; sys.path.extend(['${hostSrcPath.replace(/\\/g, "\\\\")}', '${hostDepsPath.replace(/\\/g, "\\\\")}']); from attacktrace_mcp_host.httpd._main import main; main()`]
-    : ["run", "attacktrace_httpd"]
+      ? ["-I", path.join(pyBinPath, "oap_httpd")]
+      : ["-I", "-c", `import sys; sys.path.extend(['${hostSrcPath.replace(/\\/g, "\\\\")}', '${hostDepsPath.replace(/\\/g, "\\\\")}']); from oap_mcp_host.httpd._main import main; main()`]
+    : ["run", "oap_httpd"]
 
   // Security: Get OAP token and user ID from encrypted storage (if available)
   const { getToken, getUserId } = await import("./oap")

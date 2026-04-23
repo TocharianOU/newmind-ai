@@ -25,6 +25,7 @@ export interface BaseModel<E = Record<string, any>> {
   extra: E
   custom?: Record<string, any>
   model: string
+  displayName?: string
   isCustomModel?: boolean
   verifyStatus?: ModelVerifyStatus
   enableTools?: boolean

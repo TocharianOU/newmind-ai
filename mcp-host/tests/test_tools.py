@@ -14,15 +14,15 @@ from langchain_core.callbacks import AsyncCallbackHandler
 from langchain_core.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 from mcp.types import Tool
 
-from attacktrace_mcp_host.host.conf import HostConfig, LogConfig, ProxyUrl
-from attacktrace_mcp_host.host.conf.llm import LLMConfig
-from attacktrace_mcp_host.host.host import AttackTraceMcpHost
-from attacktrace_mcp_host.host.tools import McpServer, McpServerInfo, ServerConfig, ToolManager
-from attacktrace_mcp_host.host.tools.mcp_server import McpTool
-from attacktrace_mcp_host.host.tools.model_types import ClientState
+from oap_mcp_host.host.conf import HostConfig, LogConfig, ProxyUrl
+from oap_mcp_host.host.conf.llm import LLMConfig
+from oap_mcp_host.host.host import AttackTraceMcpHost
+from oap_mcp_host.host.tools import McpServer, McpServerInfo, ServerConfig, ToolManager
+from oap_mcp_host.host.tools.mcp_server import McpTool
+from oap_mcp_host.host.tools.model_types import ClientState
 
 if TYPE_CHECKING:
-    from attacktrace_mcp_host.models.fake import FakeMessageToolModel
+    from oap_mcp_host.models.fake import FakeMessageToolModel
 
 
 @pytest.fixture
@@ -338,7 +338,7 @@ async def test_remote_http_mcp_tool_exception_handling(
         assert server._session_store._map["default"].session == session
 
         # Error removes the session
-        with patch("attacktrace_mcp_host.host.tools.hack.ClientSession.call_tool") as mocked:
+        with patch("oap_mcp_host.host.tools.hack.ClientSession.call_tool") as mocked:
             mocked.side_effect = RuntimeError("test")
             with pytest.raises(RuntimeError, match="test"):
                 await tools[0].ainvoke(
@@ -423,7 +423,7 @@ async def test_local_http_mcp_tool_exception_handling(
         assert server._session_store["default"] == session
 
         # Error removes the session
-        with patch("attacktrace_mcp_host.host.tools.hack.ClientSession.call_tool") as mocked:
+        with patch("oap_mcp_host.host.tools.hack.ClientSession.call_tool") as mocked:
             mocked.side_effect = RuntimeError("test")
             with pytest.raises(RuntimeError, match="test"):
                 await tools[0].ainvoke(
@@ -484,7 +484,7 @@ async def test_stdio_mcp_tool_exception_handling(
         server.RESTART_INTERVAL = 0.1
         tools = server.mcp_tools
         session = server._stdio_client_session
-        with patch("attacktrace_mcp_host.host.tools.hack.ClientSession.call_tool") as mocked:
+        with patch("oap_mcp_host.host.tools.hack.ClientSession.call_tool") as mocked:
             mocked.side_effect = RuntimeError("test")
             with pytest.raises(RuntimeError, match="test"):
                 await tools[0].ainvoke(
@@ -608,7 +608,7 @@ async def test_mcp_server_info(echo_tool_stdio_config: dict[str, ServerConfig]) 
         ),
         mcp_servers=echo_tool_stdio_config,
     )
-    import attacktrace_mcp_host.host.tools.echo as echo_tool
+    import oap_mcp_host.host.tools.echo as echo_tool
 
     async with AttackTraceMcpHost(config) as mcp_host:
         await mcp_host._tool_manager.initialized_event.wait()

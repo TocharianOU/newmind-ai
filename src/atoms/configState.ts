@@ -314,7 +314,7 @@ export const removeOapConfigAtom = atom(
 
 export const writeOapConfigAtom = atom(
   null,
-  async (get, set, enableGroup: boolean = true, enableRef: string[] = []) => {
+  async (get, set, enableGroup: boolean = true, enableRef: string[] = [], knownModels: string[] = []) => {
     const isLoggedInOAP = get(isLoggedInOAPAtom)
     const config = get(configAtom)
     const settings = get(modelSettingsAtom)
@@ -329,6 +329,8 @@ export const writeOapConfigAtom = atom(
       return
     }
 
+    const displayNames: Record<string, string> = (models as any).displayNames ?? {}
+
     const newModelSettings: ModelGroupSetting = {
       ...settings,
       groups: [
@@ -342,7 +344,14 @@ export const writeOapConfigAtom = atom(
           models: models.results.map(model => ({
             ...defaultBaseModel(),
             model: model,
-            active: enableGroup && enableRef.length === 0 ? true : enableRef.includes(model),
+            displayName: displayNames[model] || undefined,
+            // Initial load (enableRef empty): all active.
+            // Reload: active if previously active, OR brand-new (not in knownModels).
+            active: enableGroup && (
+              enableRef.length === 0
+              || enableRef.includes(model)
+              || !knownModels.includes(model)
+            ),
             verifyStatus: "success" as ModelVerifyStatus,
             enableTools: true,
             isCustomModel: false,
@@ -396,11 +405,34 @@ export const reloadOapConfigAtom = atom(
       return
     }
 
-    const models = group.models
+    const activeModels = group.models
       .filter(model => model.active)
       .map(model => model.model)
 
+    // Track all previously known models so writeOapConfigAtom can distinguish
+    // newly-added hub models (should be activated) from user-deactivated ones.
+    const knownModels = group.models.map(model => model.model)
+
+    // Preserve the currently selected model so it survives the reload cycle.
+    // removeOapConfigAtom clears configAtom when oap is the only group,
+    // which would otherwise reset selection to the first model in the list.
+    const prevConfig = get(configAtom)
+    const prevActiveModel = prevConfig.configs[prevConfig.activeProvider]?.model
+
     await set(removeOapConfigAtom)
-    return set(writeOapConfigAtom, group.active, models)
+    await set(writeOapConfigAtom, group.active, activeModels, knownModels)
+
+    // Restore the previously selected model if it still exists in the rebuilt group.
+    if (prevActiveModel) {
+      const newSettings = get(modelSettingsAtom)
+      const newGroup = newSettings.groups.find(g => g.modelProvider === "oap")
+      const stillExists = newGroup?.models.some(m => m.model === prevActiveModel)
+      if (stillExists) {
+        const restored = intoRawModelConfigWithQuery(newSettings, { modelProvider: "oap" }, { model: prevActiveModel })
+        if (restored) {
+          set(writeRawConfigAtom, restored)
+        }
+      }
+    }
   }
 )

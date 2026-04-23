@@ -9,8 +9,8 @@ from pydantic import SecretStr
 if TYPE_CHECKING:
     from langgraph.pregel.io import AddableUpdatesDict
 
-from attacktrace_mcp_host.host.conf import HostConfig
-from attacktrace_mcp_host.host.conf.llm import (
+from oap_mcp_host.host.conf import HostConfig
+from oap_mcp_host.host.conf.llm import (
     Credentials,
     LLMAnthropicConfig,
     LLMAzureConfig,
@@ -20,8 +20,8 @@ from attacktrace_mcp_host.host.conf.llm import (
     LLMOapConfig,
     LLMOapConfiguration,
 )
-from attacktrace_mcp_host.host.host import AttackTraceMcpHost
-from attacktrace_mcp_host.host.tools import ServerConfig
+from oap_mcp_host.host.host import AttackTraceMcpHost
+from oap_mcp_host.host.tools import ServerConfig
 from tests import helper
 
 

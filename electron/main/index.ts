@@ -58,10 +58,10 @@ app.on("open-url", (event, url) => {
 // Settings deeplink scheme
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient("attacktrace", process.execPath, [path.resolve(process.argv[1])])
+    app.setAsDefaultProtocolClient("newmind", process.execPath, [path.resolve(process.argv[1])])
   }
 } else {
-  app.setAsDefaultProtocolClient("attacktrace")
+  app.setAsDefaultProtocolClient("newmind")
 }
 
 let win: BrowserWindow | null = null
@@ -132,7 +132,7 @@ async function onReady() {
 
 export async function createWindow() {
   win = new BrowserWindow({
-    title: "AttackTrace Agent",
+    title: "NewMind AI Agent",
     icon: path.join(process.env.VITE_PUBLIC, "favicon.ico"),
     width: 1280,
     height: 720,

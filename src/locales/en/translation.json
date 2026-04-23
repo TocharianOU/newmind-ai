@@ -315,8 +315,8 @@
     "logProcessing": "Processing...",
     "no_tool_title": "No MCP Servers Available",
     "no_AttackTrace_tool_message": {
-      "all": "Please select a AttackTrace MCP Server to use, or add a custom MCP Server.",
-      "AttackTrace": "Please select a AttackTrace MCP Server to use.",
+      "all": "Please select a OAP Hub MCP Server to use, or add a custom MCP Server.",
+      "AttackTrace": "Please select a OAP Hub MCP Server to use.",
       "custom": "Please add a custom MCP Server."
     },
     "no_oap_tool_message": {

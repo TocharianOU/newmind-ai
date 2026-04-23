@@ -1,6 +1,6 @@
 from alembic import command
 
-from attacktrace_mcp_host.httpd.database.migrate import db_migration
+from oap_mcp_host.httpd.database.migrate import db_migration
 
 from .helper import POSTGRES_URI, SQLITE_URI
 

@@ -6,7 +6,7 @@ import pytest
 from fastapi import status
 from fastapi.responses import StreamingResponse
 
-from attacktrace_mcp_host.httpd.routers.openai import (
+from oap_mcp_host.httpd.routers.openai import (
     CompletionEventStreamContextManager,
     OpenaiModel,
     StreamMessage,
@@ -34,11 +34,11 @@ def mock_event_stream():
 
     with (
         patch(
-            "attacktrace_mcp_host.httpd.routers.utils.EventStreamContextManager",
+            "oap_mcp_host.httpd.routers.utils.EventStreamContextManager",
             return_value=mock_instance,
         ),
         patch(
-            "attacktrace_mcp_host.httpd.routers.openai.CompletionEventStreamContextManager",
+            "oap_mcp_host.httpd.routers.openai.CompletionEventStreamContextManager",
             return_value=mock_instance,
         ),
     ):
@@ -90,7 +90,7 @@ def test_list_models(test_client):
     assert model["owned_by"] == "dive"
 
 
-@patch("attacktrace_mcp_host.httpd.routers.openai.ChatProcessor")
+@patch("oap_mcp_host.httpd.routers.openai.ChatProcessor")
 def test_chat_completions_with_system_message(mock_chat_processor, test_client):
     """Test chat completions with a system message."""
     client, _ = test_client
@@ -136,7 +136,7 @@ def test_chat_completions_with_system_message(mock_chat_processor, test_client):
     assert response_data["system_fingerprint"] == "fp_dive"
 
 
-@patch("attacktrace_mcp_host.httpd.routers.openai.ChatProcessor")
+@patch("oap_mcp_host.httpd.routers.openai.ChatProcessor")
 def test_chat_completions_without_system_message(mock_chat_processor, test_client):
     """Test chat completions without a system message."""
     client, _ = test_client
@@ -182,7 +182,7 @@ def test_chat_completions_without_system_message(mock_chat_processor, test_clien
     assert response_data["system_fingerprint"] == "fp_dive"
 
 
-@patch("attacktrace_mcp_host.httpd.routers.openai.ChatProcessor")
+@patch("oap_mcp_host.httpd.routers.openai.ChatProcessor")
 def test_chat_completions_with_assistant_message(mock_chat_processor, test_client):
     """Test chat completions with assistant messages included."""
     client, _ = test_client
@@ -231,7 +231,7 @@ def test_chat_completions_with_assistant_message(mock_chat_processor, test_clien
     assert response_data["system_fingerprint"] == "fp_dive"
 
 
-@patch("attacktrace_mcp_host.httpd.routers.openai.ChatProcessor")
+@patch("oap_mcp_host.httpd.routers.openai.ChatProcessor")
 def test_chat_completions_with_tool_choice_none(mock_chat_processor, test_client):
     """Test chat completions with tool_choice=none."""
     client, _ = test_client
@@ -277,7 +277,7 @@ def test_chat_completions_with_tool_choice_none(mock_chat_processor, test_client
     assert response_data["system_fingerprint"] == "fp_dive"
 
 
-@patch("attacktrace_mcp_host.httpd.routers.openai.ChatProcessor")
+@patch("oap_mcp_host.httpd.routers.openai.ChatProcessor")
 def test_chat_completions_streaming(
     mock_chat_processor,
     test_client,

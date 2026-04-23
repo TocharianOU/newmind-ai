@@ -3,8 +3,8 @@ from typing import Any
 
 import pytest
 
-from attacktrace_mcp_host.host.helpers.context import ContextProtocol
-from attacktrace_mcp_host.plugins.registry import (
+from oap_mcp_host.host.helpers.context import ContextProtocol
+from oap_mcp_host.plugins.registry import (
     Callbacks,
     HookInfo,
     PluginDef,

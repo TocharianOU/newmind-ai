@@ -9,16 +9,16 @@ import pytest
 import pytest_asyncio
 from langchain_core.messages import AIMessage, HumanMessage
 
-from attacktrace_mcp_host.httpd.conf.httpd_service import ServiceManager
-from attacktrace_mcp_host.httpd.conf.mcp_servers import Config
-from attacktrace_mcp_host.httpd.conf.prompt import PromptKey
-from attacktrace_mcp_host.httpd.routers.utils import ChatProcessor, ContentHandler
-from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
-from attacktrace_mcp_host.httpd.store.manager import StoreManager
+from oap_mcp_host.httpd.conf.httpd_service import ServiceManager
+from oap_mcp_host.httpd.conf.mcp_servers import Config
+from oap_mcp_host.httpd.conf.prompt import PromptKey
+from oap_mcp_host.httpd.routers.utils import ChatProcessor, ContentHandler
+from oap_mcp_host.httpd.server import AttackTraceHostAPI
+from oap_mcp_host.httpd.store.manager import StoreManager
 from tests.httpd.routers.conftest import config_files  # noqa: F401
 
 if TYPE_CHECKING:
-    from attacktrace_mcp_host.models.fake import FakeMessageToolModel
+    from oap_mcp_host.models.fake import FakeMessageToolModel
 
 
 @pytest_asyncio.fixture
@@ -85,7 +85,7 @@ async def test_prompt(processor: ChatProcessor, monkeypatch: pytest.MonkeyPatch)
 
 def test_strip_title():
     """Test the strip_title function."""
-    from attacktrace_mcp_host.httpd.routers.utils import strip_title
+    from oap_mcp_host.httpd.routers.utils import strip_title
 
     # Test basic whitespace normalization
     assert strip_title("  hello   world  ") == "hello world"

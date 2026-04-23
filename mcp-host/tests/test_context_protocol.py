@@ -3,7 +3,7 @@ from typing import Self
 
 import pytest
 
-from attacktrace_mcp_host.host.helpers.context import ContextProtocol
+from oap_mcp_host.host.helpers.context import ContextProtocol
 
 
 class FakeContextImplementation(ContextProtocol):

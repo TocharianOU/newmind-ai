@@ -1,6 +1,6 @@
 from langchain_core.messages import AIMessage, HumanMessage, RemoveMessage, ToolMessage
 
-from attacktrace_mcp_host.host.agents.message_order import FAKE_TOOL_RESPONSE, tool_call_order
+from oap_mcp_host.host.agents.message_order import FAKE_TOOL_RESPONSE, tool_call_order
 
 
 def test_msg_order():

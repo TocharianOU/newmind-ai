@@ -57,8 +57,8 @@ const ModelSelect = ({ showSettingsButton = true }: ModelSelectProps) => {
         group.models
           .filter((model) => model.active)
           .map((model) => ({
-            provider: group.modelProvider,
-            name: `${getModelNamePrefix(group)}/${model.model}`,
+          provider: group.modelProvider,
+          name: `${getModelNamePrefix(group)}/${model.displayName || model.model}`,
             value: { group: getGroupTerm(group), model: getModelTerm(model) },
           })
           ))

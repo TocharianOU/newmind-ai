@@ -7,13 +7,13 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from attacktrace_mcp_host.host.tools.echo import ECHO_DESCRIPTION, IGNORE_DESCRIPTION
-from attacktrace_mcp_host.host.tools.log import LogEvent, LogMsg
-from attacktrace_mcp_host.host.tools.model_types import ClientState
-from attacktrace_mcp_host.httpd.conf.mcp_servers import MCPServerConfig
-from attacktrace_mcp_host.httpd.routers.models import SimpleToolInfo
-from attacktrace_mcp_host.httpd.routers.tools import McpTool, ToolsResult, list_tools
-from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
+from oap_mcp_host.host.tools.echo import ECHO_DESCRIPTION, IGNORE_DESCRIPTION
+from oap_mcp_host.host.tools.log import LogEvent, LogMsg
+from oap_mcp_host.host.tools.model_types import ClientState
+from oap_mcp_host.httpd.conf.mcp_servers import MCPServerConfig
+from oap_mcp_host.httpd.routers.models import SimpleToolInfo
+from oap_mcp_host.httpd.routers.tools import McpTool, ToolsResult, list_tools
+from oap_mcp_host.httpd.server import AttackTraceHostAPI
 from tests import helper
 
 
@@ -78,10 +78,10 @@ def test_list_tools_no_mock(test_client):
 
 
 @patch(
-    "attacktrace_mcp_host.httpd.server.AttackTraceHostAPI.local_file_cache", new_callable=PropertyMock
+    "oap_mcp_host.httpd.server.AttackTraceHostAPI.local_file_cache", new_callable=PropertyMock
 )
 @patch(
-    "attacktrace_mcp_host.host.tools.ToolManager.mcp_server_info", new_callable=PropertyMock
+    "oap_mcp_host.host.tools.ToolManager.mcp_server_info", new_callable=PropertyMock
 )
 def test_list_tools_mock_cache(
     mock_mcp_server_info, mock_local_file_cache, test_client
@@ -181,7 +181,7 @@ def test_tools_result_serialization():
 
 
 @pytest.mark.asyncio
-@patch("attacktrace_mcp_host.httpd.routers.tools.list_tools")
+@patch("oap_mcp_host.httpd.routers.tools.list_tools")
 async def test_list_tools_with_error(mock_list_tools, test_client):
     """Test list_tools function with server error."""
     _, app = test_client
@@ -225,7 +225,7 @@ async def test_list_tools_with_error(mock_list_tools, test_client):
 
 
 @pytest.mark.asyncio
-@patch("attacktrace_mcp_host.httpd.routers.tools.list_tools")
+@patch("oap_mcp_host.httpd.routers.tools.list_tools")
 async def test_list_tools_with_no_config(mock_list_tools, test_client):
     """Test list_tools function with no configuration."""
     _, app = test_client
@@ -247,7 +247,7 @@ async def test_list_tools_with_no_config(mock_list_tools, test_client):
 
 @pytest.mark.asyncio
 @patch(
-    "attacktrace_mcp_host.httpd.conf.mcp_servers.MCPServerManager.get_current_config",
+    "oap_mcp_host.httpd.conf.mcp_servers.MCPServerManager.get_current_config",
 )
 async def test_list_tools_with_missing_server_not_in_cache(
     mock_current_config,
@@ -325,7 +325,7 @@ def test_tools_cache_after_update(test_client):
                 "transport": "stdio",
                 "enabled": True,
                 "command": "python",
-                "args": ["-m", "attacktrace_mcp_host.host.tools.echo", "--transport=stdio"],
+                "args": ["-m", "oap_mcp_host.host.tools.echo", "--transport=stdio"],
             },
             "missing_server": {
                 "transport": "stdio",
@@ -351,7 +351,7 @@ def test_tools_cache_after_update(test_client):
                 "transport": "stdio",
                 "enabled": False,
                 "command": "python",
-                "args": ["-m", "attacktrace_mcp_host.host.tools.echo", "--transport=stdio"],
+                "args": ["-m", "oap_mcp_host.host.tools.echo", "--transport=stdio"],
             },
             "missing_server": {
                 "transport": "stdio",
@@ -407,7 +407,7 @@ def test_stream_logs_notfound_wait(test_client: tuple[TestClient, AttackTraceHos
                         "command": "python",
                         "args": [
                             "-m",
-                            "attacktrace_mcp_host.host.tools.echo",
+                            "oap_mcp_host.host.tools.echo",
                             "--transport=stdio",
                         ],
                     }
@@ -461,7 +461,7 @@ def test_stream_logs_name_with_slash(test_client: tuple[TestClient, AttackTraceH
                         "command": "python",
                         "args": [
                             "-m",
-                            "attacktrace_mcp_host.host.tools.echo",
+                            "oap_mcp_host.host.tools.echo",
                             "--transport=stdio",
                         ],
                     }

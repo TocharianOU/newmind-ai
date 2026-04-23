@@ -6,3 +6,5 @@ export const toggleKeymapModalAtom = atom(
   (get) => get(keymapModalVisibleAtom),
   (get, set) => set(keymapModalVisibleAtom, !get(keymapModalVisibleAtom))
 )
+
+export const memoryPanelVisibleAtom = atom(false)

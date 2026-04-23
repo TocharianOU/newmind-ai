@@ -19,14 +19,14 @@ from langchain_core.messages import (
 from langgraph.checkpoint.memory import InMemorySaver
 from pydantic import AnyUrl, SecretStr
 
-from attacktrace_mcp_host.host.chat import Chat
-from attacktrace_mcp_host.host.conf import CheckpointerConfig, HostConfig
-from attacktrace_mcp_host.host.conf.llm import LLMConfig
-from attacktrace_mcp_host.host.custom_events import ToolCallProgress
-from attacktrace_mcp_host.host.errors import ThreadNotFoundError, ThreadQueryError
-from attacktrace_mcp_host.host.host import AttackTraceMcpHost
-from attacktrace_mcp_host.host.tools import ServerConfig
-from attacktrace_mcp_host.models.fake import FakeMessageToolModel, default_responses
+from oap_mcp_host.host.chat import Chat
+from oap_mcp_host.host.conf import CheckpointerConfig, HostConfig
+from oap_mcp_host.host.conf.llm import LLMConfig
+from oap_mcp_host.host.custom_events import ToolCallProgress
+from oap_mcp_host.host.errors import ThreadNotFoundError, ThreadQueryError
+from oap_mcp_host.host.host import AttackTraceMcpHost
+from oap_mcp_host.host.tools import ServerConfig
+from oap_mcp_host.models.fake import FakeMessageToolModel, default_responses
 
 
 @pytest.fixture
@@ -37,7 +37,7 @@ def echo_tool_stdio_config() -> dict[str, ServerConfig]:  # noqa: D103
             command="python3",
             args=[
                 "-m",
-                "attacktrace_mcp_host.host.tools.echo",
+                "oap_mcp_host.host.tools.echo",
                 "--transport=stdio",
             ],
             transport="stdio",
@@ -400,7 +400,7 @@ async def test_host_reload(echo_tool_stdio_config: dict[str, ServerConfig]) -> N
             "echo": ServerConfig(
                 name="echo",
                 command="python3",
-                args=["-m", "attacktrace_mcp_host.host.tools.echo", "--transport=stdio"],
+                args=["-m", "oap_mcp_host.host.tools.echo", "--transport=stdio"],
                 transport="stdio",
             ),
             # Added new server

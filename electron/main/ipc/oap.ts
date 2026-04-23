@@ -12,7 +12,7 @@ const REGISTER_URL = `${OAP_ROOT_URL}/signup`
 
 export function ipcOapHandler(_win: BrowserWindow) {
   safeRegisterHandler("oap:login", async (_, regist: boolean) => {
-    const url = `${regist ? REGISTER_URL : LOGIN_URL}?client=attacktrace&name=${os.hostname()}&system=${process.platform}`
+    const url = `${regist ? REGISTER_URL : LOGIN_URL}?client=newmind&name=${os.hostname()}&system=${process.platform}`
     shell.openExternal(url)
   })
 
@@ -89,7 +89,7 @@ export function ipcOapHandler(_win: BrowserWindow) {
   // OAuth Login - Start SSO login flow via /api/auth/sso/:provider/start
   safeRegisterHandler("oap:loginWithOAuth", async (_, provider: string) => {
     try {
-      const url = `${OAP_ROOT_URL}/api/auth/sso/${provider}/start?appRedirect=attacktrace`
+      const url = `${OAP_ROOT_URL}/api/auth/sso/${provider}/start?appRedirect=newmind`
       console.log(`Starting SSO login with ${provider}:`, url)
       await shell.openExternal(url)
       return { success: true }

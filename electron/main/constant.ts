@@ -30,9 +30,9 @@ export const envPath = envPaths(app.getName(), {suffix: ""})
 export const legacyConfigDir = envPath.config
 export const cacheDir = envPath.cache
 export const homeDir = os.homedir()
-export const appDir = path.join(homeDir, ".attacktrace")
+export const appDir = path.join(homeDir, ".newmind")
 export const scriptsDir = path.join(appDir, "scripts")
-// Always use ~/.attacktrace/config for consistency between dev and production
+// Always use ~/.newmind/config for consistency between dev and production
 export const configDir = path.join(appDir, "config")
 export const hostCacheDir = path.join(appDir, "host_cache")
 export const logDir = path.join(appDir, "log")
@@ -74,10 +74,10 @@ export const DEF_MODEL_CONFIG = {
 export const DEF_PLUGIN_CONFIG = [
   {
     "name": "oap-platform",
-    "module": "attacktrace_mcp_host.oap_plugin",
+    "module": "oap_mcp_host.oap_plugin",
     "config": {},
-    "ctx_manager": "attacktrace_mcp_host.oap_plugin.OAPPlugin",
-    "static_callbacks": "attacktrace_mcp_host.oap_plugin.get_static_callbacks"
+    "ctx_manager": "oap_mcp_host.oap_plugin.OAPPlugin",
+    "static_callbacks": "oap_mcp_host.oap_plugin.get_static_callbacks"
   }
 ]
 
@@ -105,7 +105,7 @@ export const DEF_ATTACKTRACE_HTTPD_CONFIG = {
 /**
  * Get user-scoped base directory.
  * When a userId is supplied every project lives under:
- *   ~/.attacktrace/users/{userId}/projects/{projectId}/
+ *   ~/.newmind/users/{userId}/projects/{projectId}/
  * so that different OAP accounts never share database files or configs.
  */
 export function getUserDir(userId: string): string {
@@ -189,7 +189,7 @@ export function getCurrentProjectFilePath(userId?: string): string {
 }
 
 /**
- * Generate attacktrace_httpd config for a specific project.
+ * Generate oap_httpd config for a specific project.
  * @param projectId Project ID (defaults to 'default')
  * @param userId    OAP user ID for user-scoped DB path
  */

@@ -1,6 +1,6 @@
 from langchain_core.messages import AIMessage
 
-from attacktrace_mcp_host.host.agents.tools_in_prompt import extract_tool_calls
+from oap_mcp_host.host.agents.tools_in_prompt import extract_tool_calls
 
 
 def test_extract_tool_calls_with_json_format():

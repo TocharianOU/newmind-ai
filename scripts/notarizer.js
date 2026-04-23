@@ -27,7 +27,7 @@ export default async function notarizing(context) {
   return await notarize({
     tool: "notarytool",
     teamId: process.env.APPLETEAMID,
-    appBundleId: "ai.oaphub.attacktrace",
+    appBundleId: "com.tocharian.newmind",
     appPath: `${appOutDir}/${appName}.app`,
     appleId: process.env.APPLEID,
     appleIdPassword: process.env.APPLEIDPASS,

@@ -114,6 +114,10 @@ function App() {
       console.info("oap login")
       setCurrentChatId("")
       clearHistories()
+      // Navigate to root so stale /chat/:id URLs from a previous session
+      // are cleared — prevents the new user from inheriting the old chat URL
+      // and accidentally POSTing messages into another user's conversation.
+      router.navigate("/", { replace: true }).catch(() => {})
       updateOAPUser()
         .catch(console.error)
         .then(() => removeOapConfig())
@@ -145,6 +149,10 @@ function App() {
         .catch(console.error)
         .then(reloadOapConfig)
         .catch(console.error)
+
+      // Re-pull chat history so the sidebar stays populated after a
+      // Hub-initiated config refresh (admin model changes, plan updates, etc).
+      loadHistories()
     })
 
     const unlistenMcpInstall = registBackendEvent("mcp.install", (data: { name: string, config: string }) => {

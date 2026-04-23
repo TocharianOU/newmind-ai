@@ -14,7 +14,7 @@ export interface KeychainCredential {
 
 /**
  * Set a password in the system keychain
- * @param service - Service identifier (e.g., "attacktrace-elasticsearch")
+ * @param service - Service identifier (e.g., "newmind-elasticsearch")
  * @param account - Account identifier (e.g., "api-key" or user email)
  * @param password - Password/token to store securely
  */
@@ -101,7 +101,7 @@ export function generateKeychainReference(service: string, account: string): str
 
 /**
  * Parse a keychain reference string
- * @param reference - Reference string (e.g., "@keychain:attacktrace-es:api-key")
+ * @param reference - Reference string (e.g., "@keychain:newmind-es:api-key")
  * @returns Parsed service and account, or null if invalid
  */
 export function parseKeychainReference(reference: string): { service: string; account: string } | null {

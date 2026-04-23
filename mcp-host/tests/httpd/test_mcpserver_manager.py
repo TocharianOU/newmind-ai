@@ -8,7 +8,7 @@ import pytest
 import pytest_asyncio
 from pydantic import SecretStr
 
-from attacktrace_mcp_host.httpd.conf.mcp_servers import (
+from oap_mcp_host.httpd.conf.mcp_servers import (
     Config,
     MCPServerConfig,
     MCPServerManager,
@@ -136,7 +136,7 @@ class TestMCPServerManager:
             Path(second_config_path).unlink()
 
     @pytest.mark.asyncio
-    @patch("attacktrace_mcp_host.httpd.conf.mcp_servers.json.dump")
+    @patch("oap_mcp_host.httpd.conf.mcp_servers.json.dump")
     async def test_update_all_configs(self, mock_json_dump, mock_config_file):
         """Test updating all configurations."""
         # Mock json.dump to avoid writing to file
@@ -201,7 +201,7 @@ class TestMCPServerManagerIntegration:
             yield str(config_path)
 
     @pytest.mark.asyncio
-    @patch("attacktrace_mcp_host.httpd.conf.mcp_servers.json.dump")
+    @patch("oap_mcp_host.httpd.conf.mcp_servers.json.dump")
     async def test_full_config_workflow(self, mock_json_dump, test_config_path):
         """Test the complete server configuration workflow."""
         # Mock json.dump to avoid serialization issues

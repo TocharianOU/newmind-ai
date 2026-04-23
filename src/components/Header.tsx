@@ -2,7 +2,7 @@ import React from "react"
 import { useAtom, useSetAtom } from "jotai"
 import { sidebarVisibleAtom, toggleSidebarAtom } from "../atoms/sidebarState"
 import { useTranslation } from "react-i18next"
-import { keymapModalVisibleAtom } from "../atoms/modalState"
+import { keymapModalVisibleAtom, memoryPanelVisibleAtom } from "../atoms/modalState"
 import { openDrawerAtom } from "../atoms/drawerState"
 import { isWeb } from "../ipc/env"
 import ModelSelect from "./ModelSelect"
@@ -23,6 +23,7 @@ const Header = ({ showHelpButton = false, showModelSelect = false, showProjectSe
   const setKeymapModalVisible = useSetAtom(keymapModalVisibleAtom)
   const openDrawer = useSetAtom(openDrawerAtom)
   const [isSidebarVisible] = useAtom(sidebarVisibleAtom)
+  const [memoryPanelVisible, setMemoryPanelVisible] = useAtom(memoryPanelVisibleAtom)
 
   const onClose = () => {
     toggleSidebar()
@@ -55,6 +56,18 @@ const Header = ({ showHelpButton = false, showModelSelect = false, showProjectSe
         </div>
         {showHelpButton && (
           <div className="right-side">
+            <Tooltip content={t("memory.togglePanel")}>
+              <button
+                className={`memory-toggle-btn header-memory-btn ${memoryPanelVisible ? "active" : ""}`}
+                onClick={() => setMemoryPanelVisible(!memoryPanelVisible)}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                  <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+                {t("memory.title")}
+              </button>
+            </Tooltip>
             <UpdateButton />
             {isWeb && (
               <Tooltip content={t("header.console", "Console")}>

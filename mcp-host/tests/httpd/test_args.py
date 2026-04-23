@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from attacktrace_mcp_host.httpd.conf.arguments import Arguments
+from oap_mcp_host.httpd.conf.arguments import Arguments
 
 
 def test_argparser():

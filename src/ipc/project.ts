@@ -33,7 +33,7 @@ const isElectron = typeof window !== "undefined" && window.ipcRenderer
 
 // Web mode: current project tracked in sessionStorage so it persists across
 // page refreshes but resets when the browser tab is closed.
-const WEB_PROJECT_KEY = "attacktrace_current_project"
+const WEB_PROJECT_KEY = "newmind_current_project"
 
 function webProjectFetch(path: string, options?: RequestInit): Promise<Response> {
   const token = getWebToken()

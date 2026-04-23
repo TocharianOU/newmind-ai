@@ -5,7 +5,7 @@ import jotaiDebugLabel from "jotai/babel/plugin-debug-label"
 import jotaiReactRefresh from "jotai/babel/plugin-react-refresh"
 
 // Web build config — no Electron plugin, no Tauri.
-// The produced dist-web/ is served statically from AttackTraceHub at /app/*.
+// The produced dist-web/ is served statically from oaphub at /app/*.
 // All relative-path API calls (/api/chat, /api/tools, etc.) are resolved
 // against the Hub's origin; Hub proxies them to the MCP Host internally.
 export default defineConfig({

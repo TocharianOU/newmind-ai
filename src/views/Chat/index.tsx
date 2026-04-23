@@ -14,6 +14,7 @@ import { updateOAPUsageAtom } from "../../atoms/oapState"
 import { loadHistoriesAtom } from "../../atoms/historyState"
 import MemoryPanel from "../../components/MemoryPanel"
 import { apiFetch } from "../../utils/api"
+import { memoryPanelVisibleAtom } from "../../atoms/modalState"
 
 interface ToolCall {
   name: string
@@ -63,7 +64,7 @@ const ChatWindow = () => {
   const toolKeyRef = useRef(0)
   const updateOAPUsage = useSetAtom(updateOAPUsageAtom)
   const loadHistories = useSetAtom(loadHistoriesAtom)
-  const [showMemoryPanel, setShowMemoryPanel] = useState(false)
+  const [showMemoryPanel, setShowMemoryPanel] = useAtom(memoryPanelVisibleAtom)
 
   const loadChat = useCallback(async (id: string) => {
     try {
@@ -71,6 +72,12 @@ const ChatWindow = () => {
       const data = await response.json()
 
       if (data.success) {
+        // data.data is null when the chat exists but belongs to a different user.
+        // Bail out early so we don't store the wrong chatId or crash on null access.
+        if (!data.data) {
+          navigate("/", { replace: true })
+          return
+        }
         currentChatId.current = id
         document.title = `${data.data.chat.title.substring(0, 40)}${data.data.chat.title.length > 40 ? "..." : ""} - ${ENV_CONFIG.APP_NAME}`
 
@@ -549,19 +556,6 @@ const ChatWindow = () => {
     <div className="chat-page">
       <div className="chat-container">
         <div className="chat-window">
-          <div className="chat-header">
-            <button
-              className="memory-toggle-btn"
-              onClick={() => setShowMemoryPanel(!showMemoryPanel)}
-              title={t("memory.togglePanel")}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
-              {t("memory.title")}
-            </button>
-          </div>
           <ChatMessages
             messages={messages}
             isLoading={isChatStreaming}

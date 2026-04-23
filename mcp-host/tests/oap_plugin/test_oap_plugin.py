@@ -6,11 +6,11 @@ import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
 
-from attacktrace_mcp_host.httpd.app import create_app
-from attacktrace_mcp_host.httpd.conf.httpd_service import ConfigLocation, ServiceManager
-from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
-from attacktrace_mcp_host.oap_plugin.config_mcp_servers import MCPServerManagerPlugin
-from attacktrace_mcp_host.oap_plugin.models import UserMcpConfig
+from oap_mcp_host.httpd.app import create_app
+from oap_mcp_host.httpd.conf.httpd_service import ConfigLocation, ServiceManager
+from oap_mcp_host.httpd.server import AttackTraceHostAPI
+from oap_mcp_host.oap_plugin.config_mcp_servers import MCPServerManagerPlugin
+from oap_mcp_host.oap_plugin.models import UserMcpConfig
 from tests.httpd.routers.conftest import ConfigFileNames, config_files  # noqa: F401
 
 
@@ -69,7 +69,7 @@ def test_oap_plugin(  # noqa: C901, PLR0915
         return [config]
 
     monkeypatch.setattr(
-        "attacktrace_mcp_host.oap_plugin.config_mcp_servers.MCPServerManagerPlugin._get_user_mcp_configs",
+        "oap_mcp_host.oap_plugin.config_mcp_servers.MCPServerManagerPlugin._get_user_mcp_configs",
         mock_get_user_mcp,
     )
 

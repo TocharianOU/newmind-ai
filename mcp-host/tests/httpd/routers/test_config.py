@@ -6,16 +6,16 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from attacktrace_mcp_host.httpd.conf.mcp_servers import MCPServerConfig
-from attacktrace_mcp_host.httpd.routers.config import SaveModelSettingsRequest
-from attacktrace_mcp_host.httpd.routers.models import (
+from oap_mcp_host.httpd.conf.mcp_servers import MCPServerConfig
+from oap_mcp_host.httpd.routers.config import SaveModelSettingsRequest
+from oap_mcp_host.httpd.routers.models import (
     EmbedConfig,
     ModelFullConfigs,
 )
 from tests import helper
 
 if TYPE_CHECKING:
-    from attacktrace_mcp_host.httpd.server import AttackTraceHostAPI
+    from oap_mcp_host.httpd.server import AttackTraceHostAPI
 
 # Mock data
 MOCK_MCP_CONFIG = {
@@ -98,7 +98,7 @@ def test_get_mcp_server(test_client):
                         "command": "python3",
                         "args": [
                             "-m",
-                            "attacktrace_mcp_host.host.tools.echo",
+                            "oap_mcp_host.host.tools.echo",
                             "--transport=stdio",
                         ],
                         "env": {"NODE_ENV": "production"},
@@ -123,7 +123,7 @@ def test_post_mcp_server_omit_env_url(test_client):
                 "transport": "stdio",  # type: ignore  # Test backward compatibility
                 "enabled": True,
                 "command": "uvx",
-                "args": ["attacktrace_mcp_host.host.tools.echo", "--transport=stdio"],
+                "args": ["oap_mcp_host.host.tools.echo", "--transport=stdio"],
             },
         }
     }
@@ -155,7 +155,7 @@ def test_post_mcp_server_omit_env_url(test_client):
                         "enabled": True,
                         "command": "uvx",
                         "args": [
-                            "attacktrace_mcp_host.host.tools.echo",
+                            "oap_mcp_host.host.tools.echo",
                             "--transport=stdio",
                         ],
                         "env": {},
@@ -669,7 +669,7 @@ def test_get_mcp_server_with_alias(setup_command_alias, test_client):
                         "command": "python3",
                         "args": [
                             "-m",
-                            "attacktrace_mcp_host.host.tools.echo",
+                            "oap_mcp_host.host.tools.echo",
                             "--transport=stdio",
                         ],
                         "env": {"NODE_ENV": "production"},
@@ -771,7 +771,7 @@ def test_tools_and_mcpserver_enable_status(test_client):
                 enabled=False,
                 args=[
                     "-m",
-                    "attacktrace_mcp_host.host.tools.echo",
+                    "oap_mcp_host.host.tools.echo",
                     "--transport=stdio",
                 ],
                 env={"NODE_ENV": "production"},
@@ -804,7 +804,7 @@ def test_tools_and_mcpserver_enable_status(test_client):
                         "command": "python3",
                         "args": [
                             "-m",
-                            "attacktrace_mcp_host.host.tools.echo",
+                            "oap_mcp_host.host.tools.echo",
                             "--transport=stdio",
                         ],
                         "env": {"NODE_ENV": "production"},
@@ -889,7 +889,7 @@ def test_exclude_tools(test_client):
                 enabled=True,
                 args=[
                     "-m",
-                    "attacktrace_mcp_host.host.tools.echo",
+                    "oap_mcp_host.host.tools.echo",
                     "--transport=stdio",
                 ],
                 env={"NODE_ENV": "production"},
@@ -945,7 +945,7 @@ def test_exclude_tools(test_client):
                 enabled=True,
                 args=[
                     "-m",
-                    "attacktrace_mcp_host.host.tools.echo",
+                    "oap_mcp_host.host.tools.echo",
                     "--transport=stdio",
                 ],
                 env={"NODE_ENV": "production"},
@@ -1037,7 +1037,7 @@ def test_exclude_tools_on_disabled_mcp(test_client):
                 enabled=False,
                 args=[
                     "-m",
-                    "attacktrace_mcp_host.host.tools.echo",
+                    "oap_mcp_host.host.tools.echo",
                     "--transport=stdio",
                 ],
                 env={"NODE_ENV": "production"},
@@ -1093,7 +1093,7 @@ def test_exclude_tools_on_disabled_mcp(test_client):
                 enabled=False,
                 args=[
                     "-m",
-                    "attacktrace_mcp_host.host.tools.echo",
+                    "oap_mcp_host.host.tools.echo",
                     "--transport=stdio",
                 ],
                 env={"NODE_ENV": "production"},
@@ -1162,7 +1162,7 @@ def test_mcp_initalize_timeout(test_client):
                         "command": "python3",
                         "args": [
                             "-m",
-                            "attacktrace_mcp_host.host.tools.echo",
+                            "oap_mcp_host.host.tools.echo",
                             "--transport=stdio",
                         ],
                         "env": {"NODE_ENV": "production"},
@@ -1183,7 +1183,7 @@ def test_mcp_initalize_timeout(test_client):
                 enabled=True,
                 args=[
                     "-m",
-                    "attacktrace_mcp_host.host.tools.echo",
+                    "oap_mcp_host.host.tools.echo",
                     "--transport=stdio",
                 ],
                 env={"NODE_ENV": "production"},
@@ -1218,7 +1218,7 @@ def test_mcp_initalize_timeout(test_client):
                         "command": "python3",
                         "args": [
                             "-m",
-                            "attacktrace_mcp_host.host.tools.echo",
+                            "oap_mcp_host.host.tools.echo",
                             "--transport=stdio",
                         ],
                         "env": {"NODE_ENV": "production"},

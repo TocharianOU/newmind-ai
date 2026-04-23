@@ -1,7 +1,7 @@
 import pytest
 
-from attacktrace_mcp_host.host.conf import LogConfig
-from attacktrace_mcp_host.host.tools.log import (
+from oap_mcp_host.host.conf import LogConfig
+from oap_mcp_host.host.tools.log import (
     LogBuffer,
     LogBufferNotFoundError,
     LogEvent,

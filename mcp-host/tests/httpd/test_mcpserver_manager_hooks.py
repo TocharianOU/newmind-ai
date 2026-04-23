@@ -4,13 +4,13 @@ from collections.abc import Generator
 
 import pytest
 
-from attacktrace_mcp_host.httpd.conf.mcp_servers import (
+from oap_mcp_host.httpd.conf.mcp_servers import (
     Config,
     CurrentConfigHookName,
     MCPServerManager,
     UpdateAllConfigsHookName,
 )
-from attacktrace_mcp_host.plugins.registry import PluginManager
+from oap_mcp_host.plugins.registry import PluginManager
 
 
 @pytest.fixture

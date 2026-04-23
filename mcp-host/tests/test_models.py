@@ -9,12 +9,12 @@ from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
 from pydantic import SecretStr
 
-from attacktrace_mcp_host.host.agents.chat_agent import AgentState
-from attacktrace_mcp_host.host.conf.llm import LLMConfig, LLMConfiguration
-from attacktrace_mcp_host.host.helpers import today_datetime
-from attacktrace_mcp_host.httpd.routers.models import ModelSingleConfig
-from attacktrace_mcp_host.models import load_model
-from attacktrace_mcp_host.models.fake import FakeMessageToolModel
+from oap_mcp_host.host.agents.chat_agent import AgentState
+from oap_mcp_host.host.conf.llm import LLMConfig, LLMConfiguration
+from oap_mcp_host.host.helpers import today_datetime
+from oap_mcp_host.httpd.routers.models import ModelSingleConfig
+from oap_mcp_host.models import load_model
+from oap_mcp_host.models.fake import FakeMessageToolModel
 
 
 @pytest.mark.asyncio
@@ -99,7 +99,7 @@ def test_load_langchain_model() -> None:
 
 def test_load__load__model() -> None:
     """Test the load __load__ model."""
-    model = load_model("__load__", "attacktrace_mcp_host.models.fake:FakeMessageToolModel")
+    model = load_model("__load__", "oap_mcp_host.models.fake:FakeMessageToolModel")
     assert isinstance(model, FakeMessageToolModel)
 
 

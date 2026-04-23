@@ -1,6 +1,6 @@
 from langchain_core.prompts import ChatPromptTemplate
 
-from attacktrace_mcp_host.httpd.conf.system_prompt import system_prompt
+from oap_mcp_host.httpd.conf.system_prompt import system_prompt
 
 
 def test_system_prompt():

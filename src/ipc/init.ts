@@ -11,7 +11,7 @@ let electronPortListenerRegistered = false
 
 async function waitHostBus(): Promise<number> {
   const home = await path.homeDir()
-  const appDir = await path.join(home, ".attacktrace")
+  const appDir = await path.join(home, ".newmind")
   const hostCacheDir = await path.join(appDir, "host_cache")
   const file = await path.join(hostCacheDir, "bus")
   const read = async (file: string) => {
@@ -135,7 +135,7 @@ async function initElectronFetch(port: number) {
   const originalFetch = window.fetch
   const withDesktopHeader = (inputHeaders?: HeadersInit) => {
     const headers = new Headers(inputHeaders || {})
-    headers.set("X-Requested-With", "attacktrace-desktop")
+    headers.set("X-Requested-With", "newmind-desktop")
     return headers
   }
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -157,7 +157,7 @@ async function initElectronFetch(port: number) {
 async function initTauriFetch(port: number) {
   const withDesktopHeader = (inputHeaders?: HeadersInit) => {
     const headers = new Headers(inputHeaders || {})
-    headers.set("X-Requested-With", "attacktrace-desktop")
+    headers.set("X-Requested-With", "newmind-desktop")
     return headers
   }
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {

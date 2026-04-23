@@ -13,7 +13,7 @@ function webConfigFetch(url: string, options?: RequestInit) {
   return fetch(url, { ...options, headers })
 }
 
-const WEB_MODEL_SETTINGS_KEY = "attacktrace_model_settings"
+const WEB_MODEL_SETTINGS_KEY = "newmind_model_settings"
 
 export async function getModelSettings() {
   if (isElectron) {
@@ -29,7 +29,7 @@ export async function getModelSettings() {
   }
 
   const home = await path.homeDir()
-  const appDir = await path.join(home, ".attacktrace")
+  const appDir = await path.join(home, ".newmind")
   const configDir = await path.join(appDir, "config")
   const configPath = await path.join(configDir, "model_settings.json")
   if (!(await exists(configPath))) {
@@ -51,7 +51,7 @@ export async function setModelSettings(settings: any) {
   }
 
   const home = await path.homeDir()
-  const appDir = await path.join(home, ".attacktrace")
+  const appDir = await path.join(home, ".newmind")
   const configDir = await path.join(appDir, "config")
   const configPath = await path.join(configDir, "model_settings.json")
   await writeTextFile(configPath, JSON.stringify(settings))

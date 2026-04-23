@@ -25,7 +25,7 @@ export function setAppImageAutoLaunch(enable: boolean) {
       fse.mkdirSync(autostartDir, { recursive: true })
     }
 
-    const desktopFile = path.join(autostartDir, "attacktrace.desktop")
+    const desktopFile = path.join(autostartDir, "newmind.desktop")
 
     if (enable) {
       const desktopContent = getAppImageDesktopFile()
@@ -48,16 +48,16 @@ export function checkAppImageAutoLaunchStatus() {
 
   const desktopFile = path.join(
     process.env.HOME || "~",
-    ".config/autostart/attacktrace.desktop"
+    ".config/autostart/newmind.desktop"
   )
   return fse.existsSync(desktopFile)
 }
 
 export function getAppImageDesktopFile() {
-  const desktopFile = path.join(process.env.VITE_PUBLIC, "linux", "attacktrace.desktop")
+  const desktopFile = path.join(process.env.VITE_PUBLIC, "linux", "newmind.desktop")
   const content = fse.existsSync(desktopFile) ? fse.readFileSync(desktopFile, "utf-8") : `[Desktop Entry]
 Type=Application
-Name=AttackTrace AI
+Name=NewMind AI
 Exec=%EXEC%
 Icon=%ICON%
 StartupNotify=false

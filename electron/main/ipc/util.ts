@@ -109,7 +109,7 @@ export function ipcUtilHandler(win: BrowserWindow) {
     if (url.startsWith(localProtocol)) {
       const rawPath = url.substring(localProtocol.length)
       const resolved = path.resolve(rawPath)
-      // Restrict to user's home .attacktrace dir and temp dir
+      // Restrict to user's home .newmind dir and temp dir
       const allowedRoots = [path.resolve(appDir), path.resolve(require("os").tmpdir())]
       const allowed = allowedRoots.some(root => resolved === root || resolved.startsWith(root + path.sep))
       if (!allowed) {
