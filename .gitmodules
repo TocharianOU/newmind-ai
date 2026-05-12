@@ -1,3 +1,0 @@
-[submodule "elasticsearch-mcp"]
-	path = elasticsearch-mcp
-	url = https://github.com/TocharianOU/elasticsearch-mcp.git

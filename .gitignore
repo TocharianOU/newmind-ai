@@ -42,6 +42,7 @@ release
 
 # Customer delivery artifacts
 oaphub-customer-docker-package/
+elasticsearch-mcp/
 elasticsearch-mcp-customer-docker-package/
 oaphub/downloads/*.sha256
 !oaphub/downloads/.gitkeep
