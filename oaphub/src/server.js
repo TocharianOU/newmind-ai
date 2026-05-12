@@ -121,6 +121,7 @@ if (process.env.SERVE_WEB_APP !== 'false') {
 const CONSOLE_DIST_PATH = process.env.CONSOLE_DIST_PATH || path.join(__dirname, '../console-dist');
 if (process.env.SERVE_CONSOLE !== 'false') {
   app.use('/console', express.static(CONSOLE_DIST_PATH, { index: false }));
+  app.get('/', (_req, res) => res.redirect(302, '/console/'));
   app.get('/console', (_req, res) => res.sendFile(path.join(CONSOLE_DIST_PATH, 'index.html')));
   app.get('/console/*', (_req, res) => res.sendFile(path.join(CONSOLE_DIST_PATH, 'index.html')));
   logger.info(`[Console] Serving admin console from ${CONSOLE_DIST_PATH} at /console`);

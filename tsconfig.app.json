@@ -8,7 +8,7 @@
     "module": "ESNext",
     "skipLibCheck": true,
 
-    /* Path aliases – must mirror vite.config.electron.ts resolve.alias */
+    /* Path aliases must mirror vite.config.web.ts resolve.alias. */
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
@@ -28,6 +28,6 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": false
   },
-  "include": ["src", "electron", "services", "types", "shared"],
+  "include": ["src", "services", "types", "shared"],
   "exclude": ["node_modules", "dist", "services/__tests__"]
 }

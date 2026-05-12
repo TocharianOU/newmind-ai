@@ -347,8 +347,8 @@ const Billing = () => {
             </div>
 
             <ul className="subscription-features">
-              <li>5M gifted tokens/month (medium + strong)</li>
-              <li>strong-agent access (3x multiplier)</li>
+              <li>Monthly model usage allowance</li>
+              <li>Customer-owned high-performance model access</li>
               <li>Free tool calls included per tier</li>
               <li>Custom model providers</li>
               <li>Priority support</li>

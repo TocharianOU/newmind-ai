@@ -1,31 +1,9 @@
-import { platform } from "@tauri-apps/plugin-os"
-
-export const isElectron = window.ipcRenderer !== undefined
-export const isTauri = window.__TAURI_INTERNALS__ !== undefined
-export const isWeb = !isElectron && !isTauri
+export const isWeb = true
 
 // Use dev server assets in dev, custom protocol in production.
 // In web mode the SPA is served under /app/, so images live at /app/image/.
-export const imgPrefix = isTauri ? "/image/" : isWeb ? "/app/image/" : (import.meta.env.DEV ? "/image/" : "img://")
+export const imgPrefix = "/app/image/"
 
 export async function initPlatform() {
-  if (isElectron) {
-    window.PLATFORM = await window.ipcRenderer.getPlatform() as any
-    return
-  }
-
-  if (isTauri) {
-    switch (platform()) {
-      case "linux":
-        window.PLATFORM = "linux"
-        break
-      case "macos":
-        window.PLATFORM = "darwin"
-        break
-      case "windows":
-        window.PLATFORM = "win32"
-        break
-      default:
-    }
-  }
+  window.PLATFORM = "web" as any
 }

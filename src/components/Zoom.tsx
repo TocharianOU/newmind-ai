@@ -5,8 +5,6 @@ import Tooltip from "./Tooltip"
 import { useTranslation } from "react-i18next"
 import { useSetAtom } from "jotai"
 import { showToastAtom } from "../atoms/toastState"
-import { invokeIPC, isTauri } from "../ipc"
-import { save } from "@tauri-apps/plugin-dialog"
 import { copyImage } from "../ipc/util"
 
 type ZoomProps = {
@@ -145,19 +143,14 @@ export default function Zoom({
         return
       }
 
-      if (isTauri) {
-        let filename = img.src.split("/").pop() ?? "image"
-        if (filename.includes("?")) {
-          filename = filename.split("?")[0]
-        }
-
-        const savePath = await save({ title: filename })
-        if (savePath) {
-          await invokeIPC("download_image", { src: img.src, dst: savePath })
-        }
-      } else {
-        await window.ipcRenderer.download(img.src)
+      const link = document.createElement("a")
+      link.href = img.src
+      let filename = img.src.split("/").pop() ?? "image"
+      if (filename.includes("?")) {
+        filename = filename.split("?")[0]
       }
+      link.download = filename
+      link.click()
 
       showToast({
         message: t("toast.downloadedImage"),

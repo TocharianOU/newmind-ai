@@ -25,21 +25,33 @@ export const HARDCODED_CONFIG = {
   // Never hardcode secrets in source.
   VALID_INVITE_CODES: _parsedCodes,
 
-  // ==================== 下载地址配置 ====================
-  // 从环境变量读取，如果未配置则使用空字符串
-  DOWNLOAD_URLS: {
-    windows: {
-      x64: process.env.DOWNLOAD_URL_WINDOWS_X64 || ''
+  // ==================== 客户部署包下载配置 ====================
+  DOWNLOAD_PACKAGES: [
+    {
+      id: 'docker-x86_64',
+      mode: 'docker',
+      architecture: 'x86_64',
+      title: 'Docker Offline Package',
+      description: 'Docker Compose quick-start bundle for Intel / AMD Linux servers.',
+      fileName: process.env.DOWNLOAD_FILE_DOCKER_X86_64 || 'oaphub-docker-x86_64.tar.gz',
     },
-    macos: {
-      intel: process.env.DOWNLOAD_URL_MACOS_INTEL || '',
-      appleSilicon: process.env.DOWNLOAD_URL_MACOS_APPLE_SILICON || ''
+    {
+      id: 'docker-arm64',
+      mode: 'docker',
+      architecture: 'arm64',
+      title: 'Docker Offline Package',
+      description: 'Docker Compose quick-start bundle for ARM64 Linux servers.',
+      fileName: process.env.DOWNLOAD_FILE_DOCKER_ARM64 || 'oaphub-docker-arm64.tar.gz',
     },
-    linux: {
-      x64: process.env.DOWNLOAD_URL_LINUX_X64 || '',
-      arm64: process.env.DOWNLOAD_URL_LINUX_ARM64 || ''
-    }
-  },
+    {
+      id: 'kubernetes-standard',
+      mode: 'kubernetes',
+      architecture: 'multi-arch',
+      title: 'Kubernetes Manifests',
+      description: 'Kubernetes manifests and deployment guide for cluster installs.',
+      fileName: process.env.DOWNLOAD_FILE_KUBERNETES || 'oaphub-kubernetes-standard.tar.gz',
+    },
+  ],
 
   // ==================== 其他配置 ====================
   // 可以在这里添加更多硬编码配置

@@ -45,6 +45,8 @@ services:
     restart: unless-stopped
     ports:
       - "${PORT:-23000}:3000"
+    volumes:
+      - ./downloads:/app/downloads:ro
     environment:
       DATABASE_URL:            postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/attacktrace
       JWT_SECRET:              ${JWT_SECRET}
@@ -70,6 +72,7 @@ services:
       BILLING_ENABLED:         ${BILLING_ENABLED:-false}
       INVITE_CODE_ENABLED:     ${INVITE_CODE_ENABLED:-false}
       LICENSE_ENABLED:         ${LICENSE_ENABLED:-false}
+      DOWNLOAD_INVITE_CODES:   ${DOWNLOAD_INVITE_CODES:-}
 
       # SSO providers (only needed when SSO_ENABLED=true)
       SSO_CALLBACK_BASE_URL:   ${SSO_CALLBACK_BASE_URL:-}

@@ -6,15 +6,9 @@ import "pretendard/dist/web/static/pretendard.css"
 import "./i18n"
 import Root from "./Root.tsx"
 import ErrorBoundary from "./components/ErrorBoundary"
-import { initPlatform, isElectron } from "./ipc/env.ts"
-import logger from "electron-log/renderer"
-import { error as tauriErrorLog } from "@tauri-apps/plugin-log"
+import { initPlatform } from "./ipc/env.ts"
 
 window.onerror = (message, filename, lineno, colno, error) => {
-  if (message.toString().includes("__TAURI_INTERNALS__.unregisterCallback")) {
-    return
-  }
-
   const content = [
     "JavaScript Error:",
     {
@@ -26,11 +20,7 @@ window.onerror = (message, filename, lineno, colno, error) => {
     }
   ]
 
-  if (isElectron) {
-    logger.error(...content)
-  } else {
-    tauriErrorLog(JSON.stringify(content))
-  }
+  console.error(...content)
 }
 
 window.onunhandledrejection = (event) => {
@@ -42,22 +32,7 @@ window.onunhandledrejection = (event) => {
     }
   ]
 
-  if (isElectron) {
-    logger.error(...content)
-  } else {
-    tauriErrorLog(JSON.stringify(content))
-  }
-}
-
-if (isElectron) {
-  window.addEventListener("contextmenu", (e) => {
-  e.preventDefault()
-  const selection = window.getSelection()?.toString()
-
-  if (selection) {
-      window.ipcRenderer.showSelectionContextMenu()
-    }
-  })
+  console.error(...content)
 }
 
 window.isDev = import.meta.env.DEV

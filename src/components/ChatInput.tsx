@@ -14,10 +14,9 @@ import { useNavigate } from "react-router-dom"
 import { showToastAtom } from "../atoms/toastState"
 import { getTermFromModelConfig, queryGroup, queryModel, updateGroup, updateModel } from "../helper/model"
 import { modelSettingsAtom } from "../atoms/modelState"
-import { fileToBase64, getFileFromImageUrl } from "../util"
+import { fileToBase64 } from "../util"
 import { isLoggedInOAPAtom, isOAPUsageLimitAtom, oapUserAtom } from "../atoms/oapState"
 import Button from "./Button"
-import { invokeIPC, isTauri } from "../ipc"
 
 interface Props {
   page: "welcome" | "chat"
@@ -160,22 +159,13 @@ const ChatInput: React.FC<Props> = ({ page, onSendMessage, disabled, onAbort }) 
     if (document.activeElement !== textareaRef.current)
       return
 
-    const handlePasteInTauri = async () => {
-      if (!isTauri)
-        return
-
-      const uri = await invokeIPC("save_clipboard_image_to_cache")
-      const file = await getFileFromImageUrl(uri)
-      handleFiles([file])
-    }
-
     const items = e.clipboardData?.items
     if (!items)
-      return handlePasteInTauri()
+      return
 
     const imageItems = Array.from(items).filter(item => item.type.startsWith("image/"))
     if (imageItems.length === 0)
-      return items.length == 0 ? handlePasteInTauri() : null
+      return
 
     if (imageItems.length > 0) {
       e.preventDefault()
@@ -232,24 +222,6 @@ const ChatInput: React.FC<Props> = ({ page, onSendMessage, disabled, onAbort }) 
       window.removeEventListener("keydown", handleKeydown)
     }
   }, [disabled])
-
-  useEffect(() => {
-    const handleContextMenu = (e: MouseEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      window.ipcRenderer && window.ipcRenderer.showInputContextMenu()
-    }
-
-    if (textareaRef.current) {
-      textareaRef.current.addEventListener("contextmenu", handleContextMenu)
-    }
-
-    return () => {
-      if (textareaRef.current) {
-        textareaRef.current.removeEventListener("contextmenu", handleContextMenu)
-      }
-    }
-  }, [])
 
   const currentModelEnableToolcall = () => {
     return config?.enableTools ?? true

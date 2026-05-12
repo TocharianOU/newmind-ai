@@ -46,3 +46,10 @@ docs/
 # Docker files
 docker/
 oaphub/docker-compose*.yml
+
+# Local customer delivery workspaces are not part of the Hub image.
+oaphub-customer-docker-package/
+oaphub-customer-docker-package.tar.gz
+elasticsearch-mcp-customer-docker-package/
+elasticsearch-mcp-customer-docker-package.tar.gz
+customer-release/

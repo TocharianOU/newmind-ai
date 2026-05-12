@@ -3,36 +3,19 @@ import { Trans, useTranslation } from "react-i18next"
 
 import { isLoggedInOAPAtom, isOAPUsageLimitAtom, OAPLevelAtom, oapUsageAtom, oapUserAtom } from "../../atoms/oapState"
 import { ENV_CONFIG } from "../../config/env"
-import { isWeb } from "../../ipc/env"
 
 import Tooltip from "../../components/Tooltip"
-import { oapGetMe, oapLogout, oapLoginWithToken, openOapLoginPage, oapGetToken } from "../../ipc/oap"
+import { oapGetMe, oapLogout, oapLoginWithToken, openOapLoginPage } from "../../ipc/oap"
 import Button from "../../components/Button"
 import React, { useState } from "react"
 import "../../styles/overlay/_Account.scss"
 import EmbeddedLogin from "../../components/EmbeddedLogin"
 import EditUsernameModal from "../../components/EditUsernameModal"
 
-// Open a Hub management page.
-// Web mode: same-origin navigation (Hub is at the same host).
-// Desktop: open in external browser via IPC or window.open.
+// Open a Hub management page in the browser deployment.
 const openHubUrl = async (path: string) => {
   const consoleUrl = `${ENV_CONFIG.HUB_BASE_URL}${path}`;
-  if (isWeb) {
-    window.open(consoleUrl, '_blank');
-    return;
-  }
-  try {
-    const token = await oapGetToken();
-    const url = `${consoleUrl}${token ? `?token=${token}` : ''}`;
-    if (window.ipcRenderer && window.ipcRenderer.invoke) {
-      window.ipcRenderer.invoke('open-external-url', url);
-    } else {
-      window.open(url, '_blank');
-    }
-  } catch {
-    window.open(consoleUrl, '_blank');
-  }
+  window.open(consoleUrl, '_blank');
 };
 
 const Account = () => {

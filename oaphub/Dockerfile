@@ -68,6 +68,8 @@ COPY --chown=nodejs:nodejs oaphub/package.json ./
 COPY --chown=nodejs:nodejs oaphub/integrations ./integrations
 COPY --chown=nodejs:nodejs oaphub/system-prompt.txt ./system-prompt.txt
 
+RUN mkdir -p /app/downloads && chown -R nodejs:nodejs /app/downloads
+
 # Frontend SPA — built in stage 1
 COPY --from=frontend --chown=nodejs:nodejs /build/dist-web ./app-dist
 

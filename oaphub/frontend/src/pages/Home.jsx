@@ -1,34 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import api, { DOCS_URL } from '../config/api';
+import api from '../config/api';
 import './Home.css';
 
 const Home = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const { t, language, changeLanguage } = useLanguage();
-  // Default download URLs - empty until fetched from backend API
-  const DEFAULT_DOWNLOAD_URLS = {
-    windows: { x64: '' },
-    macos: {
-      intel: '',
-      appleSilicon: ''
-    },
-    linux: { x64: '', arm64: '' }
-  };
+  const [downloadPackages, setDownloadPackages] = useState([]);
+  const [inviteCode, setInviteCode] = useState('');
+  const [downloadError, setDownloadError] = useState('');
+  const [activeDownload, setActiveDownload] = useState('');
 
-  const [downloadUrls, setDownloadUrls] = useState(DEFAULT_DOWNLOAD_URLS);
-  const [detected, setDetected] = useState({ os: 'unknown', arch: 'x64' });
-  const [loading, setLoading] = useState(false);
-
-  // Redirect to dashboard if already logged in (unless accessing download section)
-  useEffect(() => {
-    if (user && window.location.hash !== '#download') {
-      navigate('/dashboard');
-    }
-  }, [user, navigate]);
+  const appEntry = user ? '/dashboard' : '/login';
 
   // Scroll to download section if hash is present
   useEffect(() => {
@@ -42,88 +27,143 @@ const Home = () => {
     }
   }, []);
 
-  // Detect user's platform and architecture
-  useEffect(() => {
-    const detectPlatform = () => {
-      const ua = navigator.userAgent;
-      const platform = navigator.platform;
-      
-      let os = 'unknown';
-      let arch = 'x64';
-      
-      if (ua.includes('Win')) {
-        os = 'windows';
-      } else if (ua.includes('Mac')) {
-        os = 'macos';
-        // Detect Apple Silicon
-        if (platform.includes('arm') || platform.includes('ARM')) {
-          arch = 'appleSilicon';
-        } else {
-          arch = 'intel';
-        }
-      } else if (ua.includes('Linux')) {
-        os = 'linux';
-      }
-      
-      return { os, arch };
-    };
-
-    setDetected(detectPlatform());
-  }, []);
-
-  // Try to fetch download configuration (optional override)
+  // Fetch the packages currently published by the Hub backend.
   useEffect(() => {
     const fetchDownloadConfig = async () => {
       try {
         const response = await api.get('/api/auth/download-config');
-        if (response?.data?.status === 'success' && response?.data?.data) {
-          setDownloadUrls(prev => ({ ...prev, ...response.data.data }));
+        if (response?.data?.status === 'success' && response.data.data?.packages) {
+          setDownloadPackages(response.data.data.packages);
         }
       } catch (_error) {
-        // Ignore errors: keep hardcoded defaults
+        setDownloadPackages([]);
       }
     };
 
     fetchDownloadConfig();
   }, []);
 
-  const handleDownload = (platform, arch) => {
-    let url = '';
-    
-    if (platform === 'windows') {
-      url = downloadUrls.windows.x64;
-    } else if (platform === 'macos') {
-      url = downloadUrls.macos[arch];
-    } else if (platform === 'linux') {
-      url = downloadUrls.linux[arch];
-    }
-
-    if (url) {
-      window.location.href = url;
-    }
+  const label = {
+    downloadTitle: language === 'zh' ? '客户部署包下载' : 'Customer Deployment Downloads',
+    downloadSubtitle: language === 'zh'
+      ? '选择 Docker 或 Kubernetes 安装包。下载需要邀请码。'
+      : 'Choose a Docker or Kubernetes package. Downloads require an invite code.',
+    invitePlaceholder: language === 'zh' ? '输入邀请码' : 'Enter invite code',
+    docker: language === 'zh' ? 'Docker 快速部署' : 'Docker Quick Deploy',
+    kubernetes: language === 'zh' ? 'Kubernetes 部署' : 'Kubernetes Deploy',
+    dockerDesc: language === 'zh'
+      ? '离线 Docker Compose 包，适合单机或测试环境。'
+      : 'Offline Docker Compose bundle for single-node or trial environments.',
+    kubernetesDesc: language === 'zh'
+      ? 'Kubernetes manifests 和镜像包，适合集群环境。'
+      : 'Kubernetes manifests and image bundle for cluster environments.',
+    unavailable: language === 'zh' ? '暂未发布' : 'Not published yet',
+    preparing: language === 'zh' ? '正在准备下载...' : 'Preparing download...',
+    downloading: language === 'zh' ? '下载中...' : 'Downloading...',
+    download: language === 'zh' ? '下载' : 'Download',
+    downloadPackages: language === 'zh' ? '下载部署包' : 'Download Packages',
+    documentation: language === 'zh' ? '部署文档' : 'Documentation',
+    officialHome: language === 'zh' ? '官网首页' : 'Home',
+    consoleEntry: language === 'zh' ? '进入控制台' : 'Open Console',
+    dataFlow: language === 'zh' ? '数据接入' : 'Data',
+    modelFlow: language === 'zh' ? '模型编排' : 'Models',
+    toolFlow: language === 'zh' ? '工具调用' : 'Tools',
+    answerFlow: language === 'zh' ? '问数决策' : 'Answers',
+    file: language === 'zh' ? '文件' : 'File',
+    size: language === 'zh' ? '大小' : 'Size',
+    checksum: language === 'zh' ? '校验文件已生成' : 'Checksum available',
+    guide: language === 'zh' ? '包内包含 DEPLOY.md、一键 install.sh 和默认 .env 示例。' : 'Each package includes DEPLOY.md, install.sh, and a ready-to-edit .env example.',
   };
 
-  const isRecommended = (platform, arch) => {
-    return detected.os === platform && (platform !== 'macos' || detected.arch === arch);
+  const formatFileSize = (bytes) => {
+    if (!bytes) return language === 'zh' ? '待发布' : 'Pending';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = bytes;
+    let unitIndex = 0;
+
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex += 1;
+    }
+
+    return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+  };
+
+  const getPackage = (id) => downloadPackages.find(item => item.id === id);
+  const dockerPackages = [
+    getPackage('docker-x86_64') || { id: 'docker-x86_64', architecture: 'x86_64', fileName: 'oaphub-docker-x86_64.tar.gz', available: false },
+    getPackage('docker-arm64') || { id: 'docker-arm64', architecture: 'arm64', fileName: 'oaphub-docker-arm64.tar.gz', available: false },
+  ];
+  const kubernetesPackage = getPackage('kubernetes-standard') || {
+    id: 'kubernetes-standard',
+    architecture: 'multi-arch',
+    fileName: 'oaphub-kubernetes-standard.tar.gz',
+    available: false,
+  };
+
+  const downloadPackage = (packageId) => {
+    setDownloadError('');
+
+    if (!inviteCode.trim()) {
+      setDownloadError(language === 'zh' ? '请输入邀请码后再下载。' : 'Enter an invite code before downloading.');
+      return;
+    }
+
+    setActiveDownload(packageId);
+    const query = new URLSearchParams({
+      inviteCode: inviteCode.trim(),
+      packageId,
+    });
+    window.location.href = `/api/auth/download?${query.toString()}`;
+    window.setTimeout(() => setActiveDownload(''), 2500);
+  };
+
+  const renderPackageButton = (pkg) => {
+    const busy = activeDownload === pkg.id;
+
+    return (
+      <button
+        key={pkg.id}
+        className="download-btn"
+        onClick={() => downloadPackage(pkg.id)}
+        disabled={!pkg.available || Boolean(activeDownload)}
+      >
+        <span className="btn-text">{pkg.title || pkg.architecture}</span>
+        <span className="btn-arch">
+          {pkg.available ? (busy ? label.preparing : label.download) : label.unavailable}
+        </span>
+      </button>
+    );
   };
 
   return (
     <div className="home-page">
-      {/* Language Switcher */}
-      <div className="language-switcher">
-        <button
-          className={`lang-btn ${language === 'en' ? 'active' : ''}`}
-          onClick={() => changeLanguage('en')}
-        >
-          English
-        </button>
-        <button
-          className={`lang-btn ${language === 'zh' ? 'active' : ''}`}
-          onClick={() => changeLanguage('zh')}
-        >
-          中文
-        </button>
-      </div>
+      <header className="home-nav">
+        <Link to="/" className="home-nav-brand">
+          <img src={`${import.meta.env.BASE_URL}image/logo_oap.svg`} alt="OAP Logo" />
+          <span>OAP Platform</span>
+        </Link>
+        <nav className="home-nav-links">
+          <Link to="/">{label.officialHome}</Link>
+          <Link to="/documentation">{label.documentation}</Link>
+          <a href="#download">{label.downloadPackages}</a>
+          <Link to={appEntry}>{label.consoleEntry}</Link>
+        </nav>
+        <div className="language-switcher">
+          <button
+            className={`lang-btn ${language === 'en' ? 'active' : ''}`}
+            onClick={() => changeLanguage('en')}
+          >
+            English
+          </button>
+          <button
+            className={`lang-btn ${language === 'zh' ? 'active' : ''}`}
+            onClick={() => changeLanguage('zh')}
+          >
+            中文
+          </button>
+        </div>
+      </header>
 
       {/* Hero Section */}
       <section className="hero-section">
@@ -134,8 +174,27 @@ const Home = () => {
             {t('home.heroDescription')}
           </p>
           <div className="hero-actions">
-            <Link to="/register" className="btn btn-primary">{t('home.getStarted')}</Link>
-            <Link to="/login" className="btn btn-secondary">{t('home.signIn')}</Link>
+            <Link to={appEntry} className="btn btn-primary">{label.consoleEntry}</Link>
+            <Link to="/documentation" className="btn btn-secondary">{label.documentation}</Link>
+            <a href="#download" className="btn btn-secondary">{label.downloadPackages}</a>
+          </div>
+        </div>
+        <div className="hero-visual">
+          <div className="flow-line">
+            <span>{label.dataFlow}</span>
+            <span>{label.modelFlow}</span>
+            <span>{label.toolFlow}</span>
+            <span>{label.answerFlow}</span>
+          </div>
+          <div className="query-panel">
+            <div className="query-row">
+              <span>{language === 'zh' ? '业务问题' : 'Business Question'}</span>
+              <strong>{language === 'zh' ? '本周异常订单来自哪里？' : 'Where did this week\'s order anomaly come from?'}</strong>
+            </div>
+            <div className="query-row">
+              <span>{language === 'zh' ? 'Agent 响应' : 'Agent Response'}</span>
+              <strong>{language === 'zh' ? '已关联数据、指标和工具链路' : 'Data, metrics, and tools are linked'}</strong>
+            </div>
           </div>
         </div>
       </section>
@@ -143,118 +202,100 @@ const Home = () => {
       {/* Features Section */}
       <section className="features-section">
         <h2 className="section-title">{t('home.whyChoose')}</h2>
-        <div className="features-grid">
-          <div className="feature-card">
-            <div className="feature-icon">💬</div>
-            <h3>{t('home.feature1Title')}</h3>
-            <p>{t('home.feature1Desc')}</p>
+        <div className="feature-lines">
+          <div className="feature-line">
+            <div className="feature-icon">01</div>
+            <div>
+              <h3>{t('home.feature1Title')}</h3>
+              <p>{t('home.feature1Desc')}</p>
+            </div>
           </div>
-          <div className="feature-card">
-            <div className="feature-icon">🤖</div>
-            <h3>{t('home.feature2Title')}</h3>
-            <p>{t('home.feature2Desc')}</p>
+          <div className="feature-line">
+            <div className="feature-icon">02</div>
+            <div>
+              <h3>{t('home.feature2Title')}</h3>
+              <p>{t('home.feature2Desc')}</p>
+            </div>
           </div>
-          <div className="feature-card">
-            <div className="feature-icon">🔧</div>
-            <h3>{t('home.feature3Title')}</h3>
-            <p>{t('home.feature3Desc')}</p>
+          <div className="feature-line">
+            <div className="feature-icon">03</div>
+            <div>
+              <h3>{t('home.feature3Title')}</h3>
+              <p>{t('home.feature3Desc')}</p>
+            </div>
           </div>
-          <div className="feature-card">
-            <div className="feature-icon">☁️</div>
-            <h3>{t('home.feature4Title')}</h3>
-            <p>{t('home.feature4Desc')}</p>
+          <div className="feature-line">
+            <div className="feature-icon">04</div>
+            <div>
+              <h3>{t('home.feature4Title')}</h3>
+              <p>{t('home.feature4Desc')}</p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Download Section */}
       <section id="download" className="download-section">
-        <h2 className="section-title">{t('home.downloadTitle')}</h2>
-        <p className="section-subtitle">{t('home.downloadSubtitle')}</p>
-        
-        {
-          <div className="download-grid">
-            {/* Windows */}
-            <div className="platform-card">
-              <div className="platform-header">
-                <div className="platform-icon windows-icon">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/>
-                  </svg>
-                </div>
-                <h3>{t('home.windows')}</h3>
-              </div>
-              <button
-                className={`download-btn ${isRecommended('windows', 'x64') ? 'recommended' : ''}`}
-                onClick={() => handleDownload('windows', 'x64')}
-                disabled={!downloadUrls.windows.x64}
-              >
-                {isRecommended('windows', 'x64') && <span className="badge">{t('home.recommended')}</span>}
-                <span className="btn-text">{t('home.downloadFor')} {t('home.windows')}</span>
-                <span className="btn-arch">x64</span>
-              </button>
-            </div>
+        <h2 className="section-title">{label.downloadTitle}</h2>
+        <p className="section-subtitle">{label.downloadSubtitle}</p>
 
-            {/* macOS */}
-            <div className="platform-card">
-              <div className="platform-header">
-                <div className="platform-icon macos-icon">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-                  </svg>
-                </div>
-                <h3>{t('home.macos')}</h3>
-              </div>
-              <button
-                className={`download-btn ${isRecommended('macos', 'appleSilicon') ? 'recommended' : ''}`}
-                onClick={() => handleDownload('macos', 'appleSilicon')}
-                disabled={!downloadUrls.macos.appleSilicon}
-              >
-                {isRecommended('macos', 'appleSilicon') && <span className="badge">{t('home.recommended')}</span>}
-                <span className="btn-text">{t('home.appleSilicon')}</span>
-                <span className="btn-arch">ARM64</span>
-              </button>
-              <button
-                className={`download-btn ${isRecommended('macos', 'intel') ? 'recommended' : ''}`}
-                onClick={() => handleDownload('macos', 'intel')}
-                disabled={!downloadUrls.macos.intel}
-              >
-                {isRecommended('macos', 'intel') && <span className="badge">{t('home.recommended')}</span>}
-                <span className="btn-text">{t('home.intelMac')}</span>
-                <span className="btn-arch">x64</span>
-              </button>
-            </div>
+        <div className="invite-download-form">
+          <input
+            value={inviteCode}
+            onChange={(event) => setInviteCode(event.target.value)}
+            placeholder={label.invitePlaceholder}
+            type="password"
+          />
+          {downloadError && <div className="download-error">{downloadError}</div>}
+        </div>
 
-            {/* Linux */}
-            <div className="platform-card">
-              <div className="platform-header">
-                <div className="platform-icon linux-icon">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489.109.716.405 1.416.9 1.932 1.378 1.436 3.336 1.308 5.234 1.107 1.903-.201 3.882-.411 5.785-.617.926-.101 1.832-.204 2.633-.471.801-.267 1.513-.678 1.948-1.375.436-.697.598-1.641.598-2.485 0-.844-.162-1.788-.598-2.485-.435-.697-1.147-1.108-1.948-1.375-.801-.267-1.707-.37-2.633-.471-1.903-.206-3.882-.416-5.785-.617-1.898-.201-3.856-.329-5.234 1.107-.495.516-.791 1.216-.9 1.932-.123.805.009 1.657.287 2.489.589 1.771 1.831 3.47 2.716 4.521.75 1.067.974 1.928 1.05 3.02.065 1.491-1.056 5.965 3.17 6.298.165.013.325.021.48.021 4.226 0 3.105-4.807 3.17-6.298.076-1.092.3-1.953 1.05-3.02.885-1.051 2.127-2.75 2.716-4.521.278-.832.41-1.684.287-2.489-.109-.716-.405-1.416-.9-1.932-1.378-1.436-3.336-1.308-5.234-1.107-1.903.201-3.882.411-5.785.617-.926.101-1.832.204-2.633.471-.801.267-1.513.678-1.948 1.375-.436.697-.598 1.641-.598 2.485s.162 1.788.598 2.485c.435.697 1.147 1.108 1.948 1.375.801.267 1.707.37 2.633.471 1.903.206 3.882.416 5.785.617 1.898.201 3.856.329 5.234-1.107.495-.516.791-1.216.9-1.932.123-.805-.009-1.657-.287-2.489-.589-1.771-1.831-3.47-2.716-4.521-.75-1.067-.974-1.928-1.05-3.02-.065-1.491 1.056-5.965-3.17-6.298-.165-.013-.325-.021-.48-.021z"/>
-                  </svg>
-                </div>
-                <h3>{t('home.linux')}</h3>
+        <div className="download-panel">
+          <div className="platform-block">
+            <div className="platform-header">
+              <div className="platform-icon">D</div>
+              <div>
+                <h3>{label.docker}</h3>
+                <p>{label.dockerDesc}</p>
               </div>
-              <button
-                className={`download-btn ${isRecommended('linux', 'x64') ? 'recommended' : ''}`}
-                onClick={() => handleDownload('linux', 'x64')}
-                disabled={!downloadUrls.linux.x64}
-              >
-                {isRecommended('linux', 'x64') && <span className="badge">{t('home.recommended')}</span>}
-                <span className="btn-text">{t('home.linuxX64')}</span>
-                <span className="btn-arch">x86_64</span>
-              </button>
-              <button
-                className="download-btn"
-                onClick={() => handleDownload('linux', 'arm64')}
-                disabled={!downloadUrls.linux.arm64}
-              >
-                <span className="btn-text">{t('home.linuxArm64')}</span>
-                <span className="btn-arch">aarch64</span>
-              </button>
+            </div>
+            <div className="package-list">
+              {dockerPackages.map(pkg => (
+                <div key={pkg.id} className="package-row">
+                  <div className="package-info">
+                    <span className="package-arch">{pkg.architecture}</span>
+                    <span className="package-file">{label.file}: {pkg.fileName}</span>
+                    <span className="package-file">{label.size}: {formatFileSize(pkg.fileSize)}</span>
+                    {pkg.checksumAvailable && <span className="package-checksum">{label.checksum}</span>}
+                  </div>
+                  {renderPackageButton(pkg)}
+                </div>
+              ))}
             </div>
           </div>
-        }
+
+          <div className="platform-block">
+            <div className="platform-header">
+              <div className="platform-icon">K8s</div>
+              <div>
+                <h3>{label.kubernetes}</h3>
+                <p>{label.kubernetesDesc}</p>
+              </div>
+            </div>
+            <div className="package-list">
+              <div className="package-row">
+                <div className="package-info">
+                  <span className="package-arch">{kubernetesPackage.architecture}</span>
+                  <span className="package-file">{label.file}: {kubernetesPackage.fileName}</span>
+                  <span className="package-file">{label.size}: {formatFileSize(kubernetesPackage.fileSize)}</span>
+                  {kubernetesPackage.checksumAvailable && <span className="package-checksum">{label.checksum}</span>}
+                </div>
+                {renderPackageButton(kubernetesPackage)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p className="download-guide">{label.guide}</p>
       </section>
 
       {/* Footer */}
@@ -266,9 +307,9 @@ const Home = () => {
             <span className="separator">·</span>
             <Link to="/register">{t('home.getStarted')}</Link>
             <span className="separator">·</span>
-            <a href={DOCS_URL} target="_blank" rel="noopener noreferrer">
+            <Link to="/documentation">
               {t('common.documentation')}
-            </a>
+            </Link>
           </div>
         </div>
       </footer>

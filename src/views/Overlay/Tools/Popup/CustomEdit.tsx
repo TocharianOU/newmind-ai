@@ -1258,7 +1258,7 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
                 />
               </div>
               
-              {/* Command - only show for stdio transport (desktop only) */}
+              {/* Command is hidden in browser deployments because stdio tools are local-process based. */}
               {!isWeb && (!currentMcpServers.transport || currentMcpServers.transport === "stdio") && (
                 <div className="field-item">
                   <label>Command</label>

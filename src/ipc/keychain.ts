@@ -3,8 +3,6 @@
  * Provides a clean interface for secure credential storage
  */
 
-const isElectron = typeof window !== "undefined" && window.ipcRenderer !== undefined
-
 export interface KeychainCredential {
   service: string
   account: string
@@ -23,11 +21,10 @@ export async function setPassword(
   account: string,
   password: string
 ): Promise<{ success: boolean; error?: string }> {
-  if (!isElectron) {
-    return { success: false, error: "Keychain not available in non-Electron environment" }
-  }
-  
-  return window.ipcRenderer.keychainSetPassword(service, account, password)
+  void service
+  void account
+  void password
+  return { success: false, error: "Keychain is not available in browser deployments" }
 }
 
 /**
@@ -39,11 +36,9 @@ export async function getPassword(
   service: string,
   account: string
 ): Promise<{ success: boolean; password?: string; error?: string }> {
-  if (!isElectron) {
-    return { success: false, error: "Keychain not available in non-Electron environment" }
-  }
-  
-  return window.ipcRenderer.keychainGetPassword(service, account)
+  void service
+  void account
+  return { success: false, error: "Keychain is not available in browser deployments" }
 }
 
 /**
@@ -55,11 +50,9 @@ export async function deletePassword(
   service: string,
   account: string
 ): Promise<{ success: boolean; error?: string }> {
-  if (!isElectron) {
-    return { success: false, error: "Keychain not available in non-Electron environment" }
-  }
-  
-  return window.ipcRenderer.keychainDeletePassword(service, account)
+  void service
+  void account
+  return { success: false, error: "Keychain is not available in browser deployments" }
 }
 
 /**
@@ -70,23 +63,14 @@ export async function listCredentials(): Promise<{
   credentials?: KeychainCredential[]
   error?: string
 }> {
-  if (!isElectron) {
-    return { success: false, error: "Keychain not available in non-Electron environment" }
-  }
-  
-  return window.ipcRenderer.keychainList()
+  return { success: false, error: "Keychain is not available in browser deployments" }
 }
 
 /**
  * Check if keychain encryption is available on this system
  */
 export async function isKeychainAvailable(): Promise<boolean> {
-  if (!isElectron) {
-    return false
-  }
-  
-  const result = await window.ipcRenderer.keychainIsAvailable()
-  return result.success && result.available
+  return false
 }
 
 /**

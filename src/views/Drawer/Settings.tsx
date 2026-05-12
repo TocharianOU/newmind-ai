@@ -13,7 +13,6 @@ import { imgPrefix } from "../../ipc"
 import { isLoggedInOAPAtom, oapUserAtom, OAPLevelAtom } from "../../atoms/oapState"
 import { settingTabAtom } from "../../atoms/globalState"
 import { ENV_CONFIG } from "../../config/env"
-import { oapGetToken } from "../../ipc/oap"
 import { isWeb } from "../../ipc/env"
 
 const ALL_TABS = ["Projects", "Tools", "Model", "Account", "System", "About"] as const
@@ -36,27 +35,8 @@ const Settings = ({ tab }: { tab: Tab }) => {
     setSettingTab(tab)
   }, [tab, setSettingTab])
 
-  // Open OAP Dashboard with token auto-login
   const handleOAP = async () => {
-    try {
-      const token = await oapGetToken()
-      const url = `${ENV_CONFIG.HUB_BASE_URL}/dashboard${token ? `?token=${token}` : ''}`
-      console.log('Opening OAP Dashboard:', url)
-      
-      if (window.ipcRenderer && window.ipcRenderer.invoke) {
-        window.ipcRenderer.invoke('open-external-url', url)
-      } else {
-        window.open(url, '_blank')
-      }
-    } catch (error) {
-      console.error('Error opening OAP:', error)
-      const fallbackUrl = `${ENV_CONFIG.HUB_BASE_URL}/dashboard`
-      if (window.ipcRenderer && window.ipcRenderer.invoke) {
-        window.ipcRenderer.invoke('open-external-url', fallbackUrl)
-      } else {
-        window.open(fallbackUrl, '_blank')
-      }
-    }
+    window.open(`${ENV_CONFIG.HUB_BASE_URL}/dashboard`, '_blank')
   }
 
   return (

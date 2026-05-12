@@ -1,34 +1,18 @@
 import { useAtom, useAtomValue } from "jotai"
 import { useTranslation } from "react-i18next"
 import Select from "../../components/Select"
-import React, { useState, useEffect } from "react"
+import React, { useState } from "react"
 
 import ThemeSwitch from "../../components/ThemeSwitch"
 import Switch from "../../components/Switch"
-import { getAutoDownload, setAutoDownload as _setAutoDownload } from "../../updater"
 import { disableDiveSystemPromptAtom, updateDisableDiveSystemPromptAtom } from "../../atoms/configState"
-import { getIPCAutoLaunch, getIPCMinimalToTray, setIPCAutoLaunch, setIPCMinimalToTray } from "../../ipc/system"
-import { isWeb } from "../../ipc/env"
 import "../../styles/overlay/_System.scss"
 
 const System = () => {
   const { t, i18n } = useTranslation()
   const [language, setLanguage] = useState(i18n.language)
-  const [autoDownload, setAutoDownload] = useState(false)
-  const [autoLaunch, setAutoLaunch] = useState(false)
-  const [minimalToTray, setMinimalToTray] = useState(false)
   const disableDiveSystemPrompt = useAtomValue(disableDiveSystemPromptAtom)
   const [, updateDisableDiveSystemPrompt] = useAtom(updateDisableDiveSystemPromptAtom)
-
-  useEffect(() => {
-    getIPCAutoLaunch().then(setAutoLaunch)
-    getIPCMinimalToTray().then(setMinimalToTray)
-  }, [])
-
-  const handleAutoLaunchChange = (value: boolean) => {
-    setAutoLaunch(value)
-    setIPCAutoLaunch(value)
-  }
 
   const languageOptions = [
     { label: t("system.languageDefault"), value: "default" },
@@ -36,18 +20,9 @@ const System = () => {
     { label: "English", value: "en" },
   ]
 
-  useEffect(() => {
-    setAutoDownload(getAutoDownload())
-  }, [])
-
   const handleLanguageChange = async (value: string) => {
     setLanguage(value)
     await i18n.changeLanguage(value === "default" ? navigator.language : value)
-  }
-
-  const handleMinimalToTrayChange = (value: boolean) => {
-    setMinimalToTray(value)
-    setIPCMinimalToTray(value)
   }
 
   const handleDefaultSystemPromptChange = async (value: boolean) => {
@@ -74,57 +49,6 @@ const System = () => {
             </div>
             <span className="system-list-description">{t("system.themeDescription")}</span>
           </div>
-
-          {/* minimal to tray — desktop only */}
-          {!isWeb && (
-            <div className="system-list-section">
-              <div className="system-list-content">
-                <span className="system-list-name">{t("system.minimalToTray")}</span>
-                <div className="system-list-switch-container">
-                  <Switch
-                    checked={minimalToTray}
-                    onChange={e => handleMinimalToTrayChange(e.target.checked)}
-                  />
-                </div>
-              </div>
-              <span className="system-list-description">{t("system.minimalToTrayDescription")}</span>
-            </div>
-          )}
-
-          {/* auto launch — desktop only */}
-          {!isWeb && (
-            <div className="system-list-section">
-              <div className="system-list-content">
-                <span className="system-list-name">{t("system.autoLaunch")}</span>
-                <div className="system-list-switch-container">
-                  <Switch
-                    checked={autoLaunch}
-                    onChange={e => handleAutoLaunchChange(e.target.checked)}
-                  />
-                </div>
-              </div>
-              <span className="system-list-description">{t("system.autoLaunchDescription")}</span>
-            </div>
-          )}
-
-          {/* auto download — desktop only */}
-          {!isWeb && (
-            <div className="system-list-section">
-              <div className="system-list-content">
-                <span className="system-list-name">{t("system.autoDownload")}</span>
-                <div className="system-list-switch-container">
-                  <Switch
-                    checked={autoDownload}
-                    onChange={(e) => {
-                      setAutoDownload(e.target.checked)
-                      _setAutoDownload(e.target.checked)
-                    }}
-                  />
-                </div>
-              </div>
-              <span className="system-list-description">{t("system.autoDownloadDescription")}</span>
-            </div>
-          )}
 
           {/* language */}
           <div className="system-list-section">

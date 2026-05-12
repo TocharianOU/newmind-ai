@@ -20,5 +20,5 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "vite.config.electron.ts"]
+  "include": ["vite.config.web.ts"]
 }

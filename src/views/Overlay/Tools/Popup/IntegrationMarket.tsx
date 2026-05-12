@@ -12,6 +12,7 @@ import InfiniteScroll from "../../../../components/InfiniteScroll"
 import PopupConfirm from "../../../../components/PopupConfirm"
 import SchemaForm from "./SchemaForm"
 import Tooltip from "../../../../components/Tooltip"
+import { restartHost } from "../../../../ipc/host"
 
 // Custom hook for debounced value
 function useDebounce<T>(value: T, delay: number): T {
@@ -501,7 +502,7 @@ const IntegrationMarket = ({ onClose, onIntegrationAdded }: IntegrationMarketPro
             duration: 5000
           })
           try {
-            await window.ipcRenderer.restartHost()
+            await restartHost()
           } catch (e) {
             console.error('[Keychain] Failed to restart host after credential save:', e)
           }

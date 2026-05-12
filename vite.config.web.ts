@@ -4,8 +4,7 @@ import react from "@vitejs/plugin-react"
 import jotaiDebugLabel from "jotai/babel/plugin-debug-label"
 import jotaiReactRefresh from "jotai/babel/plugin-react-refresh"
 
-// Web build config — no Electron plugin, no Tauri.
-// The produced dist-web/ is served statically from oaphub at /app/*.
+// Web build config. The produced dist-web/ is served statically from oaphub at /app/*.
 // All relative-path API calls (/api/chat, /api/tools, etc.) are resolved
 // against the Hub's origin; Hub proxies them to the MCP Host internally.
 export default defineConfig({
@@ -24,17 +23,6 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.join(__dirname, "src"),
-      // Stub out all Tauri packages — they are not available in web mode.
-      "@tauri-apps/api/core": path.join(__dirname, "src/stubs/tauri.ts"),
-      "@tauri-apps/api/event": path.join(__dirname, "src/stubs/tauri.ts"),
-      "@tauri-apps/api/path": path.join(__dirname, "src/stubs/tauri.ts"),
-      "@tauri-apps/plugin-fs": path.join(__dirname, "src/stubs/tauri.ts"),
-      "@tauri-apps/plugin-os": path.join(__dirname, "src/stubs/tauri.ts"),
-      "@tauri-apps/plugin-http": path.join(__dirname, "src/stubs/tauri.ts"),
-      "@tauri-apps/plugin-opener": path.join(__dirname, "src/stubs/tauri.ts"),
-      "@tauri-apps/plugin-autostart": path.join(__dirname, "src/stubs/tauri.ts"),
-      "@tauri-apps/plugin-updater": path.join(__dirname, "src/stubs/tauri.ts"),
-      "@tauri-apps/plugin-clipboard-manager": path.join(__dirname, "src/stubs/tauri.ts"),
       "@codemirror/state": path.resolve(
         __dirname,
         "./node_modules/@codemirror/state/dist/index.js"

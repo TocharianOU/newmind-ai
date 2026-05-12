@@ -17,7 +17,6 @@ import { isLoggedInOAPAtom, OAPLevelAtom, oapUserAtom } from "../atoms/oapState"
 import Button from "./Button"
 import { settingTabAtom } from "../atoms/globalState"
 import { ClickOutside } from "./ClickOutside"
-import { oapGetToken } from "../ipc/oap"
 import { ENV_CONFIG } from "../config/env"
 import { apiFetch } from "../utils/api"
 
@@ -276,30 +275,8 @@ const HistorySidebar = ({ onNewConversation }: Props) => {
     }
   }
 
-  // 打开 OAP Dashboard（带token自动登录）
   const handleOpenHub = async () => {
-    try {
-      const token = await oapGetToken()
-      const url = `${ENV_CONFIG.HUB_BASE_URL}/dashboard${token ? `?token=${token}` : ''}`
-      console.log('🔗 Opening OAP Dashboard:', url)
-      
-      if (window.ipcRenderer && window.ipcRenderer.invoke) {
-        // 使用IPC在外部浏览器中打开
-        window.ipcRenderer.invoke('open-external-url', url)
-      } else {
-        // 降级方案：使用window.open
-        window.open(url, '_blank')
-      }
-    } catch (error) {
-      console.error('🔗 Error opening OAP:', error)
-      // 即使获取token失败，也尝试打开（不带token）
-      const fallbackUrl = `${ENV_CONFIG.HUB_BASE_URL}/dashboard`
-      if (window.ipcRenderer && window.ipcRenderer.invoke) {
-        window.ipcRenderer.invoke('open-external-url', fallbackUrl)
-      } else {
-        window.open(fallbackUrl, '_blank')
-      }
-    }
+    window.open(`${ENV_CONFIG.HUB_BASE_URL}/dashboard`, '_blank')
   }
 
   const onBlur = () => {

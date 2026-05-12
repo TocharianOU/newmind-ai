@@ -1,230 +1,174 @@
 # NewMind AI
 
-An AI-powered operations and security intelligence platform. Combines a multi-provider LLM chat interface, an MCP (Model Context Protocol) tool orchestration layer, and an enterprise-grade management hub with SSO, multi-user, and project isolation.
+NewMind AI 是面向业务团队的问数 Agent 平台。系统将数据、模型和 MCP 工具连接在一起，让用户可以用自然语言完成查询、分析、追踪和决策。客户部署时不绑定平台托管模型，通常由客户接入自己的模型服务和内部工具。
 
----
+## 项目架构
 
-## Architecture
+整体架构由三部分组成：
 
-```
-┌──────────────────────────────────────────────────────────┐
-│                      Clients                             │
-│   Browser (Web App)          Electron (Desktop App)      │
-└────────────────┬─────────────────────────┬───────────────┘
-                 │  HTTPS / WS             │  IPC + HTTP
-                 ▼                         ▼
-┌──────────────────────────────────────────────────────────┐
-│                     OAP Hub  :3000                       │
-│  • Auth (JWT + SSO)       • User / Project management    │
-│  • Admin console          • Subscription & audit log     │
-│  • LLM model proxy        • MCP tool proxy               │
-│  • Serves Chat UI (/app)  • Serves Admin UI (/console)   │
-│                  Node.js · Express · Prisma              │
-└────────────┬────────────────────┬────────────────────────┘
-             │  PostgreSQL 5432   │  HTTP :61990
-             ▼                   ▼
-    ┌─────────────────┐  ┌──────────────────────────────┐
-    │  PostgreSQL 16  │  │        MCP Host :61990        │
-    │  (users, chats, │  │  • LLM orchestration          │
-    │   projects,     │  │  • LangGraph / LangChain      │
-    │   audit logs)   │  │  • MCP tool plugins           │
-    └─────────────────┘  │  • Chat memory (SQLite)       │
-                         │  FastAPI · Python 3.12 · uv   │
-                         └──────────────────────────────┘
+```text
+浏览器 / 桌面客户端
+        |
+        | /app/ 聊天应用，/console/ 管理控制台
+        v
+OAP Hub
+  - 用户、组织、项目、权限和审计
+  - 登录、SSO、License 和后台管理
+  - 模型代理、MCP 工具代理、客户部署包下载
+        |
+        +--> PostgreSQL：账号、项目、会话、审计和计量数据
+        |
+        +--> MCP Host：工具编排、上下文处理和工具调用运行时
 ```
 
-| Service | Technology | Port |
-|---------|-----------|------|
-| `hub` | Node.js 20, Express, Prisma | 23000 (external) |
-| `mcp-host` | Python 3.12, FastAPI, LangChain | 61990 (internal) |
-| `postgres` | PostgreSQL 16 | 5432 (internal) |
+主要服务：
 
----
+- `hub`：Node.js / Express / Prisma，提供 API、控制台、聊天应用和模型代理。
+- `mcp-host`：Python / FastAPI，承载 MCP 工具和 Agent 工具链。
+- `postgres`：PostgreSQL 16，保存业务配置和运行数据。
+- `oaphub/frontend`：控制台和官网 Home 页面，基于 React / Vite。
+- `src`：Web 聊天应用，构建后由 Hub 在 `/app/` 提供访问。
 
-## Server Deployment (Docker)
+## 目录说明
 
-### First-time setup
+```text
+newmind-ai/
+├── src/                         # Web 聊天应用
+├── oaphub/
+│   ├── src/                     # Hub 后端服务
+│   ├── frontend/                # 控制台、Home、文档页
+│   ├── prisma/                  # 数据库 schema 与迁移
+│   ├── integrations/            # 集成配置
+│   ├── Dockerfile
+│   └── docker-compose.yml
+├── mcp-host/                    # MCP Host 服务
+├── elasticsearch-mcp/           # Elasticsearch MCP 工具服务
+├── scripts/                     # 构建和客户交付包脚本
+└── public/                      # 静态资源
+```
+
+## 本地开发
+
+安装依赖后，可以分别启动前端和服务端开发流程。实际部署以 Docker / Kubernetes 为准。
 
 ```bash
-# 1. Create persistent volumes
-docker volume create oaphub_postgres_data
-docker volume create oaphub_mcp_data
+npm install
+
+cd oaphub
+npm install
+
+cd frontend
+npm install
+npm run build
 ```
 
-Create `oaphub/.env`:
+常用入口：
+
+- `http://<host>:23000/`：官网 Home 页面。
+- `http://<host>:23000/app/`：问数 Agent 应用。
+- `http://<host>:23000/console/`：管理控制台。
+- `http://<host>:23000/console/documentation`：部署与配置文档。
+- `http://<host>:23000/api/health`：健康检查。
+
+## Docker 部署
+
+Docker Compose 适合单机、PoC、内网测试和小规模私有化部署。
+
+1. 配置环境变量：
+
+```bash
+cd oaphub
+cp .env.example .env  # 如果包内已提供 .env，可直接编辑
+```
+
+至少需要确认以下配置：
 
 ```env
-# Required
-POSTGRES_PASSWORD=your_strong_password_here
-JWT_SECRET=your_jwt_secret_here          # openssl rand -hex 32
-OAP_AUTH_TOKEN=your_auth_token_here      # openssl rand -hex 32
-
-# Bootstrap admin (auto-created on first boot)
-ADMIN_EMAIL=admin@yourdomain.com
-ADMIN_PASSWORD=your_admin_password
-
-# Networking
-PORT=23000
-ALLOWED_ORIGINS=https://yourdomain.com
-HUB_FRONTEND_URL=https://yourdomain.com
-
-# SSO (disabled by default)
-SSO_ENABLED=false
+POSTGRES_PASSWORD=replace_with_secure_password
+JWT_SECRET=replace_with_random_secret
+OAP_AUTH_TOKEN=replace_with_random_token
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=replace_with_admin_password
+ALLOWED_ORIGINS=https://your-domain.example
+HUB_FRONTEND_URL=https://your-domain.example
 DEPLOYMENT_MODE=enterprise
 ```
 
+2. 启动服务：
+
 ```bash
-# 2. Build and start
-cd oaphub/
 docker compose build
 docker compose up -d
 ```
 
-| URL | Description |
-|-----|-------------|
-| `:23000/app/` | NewMind AI Chat UI |
-| `:23000/console/` | OAP Hub Admin Console |
-| `:23000/api/health` | Health check |
-
-### Update / Redeploy
+3. 检查状态：
 
 ```bash
-cd oaphub/
-docker compose build --no-cache
+docker compose ps
+curl http://localhost:23000/api/health
+```
+
+升级时通常只需要替换镜像或重新构建镜像，然后执行：
+
+```bash
 docker compose up -d
 ```
 
-### Common commands
+数据库和 MCP 运行数据应通过 volume 持久化，不要在生产环境随意执行 `docker compose down -v`。
+
+## Kubernetes 部署
+
+Kubernetes 部署适合正式集群环境。客户交付包中会包含镜像包、manifest、部署说明和更新说明。一般流程如下：
 
 ```bash
-docker compose logs -f hub          # live logs
-docker compose down                 # stop
-docker compose down -v              # stop + wipe data
+tar -xzf oaphub-kubernetes-standard.tar.gz
+cd oaphub-kubernetes-package
+
+# 将镜像导入目标集群或镜像仓库
+# 按实际域名、StorageClass、Secret 修改 manifests
+kubectl apply -f kubernetes/
+kubectl get pods -n oaphub
 ```
 
----
+生产环境需要重点确认：
 
-## SSO Configuration
+- 数据库、上传目录和 MCP 数据目录已挂载持久化存储。
+- Secret 中的密码、Token 和管理员密码已经替换。
+- Ingress、TLS、域名和跨域配置与实际访问地址一致。
+- 升级前已备份数据库和关键 volume。
 
-Set `SSO_ENABLED=true` in `.env` plus the provider variables below.
+## 模型与 MCP 配置
 
-### Google OAuth 2.0
+客户部署默认不要求使用平台内置模型。通常由客户在控制台中接入自己的模型供应商，例如企业内部网关、私有化大模型服务或兼容 OpenAI API 的模型服务。
 
-1. [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services** → **Credentials** → **Create OAuth 2.0 Client ID**
-2. Redirect URI: `https://yourdomain.com/api/auth/sso/google/callback`
+MCP 工具可按业务场景单独部署，例如 Elasticsearch、数据库、日志系统、工单系统或内部知识库。Hub 负责鉴权和代理，MCP Host 负责工具编排和上下文处理。新增工具时，应优先在内网完成连通性和权限验证，再开放给业务用户使用。
 
-```env
-SSO_CALLBACK_BASE_URL=https://yourdomain.com
-SSO_GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com
-SSO_GOOGLE_CLIENT_SECRET=xxxx
-```
+## 客户交付包
 
-### Azure AD (Microsoft Entra ID)
-
-1. [Azure Portal](https://portal.azure.com/) → **App registrations** → **New registration**
-2. Redirect URI: `https://yourdomain.com/api/auth/sso/azure/callback`
-3. Note the **Application (client) ID**, **Directory (tenant) ID**, and create a client secret.
-
-```env
-SSO_CALLBACK_BASE_URL=https://yourdomain.com
-SSO_AZURE_ENABLED=true
-SSO_AZURE_TENANT_ID=your_tenant_id
-SSO_AZURE_CLIENT_ID=your_client_id
-SSO_AZURE_CLIENT_SECRET=your_client_secret
-```
-
-### AWS Cognito
-
-1. **AWS Console** → **Cognito** → **User Pools** → **App integration** → create App client
-2. Callback URL: `https://yourdomain.com/api/auth/sso/aws/callback`
-
-```env
-SSO_CALLBACK_BASE_URL=https://yourdomain.com
-SSO_AWS_ENABLED=true
-SSO_AWS_REGION=us-east-1
-SSO_AWS_USER_POOL_ID=us-east-1_xxxxxxxxx
-SSO_AWS_CLIENT_ID=your_client_id
-SSO_AWS_CLIENT_SECRET=your_client_secret
-```
-
-### WeCom (企业微信)
-
-1. 企业微信管理后台 → **应用管理** → 选择应用，获取 **AgentId** 和 **Secret**
-2. 设置网页授权回调域名为你的服务器域名，从**企业信息**获取 **CorpID**
-
-```env
-SSO_CALLBACK_BASE_URL=https://yourdomain.com
-SSO_WECHATWORK_ENABLED=true
-SSO_WECHATWORK_CORP_ID=your_corp_id
-SSO_WECHATWORK_AGENT_ID=your_agent_id
-SSO_WECHATWORK_SECRET=your_app_secret
-```
-
-> On first SSO login, an account is created automatically. Existing accounts are linked by matching email. Use `HTTP_PROXY` / `HTTPS_PROXY` if the server needs a proxy to reach SSO providers.
-
----
-
-## Desktop App Packaging
-
-The Electron app bundles a self-contained Python runtime, `uv`, and MCP Host — no dependencies required on the end user's machine.
-
-**Prerequisites:** Node.js 20+, run `npm install` first.
-
-### macOS
+客户部署包由脚本生成：
 
 ```bash
-# Unsigned build (arm64 + x64 DMG + ZIP)
-npm run package:darwin:unsigned
-
-# Single arch
-npm run package:darwin-dmg:arm64:unsigned
-npm run package:darwin-dmg:x64:unsigned
+bash scripts/build-customer-release.sh --kind docker --arch x86_64
+bash scripts/build-customer-release.sh --kind kubernetes
 ```
 
-Output: `release/<version>/NewMind AI-<version>-mac-arm64.dmg`
+生成结果位于 `oaphub/downloads/`，通常包括：
 
-### Linux
+- Docker 或 Kubernetes 部署包。
+- `DEPLOY.md`：新部署说明。
+- `UPDATE.md`：升级和回滚说明。
+- `install.sh`：快速安装脚本。
+- `.env` 或 `.env.example`：需要客户按实际环境修改。
 
-```bash
-npm run package:linux-appImage   # → AppImage
-npm run package:linux-tar        # → tar.gz
-```
+大体原则是：源码、脚本和部署说明进入 Git；镜像包、压缩包、临时构建目录和客户交付产物不进入 Git。
 
-Output: `release/<version>/NewMind AI-<version>-linux-x64.AppImage`
+## 维护说明
 
-### Windows
-
-```bash
-npm run docker:build-win         # cross-compile via Docker (on Linux host)
-# or natively on Windows:
-npm run package:windows
-```
-
-Output: `release/<version>/NewMind AI-<version>-win-x64-setup.exe`
-
----
-
-## Project Structure
-
-```
-newmind-ai/
-├── src/                  # Chat UI — React + TypeScript (Vite)
-├── oaphub/
-│   ├── src/              # Hub server — Express + Prisma
-│   ├── frontend/         # Admin Console — React (Vite)
-│   ├── prisma/           # Database schema + migrations
-│   ├── integrations/     # Third-party MCP integration configs
-│   ├── Dockerfile
-│   └── docker-compose.yml
-├── mcp-host/
-│   ├── oap_mcp_host/     # Python MCP host package
-│   └── Dockerfile
-├── electron/             # Electron main process
-└── public/               # Static assets
-```
-
----
+- 提交前检查 `.gitignore`，避免把镜像、压缩包、密钥和本地环境文件提交。
+- 生产配置中的密码、Token、SSO Secret 和模型 API Key 不应写入仓库。
+- 对外文档保持简洁，部署包内的 `DEPLOY.md` 和 `UPDATE.md` 用于承载更具体的安装步骤。
+- 重要升级先在测试环境验证，再更新客户交付包。
 
 ## License
 
-Proprietary — © 2025 NewMind AI. All rights reserved.
+Proprietary - Copyright 2025 NewMind AI. All rights reserved.

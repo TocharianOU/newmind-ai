@@ -18,6 +18,7 @@ import AdminModels from './pages/AdminModels';
 import AdminToolStats from './pages/AdminToolStats';
 import AdminBilling from './pages/AdminBilling';
 import License from './pages/License';
+import Documentation from './pages/Documentation';
 import './App.css';
 
 // Protected Route Component
@@ -58,11 +59,34 @@ const PublicRoute = ({ children }) => {
   const urlParams = new URLSearchParams(window.location.search);
   const appRedirect = urlParams.get('appRedirect');
 
-  if (user && appRedirect !== 'newmind') {
+  if (user && appRedirect !== 'newmind' && appRedirect !== 'web') {
     return <Navigate to="/dashboard" replace />;
   }
 
   return children;
+};
+
+const DocumentationRoute = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (user) {
+    return (
+      <Layout>
+        <Documentation />
+      </Layout>
+    );
+  }
+
+  return <Documentation />;
 };
 
 function AppRoutes() {
@@ -113,6 +137,10 @@ function AppRoutes() {
             </Layout>
           </ProtectedRoute>
         }
+      />
+      <Route
+        path="/documentation"
+        element={<DocumentationRoute />}
       />
       <Route
         path="/billing"

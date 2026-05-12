@@ -1,5 +1,4 @@
 import { getCurrentProject } from "@/ipc/project"
-import { isWeb } from "@/ipc/env"
 import { getWebToken } from "@/ipc/oap"
 
 type ApiFetchInit = RequestInit & {
@@ -11,9 +10,8 @@ type ApiFetchInit = RequestInit & {
 /**
  * Enhanced fetch wrapper that automatically injects X-Project-ID and auth headers.
  *
- * Desktop / Tauri: injects X-Auth-Token (shared secret with local MCP Host).
- * Web: injects Authorization: Bearer {jwt} — the Hub validates it and injects
- *      X-Auth-Token + X-User-ID when proxying to the MCP Host.
+ * Browser deployments authenticate via Hub JWT. The Hub validates it and
+ * injects X-Auth-Token + X-User-ID when proxying to the MCP Host.
  */
 export async function apiFetch(
   input: RequestInfo | URL,
@@ -28,22 +26,9 @@ export async function apiFetch(
     headers.set("X-Project-ID", currentProjectId)
   }
 
-  if (isWeb) {
-    // Web mode: authenticate via Hub JWT — Hub forwards with internal token
-    const token = getWebToken()
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`)
-    }
-  } else {
-    // Desktop / Tauri mode: authenticate directly against local MCP Host
-    try {
-      const authToken = await window.ipcRenderer.getAuthToken()
-      if (authToken) {
-        headers.set("X-Auth-Token", authToken)
-      }
-    } catch (error) {
-      console.error("[Security] Failed to get auth token:", error)
-    }
+  const token = getWebToken()
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`)
   }
 
   return fetch(input, { ...restInit, headers })

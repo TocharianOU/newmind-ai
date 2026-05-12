@@ -8,7 +8,6 @@ import { isWeb } from "../ipc/env"
 import ModelSelect from "./ModelSelect"
 import ProjectSelector from "./ProjectSelector"
 import Tooltip from "./Tooltip"
-import UpdateButton from "./UpdateButton"
 import WindowControls from "./WindowControls"
 
 type Props = {
@@ -68,7 +67,6 @@ const Header = ({ showHelpButton = false, showModelSelect = false, showProjectSe
                 {t("memory.title")}
               </button>
             </Tooltip>
-            <UpdateButton />
             {isWeb && (
               <Tooltip content={t("header.console", "Console")}>
                 <a

@@ -10,10 +10,6 @@ lerna-debug.log*
 
 list_tool
 
-BUILD.md
-CRITICAL_FIXES.md
-RENAME_CHANGES.md
-
 node_modules
 dist
 dist-ssr
@@ -34,7 +30,22 @@ dist-electron
 
 # build output
 *.zip
+*.tar
+*.tar.gz
+*.tgz
+*.iso
+*.img
+*.qcow2
+*.vmdk
+*.ova
 release
+
+# Customer delivery artifacts
+oaphub-customer-docker-package/
+elasticsearch-mcp-customer-docker-package/
+oaphub/downloads/*.sha256
+!oaphub/downloads/.gitkeep
+customer-release/
 
 # env file
 modelConfig.json
@@ -48,7 +59,6 @@ uploads
 bin
 
 # for host
-requirements.txt
 host-deps/
 
 # development tmp files

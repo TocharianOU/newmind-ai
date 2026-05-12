@@ -20,7 +20,6 @@ import Zoom from "../../components/Zoom"
 import { convertLocalFileSrc } from "../../ipc/util"
 import Button from "../../components/Button"
 import { useLocation } from "react-router-dom"
-import { isElectron } from "../../ipc/env"
 
 declare global {
   namespace JSX {
@@ -168,20 +167,8 @@ const Message = ({ messageId, text, isSent, files, isError, isLoading, onRetry, 
     )
   }, [editedText])
 
-  // 在外部浏览器中打开URL
   const openExternalUrl = (url: string) => {
-    if (isElectron) {
-      // Electron 环境：使用 IPC 在外部浏览器打开
-      if (window.ipcRenderer && window.ipcRenderer.invoke) {
-        window.ipcRenderer.invoke('open-external-url', url)
-      } else {
-        // 降级方案
-        window.open(url, '_blank')
-      }
-    } else {
-      // Tauri 环境：直接打开
-      window.open(url, '_blank')
-    }
+    window.open(url, '_blank')
   }
 
   // 解析 document_card 标签

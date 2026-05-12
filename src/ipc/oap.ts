@@ -1,7 +1,4 @@
-import { invoke } from "@tauri-apps/api/core"
-import { isElectron, isWeb } from "./env"
 import { ApiResponse, MCPServerSearchParam, OAPMCPServer, OAPModelDescription, OAPModelDescriptionParam, OAPUsage, OAPUser } from "../../types/oap"
-import { listenIPC } from "."
 import { getHubLoginUrl, getHubRegisterUrl } from "../config/env"
 
 // ---------------------------------------------------------------------------
@@ -58,11 +55,7 @@ async function webHubFetch(path: string, options?: RequestInit): Promise<Respons
 }
 
 export function setOapHost(host: string) {
-    if (isElectron || isWeb) {
-        return
-    }
-
-    return invoke("oap_set_host", { host })
+    void host
 }
 
 export function openOapLoginPage(regist: boolean) {
@@ -77,166 +70,60 @@ export function openOapLoginPage(regist: boolean) {
         VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL
     });
     
-    const fallbackUrl = isWeb
-        ? (regist ? `${window.location.origin}/console/register` : `${window.location.origin}/console/login`)
-        : (regist ? 'http://localhost:23001/register' : 'http://localhost:23001/login');
+    const fallbackUrl = regist ? `${window.location.origin}/console/register` : `${window.location.origin}/console/login`;
 
     const finalUrl = hubUrl || fallbackUrl;
     console.log('🔗 Final URL:', finalUrl);
     
-    if (isElectron) {
-        console.log('🔗 Opening in Electron with IPC shell.openExternal');
-        try {
-            if (window.ipcRenderer && window.ipcRenderer.invoke) {
-                window.ipcRenderer.invoke('open-external-url', finalUrl);
-            } else {
-                window.open(finalUrl, '_blank');
-            }
-        } catch (error) {
-            console.error('🔗 Error opening URL:', error);
-            window.open(finalUrl, '_blank');
-        }
-        return Promise.resolve();
-    }
-
-    // Web mode: just open in same tab or new tab
-    if (isWeb) {
-        window.open(finalUrl, '_blank');
-        return Promise.resolve();
-    }
-
-    // Tauri: Use open command
-    return invoke("open_url", { url: finalUrl }).catch(() => {
-        window.open(finalUrl, '_blank');
-    });
+    window.open(finalUrl, '_blank');
+    return Promise.resolve();
 }
 
 export function oapLogin(token: string) {
-    if (isElectron) {
-        return window.ipcRenderer.oapLoginWithToken(token)
-    }
-    if (isWeb) {
-        setWebTokens(token)
-        emitWebEvent("login")
-        return Promise.resolve({ success: true })
-    }
-
-    return invoke("oap_login", { token })
+    setWebTokens(token)
+    emitWebEvent("login")
+    return Promise.resolve({ success: true })
 }
 
 export function oapLogout() {
-    if (isElectron) {
-        return window.ipcRenderer.oapLogout()
-    }
-    if (isWeb) {
-        clearWebTokens()
-        emitWebEvent("logout")
-        return Promise.resolve()
-    }
-
-    return invoke("oap_logout")
+    clearWebTokens()
+    emitWebEvent("logout")
+    return Promise.resolve()
 }
 
 export function oapGetToken(): Promise<string> {
-    if (isElectron) {
-        return window.ipcRenderer.oapGetToken()
-    }
-    if (isWeb) {
-        return Promise.resolve(getWebToken() || "")
-    }
-
-    return invoke("oap_get_token")
+    return Promise.resolve(getWebToken() || "")
 }
 
 export function oapGetMe(): Promise<ApiResponse<OAPUser>> {
-    if (isElectron) {
-        return window.ipcRenderer.oapGetMe()
-    }
-    if (isWeb) {
-        return webHubFetch("/api/v1/user/me").then(r => r.json())
-    }
-
-    return invoke("oap_get_me")
+    return webHubFetch("/api/v1/user/me").then(r => r.json())
 }
 
 export function oapGetUsage(): Promise<ApiResponse<OAPUsage>> {
-    if (isElectron) {
-        return window.ipcRenderer.oapGetUsage()
-    }
-    if (isWeb) {
-        return webHubFetch("/api/v1/user/usage").then(r => r.json())
-    }
-
-    return invoke("oap_get_usage")
+    return webHubFetch("/api/v1/user/usage").then(r => r.json())
 }
 
 export function oapSearchMCPServer(params: MCPServerSearchParam): Promise<ApiResponse<OAPMCPServer[]>> {
-    if (isElectron) {
-        return window.ipcRenderer.oapSearchMCPServer(params)
-    }
-    if (isWeb) {
-        const query = new URLSearchParams(params as any).toString()
-        return webHubFetch(`/api/v1/mcp/search?${query}`).then(r => r.json())
-    }
-
-    return invoke("oap_search_mcp_server", { params })
+    const query = new URLSearchParams(params as any).toString()
+    return webHubFetch(`/api/v1/mcp/search?${query}`).then(r => r.json())
 }
 
 type BackendEvent = "login" | "logout" | "refresh" | "mcp.install"
 export function registBackendEvent(event: BackendEvent, callback: (...args: any[]) => void) {
-    if (isElectron) {
-        switch (event) {
-            case "login":
-                return window.ipcRenderer.oapRegistEvent("login", callback)
-            case "logout":
-                return window.ipcRenderer.oapRegistEvent("logout", callback)
-            case "refresh":
-                return window.ipcRenderer.listenRefresh(callback)
-            case "mcp.install":
-                return window.ipcRenderer.listenMcpApply(callback)
-        }
-    }
-
-    if (isWeb) {
-        return onWebEvent(event, callback)
-    }
-
-    const listener = (data: any) => callback(data.payload)
-    switch (event) {
-        case "login":
-        case "logout":
-        case "refresh":
-            return listenIPC(`oap:${event}`, listener)
-        case "mcp.install":
-            return listenIPC("mcp:install", listener)
-    }
+    return onWebEvent(event, callback)
 }
 
 export function oapModelDescription(params: OAPModelDescriptionParam): Promise<ApiResponse<OAPModelDescription[]>> {
-    if (isElectron) {
-        return window.ipcRenderer.oapModelDescription(params)
-    }
-    if (isWeb) {
-        return webHubFetch("/api/v1/models/description", {
-            method: "POST",
-            body: JSON.stringify(params),
-        }).then(r => r.json())
-    }
-
-    return invoke("oap_get_model_description", { params })
+    return webHubFetch("/api/v1/models/description", {
+        method: "POST",
+        body: JSON.stringify(params),
+    }).then(r => r.json())
 }
 
 export function oapLoginWithToken(token: string): Promise<{ success: boolean }> {
-    if (isElectron) {
-        return window.ipcRenderer.oapLoginWithToken(token)
-    }
-    if (isWeb) {
-        setWebTokens(token)
-        emitWebEvent("login")
-        return Promise.resolve({ success: true })
-    }
-
-    return invoke("oap_login_with_token", { token })
+    setWebTokens(token)
+    emitWebEvent("login")
+    return Promise.resolve({ success: true })
 }
 
 /**
@@ -248,14 +135,7 @@ export function oapGetOAuthConfig(): Promise<ApiResponse<{
     brandText: string;
     providers: Array<{ name: string; displayName: string }>;
 }>> {
-    if (isElectron) {
-        return window.ipcRenderer.oapGetOAuthConfig()
-    }
-    if (isWeb) {
-        return webHubFetch("/api/auth/flags").then(r => r.json())
-    }
-
-    return invoke("oap_get_oauth_config")
+    return webHubFetch("/api/auth/flags").then(r => r.json())
 }
 
 /**
@@ -263,13 +143,6 @@ export function oapGetOAuthConfig(): Promise<ApiResponse<{
  * @param provider OAuth提供商名称 (google, microsoft, github, gitlab)
  */
 export function oapLoginWithOAuth(provider: string): Promise<{ success: boolean }> {
-    if (isElectron) {
-        return window.ipcRenderer.oapLoginWithOAuth(provider)
-    }
-    if (isWeb) {
-        window.location.href = `/api/auth/sso/${provider}/start`
-        return Promise.resolve({ success: true })
-    }
-
-    return invoke("oap_login_with_oauth", { provider })
+    window.location.href = `/api/auth/sso/${provider}/start`
+    return Promise.resolve({ success: true })
 }

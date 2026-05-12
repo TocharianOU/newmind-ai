@@ -3,6 +3,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import CryptoJS from 'crypto-js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../config/database.js';
 import { createResponse } from '../config/constants.js';
@@ -22,6 +25,39 @@ function hashToken(token) {
 }
 
 const router = express.Router();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DOWNLOAD_DIR = path.resolve(__dirname, '../../downloads');
+
+function getDownloadInviteCodes() {
+  return (process.env.DOWNLOAD_INVITE_CODES || process.env.INVITE_CODES || '')
+    .split(',')
+    .map(code => code.trim())
+    .filter(Boolean);
+}
+
+function isValidDownloadInvite(inviteCode) {
+  const codes = getDownloadInviteCodes();
+  return Boolean(inviteCode) && codes.includes(inviteCode);
+}
+
+function getDownloadPackages() {
+  return HARDCODED_CONFIG.DOWNLOAD_PACKAGES.map(pkg => {
+    const filePath = path.resolve(DOWNLOAD_DIR, pkg.fileName);
+    const available = fs.existsSync(filePath);
+    const stats = available ? fs.statSync(filePath) : null;
+    const checksumFileName = `${pkg.fileName}.sha256`;
+    const checksumPath = path.resolve(DOWNLOAD_DIR, checksumFileName);
+
+    return {
+      ...pkg,
+      available,
+      fileSize: stats?.size || 0,
+      checksumFileName,
+      checksumAvailable: fs.existsSync(checksumPath),
+    };
+  });
+}
 
 // Get auth configuration (e.g., invite code requirement)
 router.get('/config', (req, res) => {
@@ -54,12 +90,44 @@ router.get('/flags', (req, res) => {
 // Get download configuration (public endpoint)
 router.get('/download-config', (req, res) => {
   try {
-    res.json(createResponse(HARDCODED_CONFIG.DOWNLOAD_URLS));
+    res.json(createResponse({
+      inviteRequired: true,
+      packages: getDownloadPackages(),
+    }));
   } catch (error) {
     logger.error('Download config fetch error:', error);
     res.status(500).json(createResponse(null, 'Failed to fetch download configuration'));
   }
 });
+
+// Invite-gated customer package download.
+function sendDownloadPackage(req, res) {
+  try {
+    const { inviteCode, packageId } = ['GET', 'HEAD'].includes(req.method) ? req.query : (req.body || {});
+
+    if (!isValidDownloadInvite(inviteCode)) {
+      return res.status(403).json(createResponse(null, 'Invalid invite code'));
+    }
+
+    const pkg = HARDCODED_CONFIG.DOWNLOAD_PACKAGES.find(item => item.id === packageId);
+    if (!pkg) {
+      return res.status(404).json(createResponse(null, 'Download package not found'));
+    }
+
+    const filePath = path.resolve(DOWNLOAD_DIR, pkg.fileName);
+    if (!filePath.startsWith(DOWNLOAD_DIR + path.sep) || !fs.existsSync(filePath)) {
+      return res.status(404).json(createResponse(null, 'Download file is not available'));
+    }
+
+    res.download(filePath, pkg.fileName);
+  } catch (error) {
+    logger.error('Package download error:', error);
+    res.status(500).json(createResponse(null, 'Failed to download package'));
+  }
+}
+
+router.get('/download', sendDownloadPackage);
+router.post('/download', sendDownloadPackage);
 
 // Register new user
 router.post('/register', validateBody(RegisterSchema), async (req, res) => {

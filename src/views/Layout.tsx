@@ -15,16 +15,42 @@ import { isLoggedInOAPAtom } from "../atoms/oapState"
 import { isWeb } from "../ipc/env"
 import Login from "./Login"
 
+const ConsoleLoginRedirect = ({ theme }: { theme: string }) => {
+  React.useEffect(() => {
+    const timer = window.setTimeout(() => {
+      window.location.replace("/console/login?appRedirect=web")
+    }, 800)
+
+    return () => window.clearTimeout(timer)
+  }, [])
+
+  return (
+    <div className="app-container" data-theme={theme}>
+      <div className="login-page-container">
+        <div className="header">
+          <h1 className="main-title">Redirecting to sign in</h1>
+          <p className="subtitle">Use the unified OAP Hub sign-in page to continue.</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const Layout = () => {
   const isConfigNotInitialized = useAtomValue(isConfigNotInitializedAtom)
   const [theme] = useAtom(themeAtom)
   const [systemTheme] = useAtom(systemThemeAtom)
   const overlays = useAtomValue(overlaysAtom)
   const isLoggedIn = useAtomValue(isLoggedInOAPAtom)
+  const resolvedTheme = theme === "system" ? systemTheme : theme
 
   if (!isLoggedIn) {
+    if (isWeb) {
+      return <ConsoleLoginRedirect theme={resolvedTheme} />
+    }
+
     return (
-      <div className="app-container" data-theme={theme === "system" ? systemTheme : theme}>
+      <div className="app-container" data-theme={resolvedTheme}>
         <div className="login-titlebar" style={{ WebkitAppRegion: "drag" } as React.CSSProperties}>
           <div style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
             <WindowControls variant="header" />
@@ -37,7 +63,7 @@ const Layout = () => {
   }
 
   return (
-    <div className="app-container" data-theme={theme === "system" ? systemTheme : theme}>
+    <div className="app-container" data-theme={resolvedTheme}>
       <div className="app-content">
         {(!isConfigNotInitialized || isWeb) && <HistorySidebar />}
         <div className="outlet-container">

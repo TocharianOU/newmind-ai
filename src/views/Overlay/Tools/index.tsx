@@ -373,7 +373,6 @@ const Tools = () => {
 
     setIsLoading(true)
     try {
-      // const filledConfig = await window.ipcRenderer.fillPathToConfig(JSON.stringify(newConfig))
       const filledConfig = { ...newConfig }
 
       filledConfig.mcpServers = {
@@ -811,12 +810,15 @@ const Tools = () => {
 
     const configTools = sortedConfigOrder.map(name => {
       const oapData = getOapData(name)
+      const mcpServers = (mcpConfig.mcpServers as Record<string, any>)
+      const configuredEnabled = mcpServers[name]?.enabled ?? false
       
       if (toolMap.has(name)) {
         const tool = toolMap.get(name)!
         return {
           ...tool,
-          disabled: Boolean(tool?.error),
+          enabled: configuredEnabled,
+          disabled: Boolean(tool?.error || mcpServers[name]?.disabled || mcpServers[name]?.error),
           type: isOapTool(name) ? "oap" : "custom",
           plan: oapData?.planTag,
           oapId: oapData?.id,
@@ -824,13 +826,12 @@ const Tools = () => {
       }
 
       const cachedTool = toolsCacheRef.current[name]
-      const mcpServers = (mcpConfig.mcpServers as Record<string, any>)
       if (cachedTool) {
         return {
           name,
           description: cachedTool.description,
           icon: cachedTool.icon,
-          enabled: false,
+          enabled: configuredEnabled,
           tools: cachedTool.subTools.map(subTool => ({
             name: subTool.name,
             description: subTool.description,
@@ -848,7 +849,7 @@ const Tools = () => {
       return {
         name,
         description: "",
-        enabled: false,
+        enabled: configuredEnabled,
         url: mcpServers[name]?.url,
         disabled: Boolean(mcpServers[name]?.disabled || mcpServers[name]?.error),
         type: isOapTool(name) ? "oap" : "custom",

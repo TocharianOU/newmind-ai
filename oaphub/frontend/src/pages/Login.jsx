@@ -215,7 +215,7 @@ const Login = () => {
             </div>
 
             <div style={{ textAlign: 'right', marginBottom: 4 }}>
-              <Link to="/forgot-password" style={{ fontSize: 13, color: '#6366f1' }}>
+              <Link to="/forgot-password" style={{ fontSize: 13, color: '#3b82f6' }}>
                 {t('auth.forgotPassword', 'Forgot password?')}
               </Link>
             </div>
