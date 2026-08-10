@@ -299,8 +299,10 @@ router.post('/login', validateBody(LoginSchema), async (req, res) => {
     );
 
     // Generate refresh token
+    // jti 保证唯一：payload 仅含 userId 时，同一用户同一秒内登录会生成完全相同的 JWT，
+    // hashToken 后触发 RefreshToken.token 唯一约束冲突（500）。加随机 jti 消除碰撞。
     const refreshToken = jwt.sign(
-      { userId: user.id },
+      { userId: user.id, jti: crypto.randomUUID() },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d' }
     );
@@ -395,9 +397,9 @@ router.post('/refresh', validateBody(RefreshTokenSchema), async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
 
-    // Rotate refresh token
+    // Rotate refresh token（同样加随机 jti 避免同秒生成的 JWT 碰撞唯一约束）
     const newRefreshToken = jwt.sign(
-      { userId: decoded.userId },
+      { userId: decoded.userId, jti: crypto.randomUUID() },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d' }
     );
