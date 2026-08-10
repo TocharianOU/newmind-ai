@@ -1,10 +1,6 @@
 import React, { useEffect } from "react"
 import "../../styles/drawer/_Settings.scss"
-import Model from "../Overlay/Model"
-import Tools from "../Overlay/Tools"
-import System from "../Overlay/System"
 import Account from "../Overlay/Account"
-import About from "../Overlay/About"
 import ProjectManagement from "./ProjectManagement"
 import { useAtomValue, useSetAtom } from "jotai"
 import { openDrawerAtom } from "../../atoms/drawerState"
@@ -13,9 +9,10 @@ import { imgPrefix } from "../../ipc"
 import { isLoggedInOAPAtom, oapUserAtom, OAPLevelAtom } from "../../atoms/oapState"
 import { settingTabAtom } from "../../atoms/globalState"
 import { ENV_CONFIG } from "../../config/env"
-import { isWeb } from "../../ipc/env"
 
-const ALL_TABS = ["Projects", "Tools", "Model", "Account", "System", "About"] as const
+// 3.0: chat 应用内只保留用户级设置（项目、账号）。
+// 模型/工具/系统等管理功能统一由 /console 管理后台承担。
+const ALL_TABS = ["Projects", "Account"] as const
 export type Tab = (typeof ALL_TABS)[number]
 
 const Settings = ({ tab }: { tab: Tab }) => {
@@ -26,10 +23,7 @@ const Settings = ({ tab }: { tab: Tab }) => {
   const oapLevel = useAtomValue(OAPLevelAtom)
   const setSettingTab = useSetAtom(settingTabAtom)
 
-  const tabs = ALL_TABS.filter(t => {
-    if (isWeb && (t === "System" || t === "About")) return false
-    return true
-  }) as readonly Tab[]
+  const tabs = ALL_TABS
 
   useEffect(() => {
     setSettingTab(tab)
@@ -37,6 +31,10 @@ const Settings = ({ tab }: { tab: Tab }) => {
 
   const handleOAP = async () => {
     window.open(`${ENV_CONFIG.HUB_BASE_URL}/dashboard`, '_blank')
+  }
+
+  const openConsole = () => {
+    window.open(`${ENV_CONFIG.HUB_BASE_URL}/`, '_blank')
   }
 
   return (
@@ -56,6 +54,14 @@ const Settings = ({ tab }: { tab: Tab }) => {
               </div>
             </div>
           ))}
+          <div className="settings-drawer-sidebar-item-wrap">
+            <div
+              className="settings-drawer-sidebar-item"
+              onClick={openConsole}
+            >
+              {t("setting.tabs.Console", "管理后台")} ↗
+            </div>
+          </div>
           {isLoggedInOAP && (
             <div className="settings-drawer-sidebar-category link" onClick={handleOAP}>
               <div className="settings-drawer-sidebar-category-left">
@@ -76,16 +82,8 @@ const Settings = ({ tab }: { tab: Tab }) => {
             switch (tab) {
               case "Projects":
                 return <ProjectManagement />
-              case "Model":
-                return <Model />
-              case "Tools":
-                return <Tools />
               case "Account":
                 return <Account />
-              case "System":
-                return <System />
-              case "About":
-                return <About />
               default:
                 return null
             }

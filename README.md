@@ -1,174 +1,88 @@
 # NewMind AI
 
-NewMind AI 是面向业务团队的问数 Agent 平台。系统将数据、模型和 MCP 工具连接在一起，让用户可以用自然语言完成查询、分析、追踪和决策。客户部署时不绑定平台托管模型，通常由客户接入自己的模型服务和内部工具。
+NewMind AI 是面向业务团队的问数 Agent 平台（3.0 起为纯 Web 架构）。系统将数据、模型和 MCP 工具连接在一起，让用户用自然语言完成查询、分析、追踪和决策。客户部署不绑定平台托管模型，通常接入客户自己的模型服务和内部工具。
 
-## 项目架构
-
-整体架构由三部分组成：
+## 架构
 
 ```text
-浏览器 / 桌面客户端
-        |
-        | /app/ 聊天应用，/console/ 管理控制台
-        v
-OAP Hub
-  - 用户、组织、项目、权限和审计
-  - 登录、SSO、License 和后台管理
-  - 模型代理、MCP 工具代理、客户部署包下载
-        |
-        +--> PostgreSQL：账号、项目、会话、审计和计量数据
-        |
-        +--> MCP Host：工具编排、上下文处理和工具调用运行时
+浏览器
+   |  /app/ 聊天应用   /console/ 管理控制台   /  官网 Home
+   v
+OAP Hub (Node.js / Express / Prisma)
+  - 用户、项目、权限、审计、License、模型代理、下载分发
+   |
+   +--> PostgreSQL 16     账号、项目、会话、审计数据
+   +--> MCP Host (Python) 工具编排与调用运行时
 ```
-
-主要服务：
-
-- `hub`：Node.js / Express / Prisma，提供 API、控制台、聊天应用和模型代理。
-- `mcp-host`：Python / FastAPI，承载 MCP 工具和 Agent 工具链。
-- `postgres`：PostgreSQL 16，保存业务配置和运行数据。
-- `oaphub/frontend`：控制台和官网 Home 页面，基于 React / Vite。
-- `src`：Web 聊天应用，构建后由 Hub 在 `/app/` 提供访问。
-
-## 目录说明
 
 ```text
 newmind-ai/
-├── src/                         # Web 聊天应用
+├── src/                # Web 聊天应用（React，构建后由 Hub 挂在 /app/）
 ├── oaphub/
-│   ├── src/                     # Hub 后端服务
-│   ├── frontend/                # 控制台、Home、文档页
-│   ├── prisma/                  # 数据库 schema 与迁移
-│   ├── integrations/            # 集成配置
-│   ├── Dockerfile
-│   └── docker-compose.yml
-├── mcp-host/                    # MCP Host 服务
-├── elasticsearch-mcp/           # Elasticsearch MCP 工具服务
-├── scripts/                     # 构建和客户交付包脚本
-└── public/                      # 静态资源
+│   ├── src/            # Hub 后端
+│   ├── frontend/       # 控制台 + 官网 Home + 文档页
+│   ├── prisma/         # 数据库 schema 与迁移
+│   ├── env.copy        # 部署配置模板
+│   ├── deploy.sh       # 一键部署脚本
+│   └── build-package.sh# 客户离线包打包脚本
+├── mcp-host/           # MCP Host 服务
+└── public/             # 静态资源
 ```
 
-## 本地开发
-
-安装依赖后，可以分别启动前端和服务端开发流程。实际部署以 Docker / Kubernetes 为准。
-
-```bash
-npm install
-
-cd oaphub
-npm install
-
-cd frontend
-npm install
-npm run build
-```
-
-常用入口：
-
-- `http://<host>:23000/`：官网 Home 页面。
-- `http://<host>:23000/app/`：问数 Agent 应用。
-- `http://<host>:23000/console/`：管理控制台。
-- `http://<host>:23000/console/documentation`：部署与配置文档。
-- `http://<host>:23000/api/health`：健康检查。
-
-## Docker 部署
-
-Docker Compose 适合单机、PoC、内网测试和小规模私有化部署。
-
-1. 配置环境变量：
+## 部署（一键）
 
 ```bash
 cd oaphub
-cp .env.example .env  # 如果包内已提供 .env，可直接编辑
+bash deploy.sh
 ```
 
-至少需要确认以下配置：
+脚本自动完成：从 `env.copy` 生成 `.env`（随机生成密钥）、创建数据卷、构建镜像、启动并等待就绪。详见 [oaphub/DEPLOY.md](oaphub/DEPLOY.md)。
+
+完成后访问：
+
+- `http://localhost:23000/` 官网 Home（客户下载门户）
+- `http://localhost:23000/app/` 聊天应用
+- `http://localhost:23000/console/` 管理控制台
+- `http://localhost:23000/api/health` 健康检查
+
+常用命令：`bash deploy.sh --logs` 看日志，`bash deploy.sh --stop` 停止。
+
+## 配置要点
+
+配置集中在 `oaphub/.env`（模板 `env.copy`）。生产/公网部署至少确认：
 
 ```env
-POSTGRES_PASSWORD=replace_with_secure_password
-JWT_SECRET=replace_with_random_secret
-OAP_AUTH_TOKEN=replace_with_random_token
-ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=replace_with_admin_password
-ALLOWED_ORIGINS=https://your-domain.example
-HUB_FRONTEND_URL=https://your-domain.example
-DEPLOYMENT_MODE=enterprise
+POSTGRES_PASSWORD / ADMIN_PASSWORD   # 改掉默认密码
+JWT_SECRET / OAP_AUTH_TOKEN          # deploy.sh 已随机生成
+ALLOWED_ORIGINS=https://你的域名      # 公网必须显式配置
+FORCE_HTTPS=true                     # 配合反代 TLS
+INVITE_CODE_ENABLED=true             # 公网建议开启注册邀请码
+INVITE_CODES=hellonewmind            # 注册/下载邀请码（逗号分隔多个）
 ```
-
-2. 启动服务：
-
-```bash
-docker compose build
-docker compose up -d
-```
-
-3. 检查状态：
-
-```bash
-docker compose ps
-curl http://localhost:23000/api/health
-```
-
-升级时通常只需要替换镜像或重新构建镜像，然后执行：
-
-```bash
-docker compose up -d
-```
-
-数据库和 MCP 运行数据应通过 volume 持久化，不要在生产环境随意执行 `docker compose down -v`。
-
-## Kubernetes 部署
-
-Kubernetes 部署适合正式集群环境。客户交付包中会包含镜像包、manifest、部署说明和更新说明。一般流程如下：
-
-```bash
-tar -xzf oaphub-kubernetes-standard.tar.gz
-cd oaphub-kubernetes-package
-
-# 将镜像导入目标集群或镜像仓库
-# 按实际域名、StorageClass、Secret 修改 manifests
-kubectl apply -f kubernetes/
-kubectl get pods -n oaphub
-```
-
-生产环境需要重点确认：
-
-- 数据库、上传目录和 MCP 数据目录已挂载持久化存储。
-- Secret 中的密码、Token 和管理员密码已经替换。
-- Ingress、TLS、域名和跨域配置与实际访问地址一致。
-- 升级前已备份数据库和关键 volume。
-
-## 模型与 MCP 配置
-
-客户部署默认不要求使用平台内置模型。通常由客户在控制台中接入自己的模型供应商，例如企业内部网关、私有化大模型服务或兼容 OpenAI API 的模型服务。
-
-MCP 工具可按业务场景单独部署，例如 Elasticsearch、数据库、日志系统、工单系统或内部知识库。Hub 负责鉴权和代理，MCP Host 负责工具编排和上下文处理。新增工具时，应优先在内网完成连通性和权限验证，再开放给业务用户使用。
 
 ## 客户交付包
 
-客户部署包由脚本生成：
-
 ```bash
-bash scripts/build-customer-release.sh --kind docker --arch x86_64
-bash scripts/build-customer-release.sh --kind kubernetes
+cd oaphub
+bash build-package.sh
 ```
 
-生成结果位于 `oaphub/downloads/`，通常包括：
+产出 `oaphub/downloads/oaphub-docker-<arch>.tar.gz`（预构建镜像 + 离线 compose + install.sh + 配置模板），官网 Home 页会自动检测该目录并展示下载入口（凭邀请码下载）。发布到线上服务器：`scp downloads/*.tar.gz* 服务器:oaphub/downloads/`。
 
-- Docker 或 Kubernetes 部署包。
-- `DEPLOY.md`：新部署说明。
-- `UPDATE.md`：升级和回滚说明。
-- `install.sh`：快速安装脚本。
-- `.env` 或 `.env.example`：需要客户按实际环境修改。
+客户侧安装：解压后 `bash install.sh`。
 
-大体原则是：源码、脚本和部署说明进入 Git；镜像包、压缩包、临时构建目录和客户交付产物不进入 Git。
+x86_64 包需在 x86_64 机器上执行同一脚本。
 
-## 维护说明
+## 模型与 MCP
 
-- 提交前检查 `.gitignore`，避免把镜像、压缩包、密钥和本地环境文件提交。
-- 生产配置中的密码、Token、SSO Secret 和模型 API Key 不应写入仓库。
-- 对外文档保持简洁，部署包内的 `DEPLOY.md` 和 `UPDATE.md` 用于承载更具体的安装步骤。
-- 重要升级先在测试环境验证，再更新客户交付包。
+模型在控制台接入（企业内部网关、私有化大模型或 OpenAI 兼容服务均可）。MCP 工具按场景单独部署（Elasticsearch、知识库、日志系统等），Hub 负责鉴权代理，MCP Host 负责编排。文档检索结果中的 `<document_card>` 由前端直接从工具结果渲染，不占用模型 prompt。
+
+## 维护
+
+- 密码、Token、模型 API Key 不入仓库；镜像包和交付产物不入 Git（见 `.gitignore`）
+- 重要升级先在测试环境验证，再更新客户交付包
+- 生产环境勿随意执行 `docker compose down -v`（会删数据卷）
 
 ## License
 
-Proprietary - Copyright 2025 NewMind AI. All rights reserved.
+Proprietary - Copyright 2026 NewMind AI. All rights reserved.

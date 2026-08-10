@@ -1,9 +1,6 @@
 import React, { useEffect } from "react"
 import PopupWindow from "../../components/PopupWindow"
 import "../../styles/overlay/_Setting.scss"
-import Model from "./Model"
-import Tools from "./Tools"
-import System from "./System"
 import Account from "./Account"
 import ProjectManagement from "./ProjectManagement"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
@@ -17,7 +14,8 @@ import { ENV_CONFIG } from "../../config/env"
 import { sidebarVisibleAtom, toggleSidebarAtom } from "../../atoms/sidebarState"
 import { isWeb } from "../../ipc/env"
 
-const ALL_TABS = ["Projects", "Tools", "Model", "Account", "System"] as const
+// 3.0: 管理功能（模型/工具/系统）统一由 /console 承担，chat 内只留用户级设置
+const ALL_TABS = ["Projects", "Account"] as const
 export type Tab = (typeof ALL_TABS)[number]
 
 const Setting = ({ _tab }: { _tab: Tab }) => {
@@ -30,10 +28,7 @@ const Setting = ({ _tab }: { _tab: Tab }) => {
   const toggleSidebar = useSetAtom(toggleSidebarAtom)
   const isSidebarVisible = useAtomValue(sidebarVisibleAtom)
 
-  const tabs = ALL_TABS.filter(t => {
-    if (isWeb && t === "System") return false
-    return true
-  }) as readonly Tab[]
+  const tabs = ALL_TABS
 
   useEffect(() => {
     setSettingTab(_tab)
@@ -111,14 +106,8 @@ const Setting = ({ _tab }: { _tab: Tab }) => {
             switch (_tab) {
               case "Projects":
                 return <ProjectManagement />
-              case "Model":
-                return <Model />
-              case "Tools":
-                return <Tools />
               case "Account":
                 return <Account />
-              case "System":
-                return <System />
               default:
                 return null
             }

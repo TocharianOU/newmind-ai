@@ -2,6 +2,7 @@ import "../styles/components/_ChatInput.scss"
 
 import React, { useState, useRef, useEffect, useCallback } from "react"
 import { useTranslation } from "react-i18next"
+import { ENV_CONFIG } from "../config/env"
 import Tooltip from "./Tooltip"
 import useHotkeyEvent from "../hooks/useHotkeyEvent"
 import Textarea from "./WrappedTextarea"
@@ -513,7 +514,8 @@ const ChatInput: React.FC<Props> = ({ page, onSendMessage, disabled, onAbort }) 
                 className="tools-btn"
                 onClick={(e) => {
                   e.preventDefault()
-                  openDrawer({ id: "Settings", page: "Settings", tab: "Tools" })
+                  // 3.0: 工具管理统一在 /console 管理后台
+                  window.open(`${ENV_CONFIG.HUB_BASE_URL}/`, "_blank")
                 }}
               >
                 {currentModelEnableToolcall() ?

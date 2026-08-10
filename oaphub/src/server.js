@@ -63,13 +63,17 @@ const server = createServer(app);
 app.set('trust proxy', 1);
 
 // CORS configuration
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) || [
-  'http://localhost:23001',
-  'http://localhost:23000',
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://localhost:3001'
-];
+// 注意：ALLOWED_ORIGINS 为空字符串时必须回退到默认列表（''.split(',') 会得到 ['']，
+// 是真值，曾把默认白名单顶掉导致所有带 Origin 的请求被 CORS 拒绝返回 500）
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.trim()
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
+  : [
+    'http://localhost:23001',
+    'http://localhost:23000',
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:3001'
+  ];
 
 if (process.env.HUB_FRONTEND_URL) {
   allowedOrigins.push(process.env.HUB_FRONTEND_URL);

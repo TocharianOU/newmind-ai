@@ -4,6 +4,7 @@ import Button from "./Button"
 import "@/styles/components/_EmbeddedLogin.scss"
 import { nativeFetch } from "../ipc/init"
 import { isWeb } from "../ipc/env"
+import { ENV_CONFIG } from "../config/env"
 
 interface EmbeddedLoginProps {
   onCancel: () => void
@@ -46,7 +47,7 @@ const EmbeddedLogin: React.FC<EmbeddedLoginProps> = ({ onCancel, onSuccess }) =>
     setIsLoading(true)
     
     try {
-      const baseUrl = isWeb ? '' : (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000')
+      const baseUrl = isWeb ? '' : ENV_CONFIG.API_BASE_URL
       const FULL_LOGIN_URL = `${baseUrl}/api/auth/login`;
 
       const response = await nativeFetch(FULL_LOGIN_URL, {

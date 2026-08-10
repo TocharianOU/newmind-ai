@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo } from "react"
 import { keymapModalVisibleAtom } from "../../atoms/modalState"
+import { isMacOS } from "../../../shared/keymap"
 import PopupConfirm from "../PopupConfirm"
 import { useTranslation } from "react-i18next"
 import { rawKeymapAtom } from "../../atoms/hotkeyState"
@@ -12,7 +13,7 @@ const KeymapModal = () => {
   const keyMap = useAtomValue(rawKeymapAtom)
 
   const formatHotkey = (key: string): string => {
-    const metaKey = window.PLATFORM === "darwin" ? "⌘" : window.PLATFORM === "win32" ? "Win" : "Super"
+    const metaKey = isMacOS() ? "⌘" : /Win/i.test(navigator.platform || navigator.userAgent) ? "Win" : "Super"
     // Check if it"s a pure combination key format <c-o>
     if (key.startsWith("<") && key.endsWith(">") && !key.slice(1, -1).includes("><")) {
       const parts = key.slice(1, -1).split("-")

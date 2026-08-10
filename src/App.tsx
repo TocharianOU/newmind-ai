@@ -1,5 +1,6 @@
 import { RouterProvider } from "react-router-dom"
 import { router } from "./router"
+import { ENV_CONFIG } from "./config/env"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { loadConfigAtom, reloadOapConfigAtom, removeOapConfigAtom, writeOapConfigAtom } from "./atoms/configState"
 import { showToastAtom } from "./atoms/toastState"
@@ -101,7 +102,8 @@ function App() {
       data = data || installToolBuffer.current!
       const { name, config } = data
       setInstallToolBuffer(prev => [...prev, { name, config }])
-      openDrawer({ id: "Settings", page: "Settings", tab: "Tools" })
+      // 3.0: 工具安装/管理统一在 /console 管理后台完成
+      window.open(`${ENV_CONFIG.HUB_BASE_URL}/`, "_blank")
     } catch(e) {
       console.error("mcp install error", e)
     }

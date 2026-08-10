@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import Button from './Button';
 import PopupWindow from './PopupWindow';
 import { oapGetToken } from '../ipc/oap';
+import { ENV_CONFIG } from '../config/env';
 import '@/styles/components/_EditUsernameModal.scss';
 
 interface EditUsernameModalProps {
@@ -42,7 +43,7 @@ const EditUsernameModal: React.FC<EditUsernameModalProps> = ({
       const token = await oapGetToken();
       
       // Call API to update username
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/user/settings`, {
+      const response = await fetch(`${ENV_CONFIG.API_BASE_URL}/api/v1/user/settings`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

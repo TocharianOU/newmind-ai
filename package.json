@@ -1,7 +1,7 @@
 {
   "name": "newmind-ai",
   "private": true,
-  "version": "0.1.0",
+  "version": "3.0.0",
   "type": "module",
   "debug": {
     "env": {
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TocharianOU/attacktrace.git"
+    "url": "https://github.com/TocharianOU/newmind-ai.git"
   },
   "scripts": {
     "dev": "npm run dev:web",
@@ -21,22 +21,10 @@
     "check": "tsc -b",
     "check-i18n": "node scripts/checkI18n.js",
     "build": "npm run build:web",
-    "postinstall": "patch-package",
-    "prepare:mcp-echo": "cd prebuilt/scripts/mcp-server-echo && npm ci --omit=dev --ignore-scripts",
-    "build:mcp-echo": "cd prebuilt/scripts/mcp-server-echo && npm install && npm run build",
-    "clean:mcp-echo": "cd prebuilt/scripts/mcp-server-echo && rm -rf node_modules dist && npm cache clean --force"
+    "postinstall": "patch-package"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.57.0",
-    "@aws-sdk/client-bedrock": "^3.848.0",
-    "@mistralai/mistralai": "^1.5.1",
-    "clsx": "^2.1.1",
-    "cross-spawn": "^7.0.6",
-    "fs-extra": "^11.3.0",
-    "keytar": "^7.9.0",
-    "ollama": "^0.5.15",
-    "openai": "^4.95.0",
-    "zod": "^3.24.2"
+    "clsx": "^2.1.1"
   },
   "devDependencies": {
     "@codemirror/lang-json": "^6.0.1",

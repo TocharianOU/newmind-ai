@@ -16,7 +16,8 @@ function Root() {
   const loadHotkeyMap = useSetAtom(loadHotkeyMapAtom)
   const setModelSetting = useSetAtom(modelSettingsAtom)
   const [loading, setLoading] = useState(true)
-  const [downloading, setDownloading] = useState(!isWeb && window.PLATFORM !== "darwin")
+  // web-only: 不存在依赖下载阶段
+  const [downloading, setDownloading] = useState(false)
   const init = useRef(false)
 
   const initHost = useCallback(async () => {

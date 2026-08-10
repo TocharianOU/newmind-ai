@@ -10,8 +10,9 @@ import { PrismAsyncLight as SyntaxHighlighter } from "react-syntax-highlighter"
 import { tomorrow, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { codeStreamingAtom } from "../../atoms/codeStreaming"
-import ToolPanel from "./ToolPanel"
+import ToolPanel, { getToolResult } from "./ToolPanel"
 import FilePreview from "./FilePreview"
+import { safeBase64Decode } from "../../util"
 import { useTranslation } from "react-i18next"
 import { themeAtom } from "../../atoms/themeState"
 import Textarea from "../../components/WrappedTextarea"
@@ -296,19 +297,41 @@ const Message = ({ messageId, text, isSent, files, isError, isLoading, onRetry, 
 
             const isOpen = openToolPanels[toolkey] || false
 
+            // 3.0: 直接从工具调用结果中解析 <document_card> 渲染文档卡片，
+            // 不再依赖模型在回复正文里复读标签（省去 prompt 说明和输出复读的 token）
+            let docCards: JSX.Element[] = []
+            try {
+              const { results } = getToolResult(content as string)
+              const decoded = results.map(r => safeBase64Decode(r)).join("\n")
+              // 工具结果可能是 JSON 字符串，先还原被转义的引号再匹配属性
+              const normalized = decoded.replace(/\\"/g, '"')
+              docCards = parseDocumentCards(normalized).filter(
+                (p): p is JSX.Element => typeof p !== "string"
+              )
+            } catch (e) {
+              console.error("Failed to extract document cards from tool result:", e)
+            }
+
             return (
-              <ToolPanel
-                key={toolkey}
-                content={content}
-                name={name}
-                isOpen={isOpen}
-                onToggle={(open) => {
-                  setOpenToolPanels(prev => ({
-                    ...prev,
-                    [toolkey]: open
-                  }))
-                }}
-              />
+              <>
+                <ToolPanel
+                  key={toolkey}
+                  content={content as string}
+                  name={name}
+                  isOpen={isOpen}
+                  onToggle={(open) => {
+                    setOpenToolPanels(prev => ({
+                      ...prev,
+                      [toolkey]: open
+                    }))
+                  }}
+                />
+                {docCards.length > 0 && (
+                  <span className="document-cards-from-tool" style={{ display: "block" }}>
+                    {docCards}
+                  </span>
+                )}
+              </>
             )
           },
           a(props) {

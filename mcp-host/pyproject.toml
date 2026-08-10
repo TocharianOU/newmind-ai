@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "oap-service-host"
-version = "0.0.1"
+version = "3.0.0"
 description = "Backend service host for OAP MCP Host platform"
 requires-python = ">=3.12"
 authors = [
@@ -65,7 +65,7 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/TocharianOU/attacktrace"
+Homepage = "https://github.com/TocharianOU/newmind-ai"
 
 [project.scripts]
 oap_httpd = "oap_mcp_host.httpd._main:main"

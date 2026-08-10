@@ -17,7 +17,7 @@ interface ToolPanelProps {
 const callStr = "##Tool Calls:"
 const resultStr = "##Tool Result:"
 
-function getToolResult(content: string) {
+export function getToolResult(content: string) {
   let calls: string[] = []
   let results: string[] = []
 
