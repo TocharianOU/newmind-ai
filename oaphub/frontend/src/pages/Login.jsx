@@ -109,11 +109,8 @@ const Login = () => {
   };
 
   const handleContinueInApp = () => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      // Use custom URL scheme to open in NewMind AI
-      window.location.href = `newmind://signin/${token}`;
-    }
+    // web-only: 直接进入内嵌聊天应用（原桌面自定义协议 newmind:// 已移除）
+    window.location.href = '/app';
   };
 
   const handleSSOLogin = (provider) => {
