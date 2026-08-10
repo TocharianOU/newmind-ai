@@ -13,8 +13,7 @@ const zhContent = {
       steps: [
         {
           title: '下载安装包',
-          body: '在首页下载 Docker x86_64 包，或将 oaphub-docker-x86_64.tar.gz 上传到目标服务器。',
-          code: 'sha256sum -c oaphub-docker-x86_64.tar.gz.sha256',
+          body: '在首页下载 Docker x86_64 包，或将 oaphub-docker-x86_64.tar.gz 上传到目标服务器。包旁附带 .sha256 文件，如需校验完整性可自行 sha256sum -c。',
         },
         {
           title: '解压并安装',
@@ -84,8 +83,7 @@ const enContent = {
       steps: [
         {
           title: 'Download the package',
-          body: 'Download the Docker x86_64 package from the home page or upload oaphub-docker-x86_64.tar.gz to the target server.',
-          code: 'sha256sum -c oaphub-docker-x86_64.tar.gz.sha256',
+          body: 'Download the Docker x86_64 package from the home page or upload oaphub-docker-x86_64.tar.gz to the target server. A .sha256 file is provided alongside if you want to verify integrity (sha256sum -c).',
         },
         {
           title: 'Extract and install',
@@ -284,7 +282,7 @@ const Documentation = () => {
                     <div>
                       <h3>{step.title}</h3>
                       <p>{step.body}</p>
-                      <pre><code>{step.code}</code></pre>
+                      {step.code && <pre><code>{step.code}</code></pre>}
                     </div>
                   </article>
                 ))}

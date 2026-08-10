@@ -8,7 +8,7 @@ import './Auth.css';
 const Register = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [formData, setFormData] = useState({
     email: '',
     username: '',
@@ -183,6 +183,9 @@ const Register = () => {
           <p>
             {t('auth.hasAccount')}{' '}
             <Link to="/login">{t('auth.signInNow')}</Link>
+          </p>
+          <p>
+            <Link to="/">{language === 'zh' ? '← 返回首页' : '← Back to home'}</Link>
           </p>
         </div>
       </div>
