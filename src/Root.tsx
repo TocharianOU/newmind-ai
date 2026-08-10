@@ -114,11 +114,35 @@ function Root() {
     }
   }
 
-  if (downloading || loading) {
+  // web-only: 依赖下载界面仅在 downloading 时用（web 下恒为 false）；
+  // 初始化 loading 期间显示中性加载动画，而不是桌面版的“正在下载模组套件”界面
+  if (downloading) {
     return <InstallHostDependencies onFinish={onFinish} onUpdate={onUpdate} />
   }
 
+  if (loading) {
+    return <AppLoading />
+  }
+
   return <App />
+}
+
+function AppLoading() {
+  return (
+    <div className="downloading-container">
+      <div className="downloading-content" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <div className="spinner">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22" width="40" height="40" preserveAspectRatio="xMidYMid">
+            <circle cx="11" cy="11" r="9" stroke="#ECEFF4" strokeWidth="2" strokeLinecap="round" fill="none"></circle>
+            <circle cx="11" cy="11" r="9" stroke="#02c3c3" strokeWidth="2" strokeLinecap="round" fill="none">
+              <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1.5s" values="0 11 11;180 11 11;720 11 11" keyTimes="0;0.5;1"></animateTransform>
+              <animate attributeName="stroke-dasharray" repeatCount="indefinite" dur="1.5s" values="1 100; 50 50; 1 100" keyTimes="0;0.5;1"></animate>
+            </circle>
+          </svg>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default Root

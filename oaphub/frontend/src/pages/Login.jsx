@@ -73,17 +73,8 @@ const Login = () => {
     const appRedirect = searchParams.get('appRedirect');
     const token = searchParams.get('token');
 
-    if (appRedirect === 'newmind' && (token || user)) {
-      setShowAppRedirect(true);
-
-      setTimeout(() => {
-        const authToken = token || localStorage.getItem('authToken');
-        if (authToken) {
-          window.location.href = `newmind://signin/${authToken}`;
-        }
-      }, 1500);
-    } else if (appRedirect === 'web' && (token || user)) {
-      // SSO callback for web app — token already in localStorage via AuthContext
+    // web-only: 已登录且带 appRedirect=web 时回到聊天应用
+    if (appRedirect === 'web' && (token || user)) {
       window.location.href = '/app';
     }
   }, [searchParams, user, showAppRedirect]);
@@ -97,10 +88,7 @@ const Login = () => {
       await login(formData.email, formData.password);
 
       const appRedirect = searchParams.get('appRedirect');
-      if (appRedirect === 'newmind') {
-        // Desktop deep-link flow
-        setShowAppRedirect(true);
-      } else if (appRedirect === 'web') {
+      if (appRedirect === 'web') {
         // Web app flow — navigate to the embedded SPA
         window.location.href = '/app';
       } else {
