@@ -185,6 +185,7 @@ router.post('/register', validateBody(RegisterSchema), async (req, res) => {
         username,
         password: hashedPassword,
         role,
+        updatedAt: new Date(),
         Subscription: {
           create: {
             id: uuidv4(),
