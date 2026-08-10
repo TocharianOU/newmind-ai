@@ -88,6 +88,8 @@ services:
       SSO_ENABLED:             \${SSO_ENABLED:-false}
       BILLING_ENABLED:         \${BILLING_ENABLED:-false}
       INVITE_CODE_ENABLED:     \${INVITE_CODE_ENABLED:-false}
+      INVITE_CODES:            \${INVITE_CODES:-}
+      DOWNLOAD_INVITE_CODES:   \${DOWNLOAD_INVITE_CODES:-}
       LICENSE_ENABLED:         \${LICENSE_ENABLED:-false}
       FORCE_HTTPS:             \${FORCE_HTTPS:-false}
       ALLOWED_ORIGINS:         \${ALLOWED_ORIGINS:-}
