@@ -62,16 +62,36 @@ INVITE_CODES=hellonewmind            # 注册/下载邀请码（逗号分隔多�
 
 ## 客户交付包
 
+**生成（我方）**：
+
 ```bash
 cd oaphub
-bash build-package.sh
+bash build-package.sh          # Docker 包 → downloads/oaphub-docker-<arch>.tar.gz
+bash build-package-k8s.sh      # K8s 包   → downloads/oaphub-kubernetes-standard.tar.gz
 ```
 
-产出 `oaphub/downloads/oaphub-docker-<arch>.tar.gz`（预构建镜像 + 离线 compose + install.sh + 配置模板），官网 Home 页会自动检测该目录并展示下载入口（凭邀请码下载）。发布到线上服务器：`scp downloads/*.tar.gz* 服务器:oaphub/downloads/`。
+Docker 包含预构建镜像、离线 compose、`install.sh`、`env.copy`、`DEPLOY.md`；K8s 包含 manifests、镜像 tar、`load-images.sh`、`DEPLOY-K8S.md`。放进 `oaphub/downloads/` 后官网 Home 页自动检测并展示下载入口（凭邀请码下载）。发布到线上：`scp downloads/*.tar.gz* 服务器:.../oaphub/downloads/`。
 
-客户侧安装：解压后 `bash install.sh`。
+> 包内镜像按执行机器的架构导出：x86_64 包（含 K8s，集群通常是 x86_64）需在 x86_64 机器上打，arm64 包在 Apple Silicon / arm 服务器上打。
 
-x86_64 包需在 x86_64 机器上执行同一脚本。
+**安装（客户）**：
+
+```bash
+tar -xzf oaphub-docker-<arch>.tar.gz && cd oaphub-docker-<arch>
+bash install.sh                # 导入镜像 → 生成 .env（随机密钥）→ 启动
+```
+
+`install.sh` 会自动生成 `.env`。**首次登录后请编辑 `.env` 并 `docker compose up -d` 重启**，至少确认以下几项：
+
+| 变量 | 说明 |
+|---|---|
+| `ADMIN_PASSWORD` / `POSTGRES_PASSWORD` | 改掉默认 `Newmind@123` |
+| `PORT` | 对外端口，默认 `23000` |
+| `ALLOWED_ORIGINS` | 公网访问必填，写实际域名（如 `https://ai.example.com`），否则登录被 CORS 拒绝 |
+| `FORCE_HTTPS` | 域名 + TLS 反代时设 `true` |
+| `INVITE_CODE_ENABLED` / `INVITE_CODES` | 是否需要注册邀请码及码值 |
+
+`JWT_SECRET` / `OAP_AUTH_TOKEN` 由脚本随机生成，无需手填。
 
 ## 模型与 MCP
 

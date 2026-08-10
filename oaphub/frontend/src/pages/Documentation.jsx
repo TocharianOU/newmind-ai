@@ -17,14 +17,14 @@ const zhContent = {
           code: 'sha256sum -c oaphub-docker-x86_64.tar.gz.sha256',
         },
         {
-          title: '解压并检查配置',
-          body: '解压后先编辑 .env。生产环境必须替换 POSTGRES_PASSWORD、JWT_SECRET、OAP_AUTH_TOKEN、ADMIN_PASSWORD，并按真实域名配置 ALLOWED_ORIGINS。',
-          code: 'tar -xzf oaphub-docker-x86_64.tar.gz\ncd oaphub-docker-x86_64\ncp .env .env.backup\nvim .env',
+          title: '解压并安装',
+          body: 'install.sh 会导入镜像、从 env.copy 生成 .env（自动随机生成 JWT_SECRET、OAP_AUTH_TOKEN）并启动 Hub、MCP Host、Postgres。',
+          code: 'tar -xzf oaphub-docker-x86_64.tar.gz\ncd oaphub-docker-x86_64\nchmod +x install.sh\n./install.sh',
         },
         {
-          title: '启动服务',
-          body: 'install.sh 会导入镜像、创建持久化卷并启动 Hub、MCP Host、Postgres。',
-          code: 'chmod +x install.sh\n./install.sh\ndocker compose ps',
+          title: '配置并重启',
+          body: '生产环境编辑 .env，替换默认密码 POSTGRES_PASSWORD、ADMIN_PASSWORD，并按真实域名配置 ALLOWED_ORIGINS，然后重启使配置生效。',
+          code: 'vim .env\ndocker compose up -d\ndocker compose ps',
         },
         {
           title: '访问入口',
@@ -41,27 +41,27 @@ const zhContent = {
     {
       id: 'kubernetes',
       title: 'Kubernetes 部署',
-      description: '适合集群环境。标准包包含镜像包、manifests/oaphub.yaml 和 install.sh；上线前应按集群环境调整镜像仓库、存储类、域名和 Secret。',
+      description: '适合集群环境。标准包包含 images.tar、load-images.sh、manifests/ 目录（分片 yaml）和 DEPLOY-K8S.md；上线前应按集群环境调整镜像仓库、存储类、域名和 Secret。',
       steps: [
         {
           title: '准备镜像',
-          body: '单节点 Docker/KinD/Minikube 可直接 docker load；生产集群建议导入后重新 tag 并推送到企业镜像仓库。',
-          code: 'tar -xzf oaphub-kubernetes-standard.tar.gz\ncd oaphub-kubernetes-standard\ngzip -dc images/oaphub-images.tar.gz | docker load',
+          body: '单节点 Docker/KinD/Minikube 用 load-images.sh 直接导入（自动识别 docker/ctr/nerdctl）；生产多节点建议导入后重新 tag 推送到企业镜像仓库，并同步修改 manifests 中的 image。',
+          code: 'tar -xzf oaphub-kubernetes-standard.tar.gz\ncd oaphub-kubernetes-standard\nbash load-images.sh',
         },
         {
-          title: '修改 Secret 与存储',
-          body: '编辑 manifests/oaphub.yaml，替换默认密码和 token，并按集群环境设置 PVC、StorageClass、Service 或 Ingress。',
-          code: 'vim manifests/oaphub.yaml\nkubectl create namespace oaphub --dry-run=client -o yaml | kubectl apply -f -',
+          title: '修改 Secret 与配置',
+          body: '编辑 manifests/01-config.yaml，替换 JWT_SECRET、OAP_AUTH_TOKEN（openssl rand -hex 32）和默认密码，公网访问时设置 ALLOWED_ORIGINS。存储类按集群调整 manifests/02-postgres.yaml 的 PVC。',
+          code: 'vim manifests/01-config.yaml',
         },
         {
           title: '部署并等待就绪',
-          body: 'install.sh 会执行 kubectl apply 并等待核心 Deployment rollout。',
-          code: 'chmod +x install.sh\n./install.sh\nkubectl -n oaphub get pods,svc,pvc',
+          body: '按序 apply 整个 manifests 目录，等待 hub Deployment rollout 完成。',
+          code: 'kubectl apply -f manifests/\nkubectl -n oaphub rollout status deploy/hub\nkubectl -n oaphub get pods,svc,pvc',
         },
         {
           title: '暴露访问',
-          body: '默认示例使用 NodePort 30080。生产环境建议改为 Ingress，并配置 HTTPS、域名和 ALLOWED_ORIGINS。',
-          code: 'kubectl -n oaphub get svc hub\ncurl http://NODE_IP:30080/api/health',
+          body: '默认示例使用 NodePort 30000。生产环境建议改为 Ingress，并配置 HTTPS、域名和 ALLOWED_ORIGINS。',
+          code: 'kubectl -n oaphub get svc hub\ncurl http://NODE_IP:30000/api/health',
         },
       ],
       checks: [
@@ -88,14 +88,14 @@ const enContent = {
           code: 'sha256sum -c oaphub-docker-x86_64.tar.gz.sha256',
         },
         {
-          title: 'Extract and review settings',
-          body: 'Edit .env before production use. Replace POSTGRES_PASSWORD, JWT_SECRET, OAP_AUTH_TOKEN, ADMIN_PASSWORD, and set ALLOWED_ORIGINS for the real domain.',
-          code: 'tar -xzf oaphub-docker-x86_64.tar.gz\ncd oaphub-docker-x86_64\ncp .env .env.backup\nvim .env',
+          title: 'Extract and install',
+          body: 'install.sh imports images, generates .env from env.copy (JWT_SECRET and OAP_AUTH_TOKEN are auto-randomized), and starts Hub, MCP Host, and Postgres.',
+          code: 'tar -xzf oaphub-docker-x86_64.tar.gz\ncd oaphub-docker-x86_64\nchmod +x install.sh\n./install.sh',
         },
         {
-          title: 'Start services',
-          body: 'install.sh loads images, creates persistent volumes, and starts Hub, MCP Host, and Postgres.',
-          code: 'chmod +x install.sh\n./install.sh\ndocker compose ps',
+          title: 'Configure and restart',
+          body: 'For production, edit .env: replace default POSTGRES_PASSWORD and ADMIN_PASSWORD, set ALLOWED_ORIGINS to your real domain, then restart to apply.',
+          code: 'vim .env\ndocker compose up -d\ndocker compose ps',
         },
         {
           title: 'Open the apps',
@@ -112,27 +112,27 @@ const enContent = {
     {
       id: 'kubernetes',
       title: 'Kubernetes Deployment',
-      description: 'Best for cluster environments. The standard package includes image archives, manifests/oaphub.yaml, and install.sh. Adjust registry, storage, domain, and secrets before production.',
+      description: 'Best for cluster environments. The standard package includes images.tar, load-images.sh, a manifests/ directory (split yaml), and DEPLOY-K8S.md. Adjust registry, storage, domain, and secrets before production.',
       steps: [
         {
           title: 'Prepare images',
-          body: 'For single-node Docker, KinD, or Minikube, docker load is enough. For production clusters, tag and push images to your private registry.',
-          code: 'tar -xzf oaphub-kubernetes-standard.tar.gz\ncd oaphub-kubernetes-standard\ngzip -dc images/oaphub-images.tar.gz | docker load',
+          body: 'For single-node Docker, KinD, or Minikube, use load-images.sh (auto-detects docker/ctr/nerdctl). For multi-node clusters, tag and push to your private registry and update the image fields in manifests.',
+          code: 'tar -xzf oaphub-kubernetes-standard.tar.gz\ncd oaphub-kubernetes-standard\nbash load-images.sh',
         },
         {
-          title: 'Update secrets and storage',
-          body: 'Edit manifests/oaphub.yaml to replace default passwords and tokens, then adjust PVCs, StorageClass, Service, or Ingress for your cluster.',
-          code: 'vim manifests/oaphub.yaml\nkubectl create namespace oaphub --dry-run=client -o yaml | kubectl apply -f -',
+          title: 'Update secrets and config',
+          body: 'Edit manifests/01-config.yaml to replace JWT_SECRET, OAP_AUTH_TOKEN (openssl rand -hex 32) and default passwords; set ALLOWED_ORIGINS for public access. Adjust the PVC in manifests/02-postgres.yaml for your StorageClass.',
+          code: 'vim manifests/01-config.yaml',
         },
         {
           title: 'Deploy and wait',
-          body: 'install.sh applies the manifests and waits for core deployments to roll out.',
-          code: 'chmod +x install.sh\n./install.sh\nkubectl -n oaphub get pods,svc,pvc',
+          body: 'Apply the whole manifests directory and wait for the hub Deployment to roll out.',
+          code: 'kubectl apply -f manifests/\nkubectl -n oaphub rollout status deploy/hub\nkubectl -n oaphub get pods,svc,pvc',
         },
         {
           title: 'Expose access',
-          body: 'The example uses NodePort 30080. For production, prefer Ingress with HTTPS, a real domain, and ALLOWED_ORIGINS.',
-          code: 'kubectl -n oaphub get svc hub\ncurl http://NODE_IP:30080/api/health',
+          body: 'The example uses NodePort 30000. For production, prefer Ingress with HTTPS, a real domain, and ALLOWED_ORIGINS.',
+          code: 'kubectl -n oaphub get svc hub\ncurl http://NODE_IP:30000/api/health',
         },
       ],
       checks: [

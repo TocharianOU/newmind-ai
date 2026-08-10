@@ -142,10 +142,11 @@ chmod +x "$STAGE_DIR/install.sh"
 cp env.copy DEPLOY.md "$STAGE_DIR/"
 
 # 6. 压缩 + 校验和 → downloads/
+# 校验和用标准 "hash  文件名" 格式（仅 basename），使客户可直接 sha256sum -c 校验
 echo "🗜  压缩..."
 OUT="downloads/${PKG_NAME}.tar.gz"
 tar -czf "$OUT" -C "$(dirname "$STAGE_DIR")" "$PKG_NAME"
-shasum -a 256 "$OUT" | awk '{print $1}' > "${OUT}.sha256"
+( cd downloads && { shasum -a 256 "${PKG_NAME}.tar.gz" 2>/dev/null || sha256sum "${PKG_NAME}.tar.gz"; } > "${PKG_NAME}.tar.gz.sha256" )
 
 SIZE=$(du -h "$OUT" | cut -f1)
 echo ""
