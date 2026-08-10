@@ -191,7 +191,8 @@ router.post('/register', validateBody(RegisterSchema), async (req, res) => {
             id: uuidv4(),
             planName: 'BASE',
             isDefaultPlan: true,
-            isActive: true
+            isActive: true,
+            updatedAt: new Date(),
           }
         },
         Project: {
