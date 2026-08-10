@@ -197,7 +197,9 @@ router.post('/register', validateBody(RegisterSchema), async (req, res) => {
         },
         Project: {
           create: {
-            id: 'default',
+            // id 必须全局唯一（Project.id 是主键）；默认项目靠 isDefault 标记 +
+            // (userId, name) 定位，不能硬编码 'default'（否则第二个用户注册撞主键）
+            id: uuidv4(),
             name: 'Default',
             description: 'Default project',
             isDefault: true,
