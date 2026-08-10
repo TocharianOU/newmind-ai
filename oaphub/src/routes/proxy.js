@@ -398,7 +398,8 @@ router.post('/messages', authenticateToken, async (req, res) => {
       }
       if (!requestBody.max_tokens) requestBody.max_tokens = 32000;
 
-      const targetURL = `${cm.baseURL}/messages`;
+      // Anthropic 官方接口是 {base}/v1/messages；容错处理用户把 baseURL 填成带 /v1 的情况
+      const targetURL = `${cm.baseURL.replace(/\/v1$/, '')}/v1/messages`;
       const headers = {
         'Content-Type': 'application/json',
         ...(cm.apiKey && {

@@ -64,11 +64,15 @@ router.get('/models', authenticateToken, async (req, res) => {
           created: Math.floor(new Date(cm.createdAt).getTime() / 1000),
           owned_by: cm.provider,
           provider: cm.provider,
-          endpoint: cm.provider === 'anthropic' ? '/messages' : '/chat/completions',
+          endpoint: cm.provider === 'anthropic' ? '/v1/messages' : '/chat/completions',
           permission: [],
           root: cm.modelId,
           parent: null,
-          metadata: { custom: true, name: cm.name }
+          // anthropic 自定义模型必须声明 native_format，否则 mcp-host 回退到 OpenAI
+          // 兼容模式，把 Anthropic 模型错误地走 /chat/completions 导致 404
+          metadata: cm.provider === 'anthropic'
+            ? { custom: true, name: cm.name, native_format: true, native_client: 'anthropic' }
+            : { custom: true, name: cm.name }
         });
       }
     } catch (dbErr) {
