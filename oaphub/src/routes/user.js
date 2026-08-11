@@ -262,7 +262,8 @@ router.get('/preferences', authenticateToken, async (req, res) => {
           theme: 'light',
           language: 'en',
           notifications: true,
-          emailNotifications: true
+          emailNotifications: true,
+          updatedAt: new Date()
         }
       });
     }
@@ -279,7 +280,7 @@ router.put('/preferences', authenticateToken, validateBody(UpdatePreferencesSche
   try {
     const { theme, language, notifications, emailNotifications } = req.body;
 
-    const updateData = {};
+    const updateData = { updatedAt: new Date() };
     if (theme !== undefined) updateData.theme = theme;
     if (language !== undefined) updateData.language = language;
     if (notifications !== undefined) updateData.notifications = notifications;
@@ -293,7 +294,8 @@ router.put('/preferences', authenticateToken, validateBody(UpdatePreferencesSche
         theme: theme || 'light',
         language: language || 'en',
         notifications: notifications !== undefined ? notifications : true,
-        emailNotifications: emailNotifications !== undefined ? emailNotifications : true
+        emailNotifications: emailNotifications !== undefined ? emailNotifications : true,
+        updatedAt: new Date()
       }
     });
 

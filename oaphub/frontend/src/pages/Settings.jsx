@@ -317,7 +317,11 @@ const Settings = () => {
                   id="language"
                   name="language"
                   value={preferences.language}
-                  onChange={handlePreferenceChange}
+                  onChange={(e) => {
+                    // 即时切换语言（与 Home 行为一致），不依赖后端保存是否成功
+                    handlePreferenceChange(e);
+                    changeLanguage(e.target.value);
+                  }}
                 >
                   <option value="en">English</option>
                   <option value="zh">中文</option>

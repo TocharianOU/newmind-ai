@@ -34,7 +34,8 @@ const Settings = ({ tab }: { tab: Tab }) => {
   }
 
   const openConsole = () => {
-    window.open(`${ENV_CONFIG.HUB_BASE_URL}/`, '_blank')
+    // 管理后台 = /console/dashboard（管理页），而非 /console/（主页 Home）
+    window.open(`${ENV_CONFIG.HUB_BASE_URL}/dashboard`, '_blank')
   }
 
   return (
@@ -54,6 +55,14 @@ const Settings = ({ tab }: { tab: Tab }) => {
               </div>
             </div>
           ))}
+          <div className="settings-drawer-sidebar-item-wrap">
+            <div
+              className="settings-drawer-sidebar-item"
+              onClick={() => openDrawer({ id: "Tools", page: "Tools" })}
+            >
+              {t("setting.tabs.Tools", "工具（MCP）")}
+            </div>
+          </div>
           <div className="settings-drawer-sidebar-item-wrap">
             <div
               className="settings-drawer-sidebar-item"

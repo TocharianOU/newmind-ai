@@ -2,7 +2,7 @@ import { atom } from "jotai"
 
 export type DrawerType = {
   id: string
-  page: "Settings" | "IntegrationMarket" | "ToolEdit" | "ModelEdit" | "ParameterSettings"
+  page: "Settings" | "IntegrationMarket" | "ToolEdit" | "ModelEdit" | "ParameterSettings" | "Tools"
   tab?: string
   props?: Record<string, any>
 }

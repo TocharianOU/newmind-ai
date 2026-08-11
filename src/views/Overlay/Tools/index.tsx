@@ -407,6 +407,11 @@ const Tools = () => {
         setMcpConfig(filledConfig)
         setShowCustomEditPopup(false)
         await loadMcpConfig()
+        // 新增/修改 MCP 后，必须让 MCP host 重载配置并连接该 server，
+        // 否则 /api/tools/ 拿不到它的工具 → 聊天里不被识别为工具（计数不更新）。
+        // web 下 restartHost = 触发 /api/config/reload；随后等待片刻再刷新工具列表。
+        try { await restartHost() } catch (e) { console.error("[Tools] restartHost failed after save:", e) }
+        await new Promise(resolve => setTimeout(resolve, 1000))
         await updateToolsCache()
         handleUpdateConfigResponse(data)
         setIsResort(true)

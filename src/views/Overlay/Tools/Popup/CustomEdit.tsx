@@ -127,6 +127,14 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
   const theme = useAtomValue(themeAtom)
   const systemTheme = useAtomValue(systemThemeAtom)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  // 认证方式（针对 http 类 transport 的 headers 快捷填写）
+  const [authMethod, setAuthMethod] = useState("none")   // none | bearer | basic | custom
+  const [authToken, setAuthToken] = useState("")          // Bearer token
+  const [authUser, setAuthUser] = useState("")            // Basic 用户名
+  const [authPass, setAuthPass] = useState("")            // Basic 密码
+  const [authHeaderName, setAuthHeaderName] = useState("")   // 自定义头名
+  const [authHeaderValue, setAuthHeaderValue] = useState("") // 自定义头值
+  const [authValueVisible, setAuthValueVisible] = useState(false)
   const showToast = useSetAtom(showToastAtom)
   const logContentRef = useRef<HTMLDivElement>(null)
 
@@ -941,6 +949,37 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
     return result
   }, [type, tmpCustom.mcpServers, customList, currentIndex])
 
+  // 切换 server/tool 时，从现有 headers 反解认证方式，回填到表单
+  useEffect(() => {
+    const h = (currentMcpServers && currentMcpServers.headers) || {}
+    const auth = h.Authorization || h.authorization || ""
+    if (typeof auth === "string" && auth.startsWith("Bearer ")) {
+      setAuthMethod("bearer"); setAuthToken(auth.slice(7))
+    } else if (typeof auth === "string" && auth.startsWith("Basic ")) {
+      setAuthMethod("basic")
+      try { const d = atob(auth.slice(6)); const i = d.indexOf(":"); setAuthUser(i >= 0 ? d.slice(0, i) : d); setAuthPass(i >= 0 ? d.slice(i + 1) : "") }
+      catch { setAuthUser(""); setAuthPass("") }
+    } else if (Object.keys(h).length > 0) {
+      const n = Object.keys(h)[0]; setAuthMethod("custom"); setAuthHeaderName(n); setAuthHeaderValue(String(h[n] ?? ""))
+    } else {
+      setAuthMethod("none")
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, type])
+
+  // 根据认证方式生成 headers 并写入配置
+  const writeAuthHeaders = (method: string, token: string, user: string, pass: string, name: string, value: string) => {
+    let headers: Record<string, string> = {}
+    if (method === "bearer") {
+      if (token) headers = { "Authorization": `Bearer ${token}` }
+    } else if (method === "basic") {
+      if (user || pass) { try { headers = { "Authorization": `Basic ${btoa(`${user}:${pass}`)}` } } catch { headers = {} } }
+    } else if (method === "custom") {
+      if (name) headers = { [name]: value }
+    }
+    handleCustomChange("headers", headers)
+  }
+
   // Convert env to array format for SchemaForm - moved to component top level
   const envConfig = useMemo(() => {
     const env = currentMcpServers?.env;
@@ -1307,6 +1346,67 @@ const CustomEdit = React.memo(({ _type, _config, _toolName, onDelete, onCancel, 
                 </div>
               )}
               
+              {/* 认证方式 — 仅 http 类 transport（sse/streamable/websocket）；自动生成 headers */}
+              {(currentMcpServers.transport === "sse" || currentMcpServers.transport === "streamable" || currentMcpServers.transport === "websocket") && (
+                <>
+                  <div className="field-item">
+                    <label>{t("tools.auth.label", "认证方式")}</label>
+                    <Select
+                      options={[
+                        { value: "none", label: (<div className="model-select-label"><span className="model-select-label-text">{t("tools.auth.none", "无")}</span></div>) },
+                        { value: "bearer", label: (<div className="model-select-label"><span className="model-select-label-text">Bearer Token</span></div>) },
+                        { value: "basic", label: (<div className="model-select-label"><span className="model-select-label-text">Basic Auth</span></div>) },
+                        { value: "custom", label: (<div className="model-select-label"><span className="model-select-label-text">{t("tools.auth.custom", "自定义 Header")}</span></div>) },
+                      ]}
+                      value={authMethod}
+                      onSelect={(value) => { setAuthMethod(value); writeAuthHeaders(value, authToken, authUser, authPass, authHeaderName, authHeaderValue) }}
+                    />
+                  </div>
+
+                  {authMethod === "bearer" && (
+                    <div className="field-item">
+                      <label>Token</label>
+                      <input
+                        type="password"
+                        placeholder={t("tools.auth.tokenPlaceholder", "粘贴 Token（自动加 Bearer 前缀）")}
+                        value={authToken}
+                        onChange={(e) => { setAuthToken(e.target.value); writeAuthHeaders("bearer", e.target.value, authUser, authPass, authHeaderName, authHeaderValue) }}
+                      />
+                    </div>
+                  )}
+
+                  {authMethod === "basic" && (
+                    <>
+                      <div className="field-item">
+                        <label>{t("tools.auth.username", "用户名")}</label>
+                        <input type="text" value={authUser}
+                          onChange={(e) => { setAuthUser(e.target.value); writeAuthHeaders("basic", authToken, e.target.value, authPass, authHeaderName, authHeaderValue) }} />
+                      </div>
+                      <div className="field-item">
+                        <label>{t("tools.auth.password", "密码")}</label>
+                        <input type="password" value={authPass}
+                          onChange={(e) => { setAuthPass(e.target.value); writeAuthHeaders("basic", authToken, authUser, e.target.value, authHeaderName, authHeaderValue) }} />
+                      </div>
+                    </>
+                  )}
+
+                  {authMethod === "custom" && (
+                    <>
+                      <div className="field-item">
+                        <label>{t("tools.auth.headerName", "Header 名")}</label>
+                        <input type="text" placeholder="X-API-Key" value={authHeaderName}
+                          onChange={(e) => { setAuthHeaderName(e.target.value); writeAuthHeaders("custom", authToken, authUser, authPass, e.target.value, authHeaderValue) }} />
+                      </div>
+                      <div className="field-item">
+                        <label>{t("tools.auth.headerValue", "Header 值")}</label>
+                        <input type="password" value={authHeaderValue}
+                          onChange={(e) => { setAuthHeaderValue(e.target.value); writeAuthHeaders("custom", authToken, authUser, authPass, authHeaderName, e.target.value) }} />
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+
               {/* ENV - always use key-value for custom MCP */}
               <div className="field-item">
                 <label>

@@ -2,7 +2,6 @@ import "../styles/components/_ChatInput.scss"
 
 import React, { useState, useRef, useEffect, useCallback } from "react"
 import { useTranslation } from "react-i18next"
-import { ENV_CONFIG } from "../config/env"
 import Tooltip from "./Tooltip"
 import useHotkeyEvent from "../hooks/useHotkeyEvent"
 import Textarea from "./WrappedTextarea"
@@ -514,8 +513,9 @@ const ChatInput: React.FC<Props> = ({ page, onSendMessage, disabled, onAbort }) 
                 className="tools-btn"
                 onClick={(e) => {
                   e.preventDefault()
-                  // 3.0: 工具管理统一在 /console 管理后台
-                  window.open(`${ENV_CONFIG.HUB_BASE_URL}/`, "_blank")
+                  // 在聊天内直接打开 MCP 集成配置页（Tools）——支持 streamable/sse 等 transport 参数填写；
+                  // web 模式下自动隐藏 stdio。以抽屉形式呈现（带关闭按钮），不再跳 /console 新标签。
+                  openDrawer({ id: "Tools", page: "Tools" })
                 }}
               >
                 {currentModelEnableToolcall() ?

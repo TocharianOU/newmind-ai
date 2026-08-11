@@ -4,6 +4,7 @@ import { drawerStackAtom, closeDrawerAtom } from "../../atoms/drawerState"
 import Drawer from "./Drawer"
 import Settings from "../../views/Drawer/Settings"
 import IntegrationMarket from "../../views/Drawer/IntegrationMarket"
+import Tools from "../../views/Overlay/Tools"
 import ProjectSelector from "../ProjectSelector"
 import { useTranslation } from "react-i18next"
 
@@ -26,11 +27,15 @@ const DrawerPortal: React.FC = () => {
             headerExtra = <ProjectSelector />
             break
           case "IntegrationMarket":
-            content = <IntegrationMarket 
-              {...(drawer.props || {})} 
+            content = <IntegrationMarket
+              {...(drawer.props || {})}
               onClose={() => closeDrawer(drawer.id)}
             />
             title = t("sidebar.integrationMarket") || "Integration Market"
+            break
+          case "Tools":
+            content = <Tools />
+            title = t("sidebar.tools") || t("tools.title") || "MCP 集成"
             break
           default:
             content = <div>Unknown drawer: {drawer.page}</div>

@@ -11,7 +11,7 @@ import { systemThemeAtom } from "./atoms/themeState"
 import { oapUsageAtom, oapUserAtom, updateOAPUsageAtom } from "./atoms/oapState"
 import { queryGroup } from "./helper/model"
 import { modelGroupsAtom, modelSettingsAtom } from "./atoms/modelState"
-import { installToolBufferAtom, loadMcpConfigAtom, loadToolsAtom } from "./atoms/toolState"
+import { installToolBufferAtom, loadMcpConfigAtom, loadToolsAtom, toolsAtom } from "./atoms/toolState"
 import { loadCurrentProjectIdAtom } from "./atoms/projectState"
 import { clearHistoriesAtom, loadHistoriesAtom } from "./atoms/historyState"
 import { useTranslation } from "react-i18next"
@@ -51,6 +51,24 @@ function App() {
   const setInstallToolBuffer = useSetAtom(installToolBufferAtom)
   const installToolBuffer = useRef<{ name: string, config: any } | null>(null)
   const [installToolConfirm, setInstallToolConfirm] = useState(false)
+  const tools = useAtomValue(toolsAtom)
+  const autoReconnectDone = useRef(false)
+
+  // 自愈：加载后若存在"已开启但连接失败(error)"的工具，说明 MCP host 启动时没连上，
+  // 大模型会拿不到它 → 自动触发一次配置重载让 host 重连，无需用户手动拨开关。
+  // 用 ref 守卫，失败也只尝试一次，避免死循环。
+  useEffect(() => {
+    if (autoReconnectDone.current) return
+    const brokenEnabled = (tools || []).filter((tool: any) => tool?.enabled && tool?.error)
+    if (brokenEnabled.length === 0) return
+    autoReconnectDone.current = true
+    console.warn("[App] 检测到已开启但未连接的工具，自动重连:", brokenEnabled.map((t: any) => t.name))
+    ;(async () => {
+      try { await refreshConfig() } catch (e) { console.error("[App] auto reconnect refreshConfig failed:", e) }
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+      loadTools()
+    })()
+  }, [tools, loadTools])
 
   useEffect(() => {
     console.log("set model setting", modelSetting)

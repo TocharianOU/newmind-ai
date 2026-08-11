@@ -268,7 +268,8 @@ async function findOrCreateSSOUser(provider, userInfo) {
           email: userInfo.email,
           displayName: userInfo.displayName,
           profilePicture: userInfo.profilePicture,
-          metadata: userInfo.metadata
+          metadata: userInfo.metadata,
+          updatedAt: new Date()
         }
       });
 
@@ -287,12 +288,14 @@ async function findOrCreateSSOUser(provider, userInfo) {
       username: userInfo.displayName || `${provider}_user`,
       password: null, // SSO-only user
       picture: userInfo.profilePicture,
+      updatedAt: new Date(),
       subscription: {
         create: {
           id: uuidv4(),
           planName: 'BASE',
           isDefaultPlan: true,
-          isActive: true
+          isActive: true,
+          updatedAt: new Date()
         }
       },
       authIdentities: {
@@ -302,12 +305,13 @@ async function findOrCreateSSOUser(provider, userInfo) {
           email: userInfo.email,
           displayName: userInfo.displayName,
           profilePicture: userInfo.profilePicture,
-          metadata: userInfo.metadata
+          metadata: userInfo.metadata,
+          updatedAt: new Date()
         }
       },
       Project: {
         create: {
-          id: 'default',
+          id: uuidv4(),
           name: 'Default',
           description: 'Default project',
           isDefault: true,
