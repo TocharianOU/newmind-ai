@@ -115,6 +115,8 @@ class McpServer(ContextProtocol):
     RETRY_LIMIT: int = 3
     KEEP_ALIVE_INTERVAL: float = 60
     RESTART_INTERVAL: float = 1
+    HTTP_RECONNECT_INTERVAL: float = 30
+    """远程 HTTP/SSE server 断线后的重连间隔（秒）。持续重连直到 CLOSED。"""
 
     def __init__(
         self,
@@ -745,65 +747,77 @@ class McpServer(ContextProtocol):
         ):
             await self._init_tool_info(session)
 
+    async def _http_client_watcher(self) -> None:
+        """Persistent watcher for remote HTTP/SSE servers.
+
+        修复"工具数突然掉 0 且只能手动开关恢复"：
+        旧实现只在启动时的 initial_timeout（默认 10s）窗口内重试，失败即永久
+        FAILED；运行中远端重启/网络抖动也无人恢复。此 watcher 常驻：
+        - 初始化失败 → 标 FAILED（UI 可见错误）但每 HTTP_RECONNECT_INTERVAL 秒
+          持续重连，成功即恢复 RUNNING 并刷新工具列表；
+        - 会话报网络类错误 → 状态被置 RESTARTING（见 _http_session 的
+          restart_client），watcher 立即重新初始化。
+        仅 CLOSED（服务被删除/停用/进程退出）才终止。
+        """
+        while True:
+            try:
+                await self._http_init_client()
+            except BaseException as e:  # noqa: BLE001
+                if isinstance(e, asyncio.CancelledError):
+                    raise
+                if (
+                    isinstance(e, BaseExceptionGroup)
+                    and e.subgroup(asyncio.CancelledError) is not None
+                ):
+                    raise
+                excs = (
+                    list(e.exceptions) if isinstance(e, BaseExceptionGroup) else [e]
+                )
+                err_msg = f"Client initialization error for {self.name}: {excs}"
+                logger.error("http setup error %s", err_msg)
+                self._exception = McpSessionGroupError(err_msg, excs)
+                await self._log_buffer.push_session_error(self._exception)
+                async with self._cond:
+                    if self._client_status == ClientState.CLOSED:
+                        return
+                    await self.__change_state(
+                        ClientState.FAILED, None, self._exception
+                    )
+                self._retries += 1
+                await asyncio.sleep(self.HTTP_RECONNECT_INTERVAL)
+                continue
+            # _http_init_client 成功即已置 RUNNING；等待需要重连或关闭的信号
+            self._retries = 0
+            async with self._cond:
+                await self._cond.wait_for(
+                    lambda: self._client_status
+                    in [ClientState.CLOSED, ClientState.RESTARTING],
+                )
+                if self._client_status == ClientState.CLOSED:
+                    logger.info("Client %s closed, stopping watcher", self.name)
+                    return
+            logger.warning("mcp server %s reconnecting", self.name)
+            await asyncio.sleep(self.RESTART_INTERVAL)
+
     async def _http_setup(self) -> None:
         """Setup the http client."""
         self._retries = 0
-        start_time = time.time()
-        while (
-            self._retries == 0
-            or (time.time() - start_time) < self.config.initial_timeout
-        ):
-            should_break = False
-            try:
-                await self._http_init_client()
-                async with self._cond:
-                    await self.__change_state(ClientState.RUNNING, None, None)
-                return
-            except* (
-                httpx.ConnectError,
-                httpx.TooManyRedirects,
-                httpx.ConnectTimeout,
-            ) as eg:
-                logger.error("http setup error %s", eg.exceptions)
-                self._exception = McpSessionGroupError(
-                    f"Client connection error for {self.name}: {eg.exceptions}",
-                    eg.exceptions,
-                )
-            except* (
-                McpError,
-                httpx.InvalidURL,
-                Exception,
-                ValidationError,
-            ) as eg:
-                err_msg = (
-                    f"Client initialization error for {self.name}: {eg.exceptions}"
-                )
-                logger.exception(err_msg)
-                self._exception = McpSessionGroupError(err_msg, eg.exceptions)
-                should_break = True
-            except* httpx.HTTPStatusError as eg:
-                err_msg = f"Client http error for {self.name}: {eg.exceptions}"
-                logger.exception(err_msg)
-                self._exception = McpSessionGroupError(err_msg, eg.exceptions)
-                for e in eg.exceptions:
-                    logger.error("http setup error %s", e)
-                    if (
-                        isinstance(e, httpx.HTTPStatusError)
-                        and e.response.status_code < 500  # noqa: PLR2004
-                        and e.response.status_code != 429  # noqa: PLR2004
-                    ):
-                        should_break = True
-            if should_break:
-                break
-            self._retries += 1
-            await asyncio.sleep(self.RESTART_INTERVAL)
-        async with self._cond:
-            logger.error("http setup failed %s", self._exception)
-            await self.__change_state(ClientState.FAILED, None, self._exception)
+        self._server_task = asyncio.create_task(
+            self._http_client_watcher(),
+            name=f"http_client_watcher-{self.name}",
+        )
+        # 等首次连接出结果（RUNNING/FAILED），保持原有调用语义；
+        # 之后断线重连由 watcher 负责，不再一次失败定终身
+        await self.wait([ClientState.RUNNING])
 
     async def _http_teardown(self) -> None:
-        """Teardown the http client. Do nothing."""
+        """Teardown the http client: stop the reconnect watcher."""
         logger.debug("http teardown")
+        if self._server_task:
+            self._server_task.cancel()
+            async with asyncio.timeout(30):
+                with suppress(asyncio.CancelledError):
+                    await self._server_task
 
     def _http_session(
         self, chat_id: ChatID
@@ -832,7 +846,26 @@ class McpServer(ContextProtocol):
                 logger.exception("http session error, chat_id: %s", chat_id)
                 raise
 
-        return self._session_ctx_mgr_wrapper(chat_id, _create)
+        def _restart_on_network_error(e: Exception) -> bool:
+            # 网络/流类错误说明远端或链路出了问题：置 RESTARTING 让
+            # watcher 重新初始化并刷新工具列表，而不是无限期停留在
+            # 陈旧的 RUNNING 状态或（此前）无人恢复的状态
+            targets = (
+                httpx.HTTPError,
+                anyio.BrokenResourceError,
+                anyio.ClosedResourceError,
+                anyio.EndOfStream,
+                ConnectionError,
+                TimeoutError,
+            )
+            if isinstance(e, targets):
+                return True
+            return bool(
+                isinstance(e, BaseExceptionGroup)
+                and e.subgroup(targets) is not None
+            )
+
+        return self._session_ctx_mgr_wrapper(chat_id, _create, _restart_on_network_error)
 
     async def _local_http_process_watcher(self) -> None:
         """Watcher the local http server process."""
