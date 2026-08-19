@@ -20,6 +20,7 @@ COPY shared/ ./shared/
 COPY types/  ./types/
 COPY public/ ./public/
 
+RUN npm config set fetch-retries 8 && npm config set fetch-retry-mintimeout 20000 && npm config set fetch-retry-maxtimeout 120000
 RUN npm install --ignore-scripts
 RUN npx vite build --config vite.config.web.ts
 
@@ -29,6 +30,7 @@ FROM node:20-alpine AS dashboard
 WORKDIR /build
 
 COPY oaphub/frontend/package.json oaphub/frontend/package-lock.json ./
+RUN npm config set fetch-retries 8 && npm config set fetch-retry-mintimeout 20000 && npm config set fetch-retry-maxtimeout 120000
 RUN npm install --ignore-scripts
 
 COPY oaphub/frontend/ ./
@@ -44,6 +46,7 @@ WORKDIR /app
 COPY oaphub/package*.json ./
 COPY oaphub/prisma ./prisma/
 
+RUN npm config set fetch-retries 8 && npm config set fetch-retry-mintimeout 20000 && npm config set fetch-retry-maxtimeout 120000
 RUN npm install --omit=dev && npx prisma generate
 
 # ── Stage 4: Runtime image ───────────────────────────────────────────────────
