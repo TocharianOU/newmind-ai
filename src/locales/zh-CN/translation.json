@@ -142,17 +142,26 @@
     "default": "默认"
   },
   "common": {
+    "close": "关闭",
+    "confirm": "确认",
     "cancel": "取消",
-    "save": "保存",
+    "ok": "确定",
     "create": "创建",
     "creating": "创建中...",
     "saving": "保存中...",
     "confirming": "确认中...",
-    "delete": "删除",
     "edit": "编辑",
-    "close": "关闭",
-    "confirm": "确认",
-    "ok": "确定"
+    "delete": "删除",
+    "copy": "复制",
+    "copySuccess": "已复制",
+    "zoomInImage": "图片放大",
+    "copyImage": "复制图片",
+    "copyImageUrl": "复制图片URL",
+    "downloadImage": "下载图片",
+    "login": "登录",
+    "signup": "注册",
+    "save": "保存",
+    "signout": "登出"
   },
   "tools": {
     "title": "安全集成",
@@ -233,7 +242,6 @@
       "downloading": "正在下载包...",
       "ready": "准备就绪",
       "installationCancelled": "安装已取消",
-      "preparing": "准备集成中...",
       "preparing": "准备安装...",
       "refresh": "刷新",
       "refreshing": "刷新中...",
@@ -378,6 +386,10 @@
       "titleAdd": "新增 MCP Server",
       "titleEdit": "编辑 {{tool}} MCP",
       "titleEditJson": "MCP Tools 设置"
+    },
+    "manage": {
+      "headerBtn": "管理连接",
+      "headerBtnAlt": "在管理后台统一维护连接器与自定义 MCP"
     }
   },
   "modelConfig": {
@@ -390,28 +402,6 @@
     "customRulesFailed": "保存自定义指令失败",
     "modelDescription": "要使用的模型名称",
     "modelDescriptionHint": "要使用的模型名称（请先输入 API Key 以查看可用的模型）"
-  },
-  "common": {
-    "close": "关闭",
-    "confirm": "确认",
-    "cancel": "取消",
-    "ok": "确定",
-    "create": "创建",
-    "creating": "创建中...",
-    "saving": "保存中...",
-    "confirming": "确认中...",
-    "edit": "编辑",
-    "delete": "删除",
-    "copy": "复制",
-    "copySuccess": "已复制",
-    "zoomInImage": "图片放大",
-    "copyImage": "复制图片",
-    "copyImageUrl": "复制图片URL",
-    "downloadImage": "下载图片",
-    "login": "登录",
-    "signup": "注册",
-    "save": "保存",
-    "signout": "登出"
   },
   "models": {
     "title": "模型设置",

@@ -95,7 +95,78 @@ model McpServer {
   createdAt       DateTime @default(now())
   updatedAt       DateTime
 
+  TenantIntegration TenantIntegration[]
+
   @@index([planRequired])
+}
+
+model TenantMcpHost {
+  id            String    @id @default(uuid())
+  tenantId      String
+  ownerUserId   String
+  name          String    @default("default")
+  baseUrl       String    @db.VarChar(1000)
+  status        String    @default("REGISTERED") @db.VarChar(30)
+  deployment    String    @default("docker") @db.VarChar(30)
+  metadata      Json?
+  lastSeenAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  Owner         User      @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([ownerUserId])
+  @@index([status])
+}
+
+model TenantIntegration {
+  id            String    @id @default(uuid())
+  tenantId      String
+  ownerUserId   String
+  mcpServerId   String
+  enabled       Boolean   @default(true)
+  config        Json?
+  status        String    @default("ENABLED") @db.VarChar(30)
+  lastTestedAt  DateTime?
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  Owner         User      @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  McpServer     McpServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, mcpServerId])
+  @@index([tenantId])
+  @@index([ownerUserId])
+  @@index([mcpServerId])
+  @@index([enabled])
+}
+
+model TenantCustomMcp {
+  id            String    @id @default(uuid())
+  tenantId      String
+  ownerUserId   String
+  name          String
+  transport     String    @default("streamable") @db.VarChar(20)
+  url           String?   @db.VarChar(1000)
+  headers       Json?
+  authType      String?   @db.VarChar(20)
+  command       String?   @db.VarChar(500)
+  args          Json?
+  env           Json?
+  enabled       Boolean   @default(true)
+  source        String    @default("manual") @db.VarChar(20)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  Owner         User      @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([ownerUserId])
+  @@index([enabled])
 }
 
 model Message {
@@ -275,6 +346,9 @@ model User {
   RefreshToken        RefreshToken[]
   Subscription        Subscription?
   SubscriptionPayment SubscriptionPayment[]
+  TenantMcpHost       TenantMcpHost[]
+  TenantIntegration   TenantIntegration[]
+  TenantCustomMcp     TenantCustomMcp[]
   TokenPurchase       TokenPurchase[]
   UsageRecord         UsageRecord[]
   UserPreferences     UserPreferences?

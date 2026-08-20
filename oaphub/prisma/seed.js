@@ -49,7 +49,12 @@ async function main() {
   console.log(`✅ Admin user: ${adminUser.email}`);
 
   // Create BASE user
-  const baseUser = await prisma.user.upsert({
+  // 测试账号（base/pro/enterprise，密码 password123）只在显式开启时创建。
+  // 客户部署会在 entrypoint 里跑本脚本来灌连接器清单，绝不能顺带建出弱口令账号。
+  const SEED_TEST_USERS = process.env.SEED_TEST_USERS === 'true';
+  let baseUser = { email: '(skipped)' }, proUser = { email: '(skipped)' }, enterpriseUser = { email: '(skipped)' };
+  if (SEED_TEST_USERS) {
+  const baseUser_ = await prisma.user.upsert({
     where: { email: 'base@test.com' },
     update: {},
     create: {
@@ -71,7 +76,7 @@ async function main() {
   });
 
   // Create PRO user
-  const proUser = await prisma.user.upsert({
+  const proUser_ = await prisma.user.upsert({
     where: { email: 'pro@test.com' },
     update: {},
     create: {
@@ -93,7 +98,7 @@ async function main() {
   });
 
   // Create ENTERPRISE user
-  const enterpriseUser = await prisma.user.upsert({
+  const enterpriseUser_ = await prisma.user.upsert({
     where: { email: 'enterprise@test.com' },
     update: {},
     create: {
@@ -114,7 +119,11 @@ async function main() {
     }
   });
 
+  baseUser = baseUser_; proUser = proUser_; enterpriseUser = enterpriseUser_;
   console.log(`✅ Users created: ${baseUser.email}, ${proUser.email}, ${enterpriseUser.email}`);
+  } else {
+    console.log('⏭️  跳过测试账号创建（如需创建请设 SEED_TEST_USERS=true）');
+  }
 
   // Auto-load MCP servers from integrations directory
   console.log('📦 Loading MCP integrations...');

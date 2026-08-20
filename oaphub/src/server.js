@@ -37,6 +37,7 @@ import syncRoutes from './routes/sync.js';
 import customModelsRoutes from './routes/customModels.js';
 import adminBillingRoutes from './routes/adminBilling.js';
 import mcpProxyRoutes from './routes/mcp-proxy.js';
+import tenantMcpRoutes from './routes/tenant-mcp.js';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler.js';
@@ -214,6 +215,7 @@ app.use('/api/v1/user', userRoutes);
 app.use('/api/v1', modelRoutes);
 app.use('/api/v1', proxyRoutes);
 app.use('/api/v1', mcpRoutes);
+app.use('/api/v1/tenant-mcp', tenantMcpRoutes);
 app.use('/api/v1', llmRoutes);
 app.use('/api/v1/system-prompt', systemPromptRoutes);
 

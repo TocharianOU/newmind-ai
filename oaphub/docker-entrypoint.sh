@@ -80,5 +80,10 @@ if [ -n "$ADMIN2_EMAIL" ] && [ -n "$ADMIN2_PASSWORD" ]; then
   "
 fi
 
+# 同步连接器清单到数据库（integrations/*/config.js → mcpServer 表）
+# 不做这步，市场页在全新安装时是空的
+echo "[entrypoint] Seeding MCP connectors..."
+node prisma/seed.js || echo "[entrypoint] connector seed failed (non-fatal)"
+
 echo "[entrypoint] Starting server..."
 exec node src/server.js

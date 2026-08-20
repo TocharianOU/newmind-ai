@@ -142,17 +142,26 @@
     "default": "Default"
   },
   "common": {
+    "close": "Close",
+    "confirm": "Confirm",
     "cancel": "Cancel",
-    "save": "Save",
+    "ok": "OK",
     "create": "Create",
     "creating": "Creating...",
     "saving": "Saving...",
     "confirming": "Confirming...",
-    "delete": "Delete",
     "edit": "Edit",
-    "close": "Close",
-    "confirm": "Confirm",
-    "ok": "OK"
+    "delete": "Delete",
+    "copy": "Copy",
+    "copySuccess": "Copied",
+    "zoomInImage": "Zoom In Image",
+    "copyImage": "Copy Image",
+    "copyImageUrl": "Copy Image URL",
+    "downloadImage": "Download Image",
+    "login": "Login",
+    "signup": "Sign Up",
+    "save": "Save",
+    "signout": "Sign Out"
   },
   "tools": {
     "title": "Security Integrations",
@@ -377,6 +386,10 @@
       "titleAdd": "Add MCP Server",
       "titleEdit": "Edit {{tool}} MCP",
       "titleEditJson": "MCP Tools Settings"
+    },
+    "manage": {
+      "headerBtn": "Manage",
+      "headerBtnAlt": "Manage connectors and custom MCP in the admin console"
     }
   },
   "modelConfig": {
@@ -389,28 +402,6 @@
     "customRulesFailed": "Failed to save custom instructions",
     "modelDescription": "Model name to use",
     "modelDescriptionHint": "Model name to use (Please enter API Key first to see available models)"
-  },
-  "common": {
-    "close": "Close",
-    "confirm": "Confirm",
-    "cancel": "Cancel",
-    "ok": "OK",
-    "create": "Create",
-    "creating": "Creating...",
-    "saving": "Saving...",
-    "confirming": "Confirming...",
-    "edit": "Edit",
-    "delete": "Delete",
-    "copy": "Copy",
-    "copySuccess": "Copied",
-    "zoomInImage": "Zoom In Image",
-    "copyImage": "Copy Image",
-    "copyImageUrl": "Copy Image URL",
-    "downloadImage": "Download Image",
-    "login": "Login",
-    "signup": "Sign Up",
-    "save": "Save",
-    "signout": "Sign Out"
   },
   "models": {
     "title": "Model Settings",

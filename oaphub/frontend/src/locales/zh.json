@@ -29,6 +29,7 @@
   },
   "navigation": {
     "dashboard": "仪表板",
+    "integrations": "组织连接",
     "billing": "计费",
     "settings": "设置",
     "profile": "个人资料",

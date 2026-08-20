@@ -909,6 +909,10 @@ const Tools = () => {
             {t("tools.toolMenu.edit")}
           </div>,
         onClick: () => {
+          if (isWeb) {
+            window.open("/console/integrations", "_blank", "noopener")
+            return
+          }
           setCurrentTool(tool.name)
           setShowCustomEditPopup(true)
         },
@@ -926,6 +930,11 @@ const Tools = () => {
             {t("tools.toolMenu.delete")}
           </div>,
         onClick: () => {
+          // Web 部署下删除也走管理后台：直接改 mcp-host 会在下次下发时被 Hub 覆盖回来
+          if (isWeb) {
+            window.open("/console/integrations", "_blank", "noopener")
+            return
+          }
           setCurrentTool(tool.name)
           setShowDeletePopup(true)
         },
@@ -1008,9 +1017,15 @@ const Tools = () => {
               </Tooltip>
             )}
             
-            <Tooltip content={t("tools.custom.headerBtnAlt")}>
+            {/* Web 部署下 MCP 配置统一由管理后台「组织连接」维护（含自定义 MCP），
+                此处不再打开本地配置弹窗，避免两个写入方互相覆盖。 */}
+            <Tooltip content={isWeb ? t("tools.manage.headerBtnAlt") : t("tools.custom.headerBtnAlt")}>
               <Button
                 onClick={() => {
+                  if (isWeb) {
+                    window.open("/console/integrations", "_blank", "noopener")
+                    return
+                  }
                   setCurrentTool("")
                   setShowCustomEditPopup(true)
                 }}
@@ -1018,9 +1033,10 @@ const Tools = () => {
                 size="fit"
                 padding="xs"
               >
-                {t("tools.custom.headerBtn")}
+                {isWeb ? t("tools.manage.headerBtn") : t("tools.custom.headerBtn")}
               </Button>
             </Tooltip>
+
           </div>
         </div>
 

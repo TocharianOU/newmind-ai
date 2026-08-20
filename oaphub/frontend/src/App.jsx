@@ -11,6 +11,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
+import Integrations from './pages/Integrations';
 import Billing from './pages/Billing';
 import PaymentSuccess from './pages/PaymentSuccess';
 import AdminStats from './pages/AdminStats';
@@ -124,6 +125,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <Dashboard />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/integrations"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Integrations />
             </Layout>
           </ProtectedRoute>
         }
